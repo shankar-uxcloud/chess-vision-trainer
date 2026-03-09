@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess Vision Trainer</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Background texture layer -->
+  <div class="bg-texture"></div>
+
+  <div class="app-wrapper">
+
+    <!-- ── HEADER ── -->
+    <header class="app-header">
+      <div class="header-ornament">♟</div>
+      <h1 class="app-title">Chess Vision<br><em>Trainer</em></h1>
+      <p class="app-subtitle">Sharpen your board awareness. Race the clock.</p>
+    </header>
+
+    <!-- ── CONTROLS ── -->
+    <section class="controls-bar">
+      <div class="control-group">
+        <label class="control-label" for="timer-select">Duration</label>
+        <div class="select-wrapper">
+          <select id="timer-select" class="timer-select">
+            <option value="30">30 seconds</option>
+            <option value="60" selected>60 seconds</option>
+            <option value="120">120 seconds</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+
+      <button id="start-btn" class="start-btn">
+        <span class="btn-text">Start Training</span>
+        <span class="btn-icon">→</span>
+      </button>
+    </section>
+
+    <!-- ── TARGET COORDINATE DISPLAY ── -->
+    <section class="target-section">
+      <div class="target-wrapper" id="target-wrapper">
+        <div class="target-label">Find this square</div>
+        <div class="target-coord" id="target-coord">—</div>
+        <div class="target-hint" id="target-hint">Press Start Training to begin</div>
+      </div>
+    </section>
+
+    <!-- ── TIMER PROGRESS BAR ── -->
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+
+    <!-- ── CHESSBOARD ── -->
+    <section class="board-section">
+      <div class="board-container">
+        <!-- Rank labels left -->
+        <div class="rank-labels" id="rank-labels"></div>
+
+        <!-- Board grid -->
+        <div class="board" id="chessboard"></div>
+
+        <!-- Rank labels right (mirror) -->
+        <div class="rank-labels rank-labels-right" id="rank-labels-right"></div>
+      </div>
+
+      <!-- File labels -->
+      <div class="file-labels" id="file-labels"></div>
+    </section>
+
+    <!-- ── SCORE PANEL ── -->
+    <section class="score-panel" id="score-panel">
+      <div class="score-card" id="card-correct">
+        <div class="score-icon">✓</div>
+        <div class="score-value" id="score-correct">0</div>
+        <div class="score-name">Correct</div>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-card" id="card-errors">
+        <div class="score-icon">✗</div>
+        <div class="score-value" id="score-errors">0</div>
+        <div class="score-name">Errors</div>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-card" id="card-accuracy">
+        <div class="score-icon">◎</div>
+        <div class="score-value" id="score-accuracy">—</div>
+        <div class="score-name">Accuracy</div>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-card" id="card-time">
+        <div class="score-icon">◷</div>
+        <div class="score-value" id="score-time">—</div>
+        <div class="score-name">Remaining</div>
+      </div>
+    </section>
+
+    <!-- ── RESULTS PANEL ── -->
+    <section class="results-panel hidden" id="results-panel">
+      <div class="results-inner">
+        <div class="results-ornament">♛</div>
+        <h2 class="results-title">Session Complete</h2>
+        <div class="results-stats">
+          <div class="result-row">
+            <span class="result-label">Correct Answers</span>
+            <span class="result-value" id="res-correct">—</span>
+          </div>
+          <div class="result-divider"></div>
+          <div class="result-row">
+            <span class="result-label">Total Errors</span>
+            <span class="result-value" id="res-errors">—</span>
+          </div>
+          <div class="result-divider"></div>
+          <div class="result-row">
+            <span class="result-label">Accuracy</span>
+            <span class="result-value accent" id="res-accuracy">—</span>
+          </div>
+        </div>
+        <div class="result-grade" id="result-grade"></div>
+        <button id="restart-btn" class="restart-btn">
+          <span>Play Again</span>
+          <span>⟳</span>
+        </button>
+        <p class="restart-shortcut">or press <kbd>R</kbd></p>
+      </div>
+    </section>
+
+  </div><!-- /app-wrapper -->
+
+  <script src="script.js"></script>
+</body>
+</html>
