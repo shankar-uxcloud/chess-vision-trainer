@@ -3,136 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Chess Vision Trainer helps chess players improve board visualization, focus, and pattern recognition.">
-  <title>Chess Vision Trainer</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0b0e12" />
+  <meta name="description" content="Train your chessboard visualization, square recognition, focus, and pattern awareness with Chess Vision Trainer." />
+  <title>Chess Vision Trainer — Train Your Board Vision</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-  <!-- Background texture layer -->
-  <div class="bg-texture"></div>
-
-  <div class="app-wrapper">
-
-    <!-- ── HEADER ── -->
-    <header class="app-header">
-      <div class="header-ornament">♟</div>
-      <h1 class="app-title">Chess Vision<br><em>Trainer</em></h1>
-      <p class="app-subtitle">Sharpen your board awareness. Race the clock.</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Chess Vision Trainer home">
+        <span class="brand-mark">♞</span>
+        <span class="brand-copy"><strong>CHESS VISION</strong><small>TRAINING STUDIO</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="live-indicator"><i></i> FOCUS MODE</span>
+        <button class="icon-button" id="theme-toggle" type="button" aria-label="Toggle light mode" title="Toggle theme">☼</button>
+      </div>
     </header>
 
-    <!-- ── CONTROLS ── -->
-    <section class="controls-bar">
-      <div class="control-group">
-        <label class="control-label" for="timer-select">Duration</label>
-        <div class="select-wrapper">
-          <select id="timer-select" class="timer-select">
-            <option value="30">30 seconds</option>
-            <option value="60" selected>60 seconds</option>
-            <option value="120">120 seconds</option>
-          </select>
-          <span class="select-arrow">▾</span>
-        </div>
-      </div>
+    <main>
+      <section class="intro">
+        <div class="eyebrow"><span class="eyebrow-line"></span> SEE THE BOARD DIFFERENTLY</div>
+        <h1>Build your <em>board vision.</em></h1>
+        <p>Train your mind to recognize every square. Stay sharp, stay present, and let the patterns become instinct.</p>
+      </section>
 
-      <button id="start-btn" class="start-btn">
-        <span class="btn-text">Start Training</span>
-        <span class="btn-icon">→</span>
-      </button>
-    </section>
+      <section class="training-layout" aria-label="Chess vision training">
+        <div class="play-column">
+          <div class="panel training-panel">
+            <div class="panel-heading">
+              <div><span class="section-kicker">01 / TRAINING BOARD</span><h2>Square recognition</h2></div>
+              <span class="status-pill" id="session-status"><i></i> READY</span>
+            </div>
 
-    <!-- ── TARGET COORDINATE DISPLAY ── -->
-    <section class="target-section">
-      <div class="target-wrapper" id="target-wrapper">
-        <div class="target-label">Find this square</div>
-        <div class="target-coord" id="target-coord">—</div>
-        <div class="target-hint" id="target-hint">Press Start Training to begin</div>
-      </div>
-    </section>
+            <div class="board-stage">
+              <div class="board-frame">
+                <div class="rank-labels" id="rank-labels" aria-hidden="true"></div>
+                <div class="board" id="chessboard" role="group" aria-label="Chessboard square selection"></div>
+                <div class="rank-labels rank-labels-right" id="rank-labels-right" aria-hidden="true"></div>
+              </div>
+              <div class="file-labels" id="file-labels" aria-hidden="true"></div>
+            </div>
 
-    <!-- ── TIMER PROGRESS BAR ── -->
-    <div class="progress-bar-track">
-      <div class="progress-bar-fill" id="progress-bar"></div>
-    </div>
-
-    <!-- ── CHESSBOARD ── -->
-    <section class="board-section">
-      <div class="board-container">
-        <!-- Rank labels left -->
-        <div class="rank-labels" id="rank-labels"></div>
-
-        <!-- Board grid -->
-        <div class="board" id="chessboard"></div>
-
-        <!-- Rank labels right (mirror) -->
-        <div class="rank-labels rank-labels-right" id="rank-labels-right"></div>
-      </div>
-
-      <!-- File labels -->
-      <div class="file-labels" id="file-labels"></div>
-    </section>
-
-    <!-- ── SCORE PANEL ── -->
-    <section class="score-panel" id="score-panel">
-      <div class="score-card" id="card-correct">
-        <div class="score-icon">✓</div>
-        <div class="score-value" id="score-correct">0</div>
-        <div class="score-name">Correct</div>
-      </div>
-      <div class="score-divider"></div>
-      <div class="score-card" id="card-errors">
-        <div class="score-icon">✗</div>
-        <div class="score-value" id="score-errors">0</div>
-        <div class="score-name">Errors</div>
-      </div>
-      <div class="score-divider"></div>
-      <div class="score-card" id="card-accuracy">
-        <div class="score-icon">◎</div>
-        <div class="score-value" id="score-accuracy">—</div>
-        <div class="score-name">Accuracy</div>
-      </div>
-      <div class="score-divider"></div>
-      <div class="score-card" id="card-time">
-        <div class="score-icon">◷</div>
-        <div class="score-value" id="score-time">—</div>
-        <div class="score-name">Remaining</div>
-      </div>
-    </section>
-
-    <!-- ── RESULTS PANEL ── -->
-    <section class="results-panel hidden" id="results-panel">
-      <div class="results-inner">
-        <div class="results-ornament">♛</div>
-        <h2 class="results-title">Session Complete</h2>
-        <div class="results-stats">
-          <div class="result-row">
-            <span class="result-label">Correct Answers</span>
-            <span class="result-value" id="res-correct">—</span>
+            <div class="board-legend"><span><i class="legend-dot light-dot"></i> Light square</span><span><i class="legend-dot dark-dot"></i> Dark square</span></div>
           </div>
-          <div class="result-divider"></div>
-          <div class="result-row">
-            <span class="result-label">Total Errors</span>
-            <span class="result-value" id="res-errors">—</span>
-          </div>
-          <div class="result-divider"></div>
-          <div class="result-row">
-            <span class="result-label">Accuracy</span>
-            <span class="result-value accent" id="res-accuracy">—</span>
+
+          <div class="score-panel" id="score-panel" aria-label="Live session statistics">
+            <div class="score-card" id="card-correct"><span class="metric-icon">✓</span><span class="score-value" id="score-correct">0</span><span class="score-name">Correct</span></div>
+            <div class="score-card" id="card-errors"><span class="metric-icon">×</span><span class="score-value" id="score-errors">0</span><span class="score-name">Mistakes</span></div>
+            <div class="score-card" id="card-accuracy"><span class="metric-icon">◎</span><span class="score-value" id="score-accuracy">—</span><span class="score-name">Accuracy</span></div>
+            <div class="score-card" id="card-time"><span class="metric-icon">◷</span><span class="score-value" id="score-time">1:00</span><span class="score-name">Time left</span></div>
           </div>
         </div>
-        <div class="result-grade" id="result-grade"></div>
-        <button id="restart-btn" class="restart-btn">
-          <span>Play Again</span>
-          <span>⟳</span>
-        </button>
-        <p class="restart-shortcut">or press <kbd>R</kbd></p>
-      </div>
-    </section>
 
-  </div><!-- /app-wrapper -->
+        <aside class="side-column">
+          <div class="panel mission-panel">
+            <div class="panel-heading compact"><div><span class="section-kicker">02 / YOUR TARGET</span><h2>Find the square</h2></div><span class="target-symbol">⌖</span></div>
+            <div class="target-wrapper" id="target-wrapper">
+              <div class="target-label">LOCATE THIS COORDINATE</div>
+              <div class="target-coord" id="target-coord">—</div>
+              <div class="target-hint" id="target-hint">Start a session to reveal your first square.</div>
+            </div>
+            <div class="progress-meta"><span>SESSION TIME</span><strong id="progress-time">01:00</strong></div>
+            <div class="progress-bar-track" role="progressbar" aria-label="Session time remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+              <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+            <div class="controls">
+              <label class="control-label" for="timer-select">Session duration</label>
+              <div class="control-row">
+                <div class="select-wrap"><select id="timer-select" class="timer-select">
+                  <option value="30">30 seconds</option>
+                  <option value="60" selected>60 seconds</option>
+                  <option value="120">2 minutes</option>
+                </select><span class="select-arrow">⌄</span></div>
+                <button id="start-btn" class="start-btn" type="button"><span class="btn-text">Start training</span><span class="btn-icon">↗</span></button>
+              </div>
+              <p class="keyboard-tip">KEYBOARD: PRESS <kbd>R</kbd> TO RESTART</p>
+            </div>
+          </div>
 
+          <div class="panel guide-panel">
+            <div class="guide-icon">♟</div>
+            <div><h3>How to train</h3><p>Read the coordinate above, then click its matching square on the board. Correct answers advance you to the next target.</p></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="results-panel hidden" id="results-panel" aria-live="polite">
+        <div class="results-inner">
+          <div class="results-crown">♛</div>
+          <span class="section-kicker">SESSION REPORT</span>
+          <h2 class="results-title">Training complete.</h2>
+          <p class="results-copy">Every session builds sharper board awareness. Here's how you did.</p>
+          <div class="results-stats">
+            <div class="result-stat"><span>Correct answers</span><strong id="res-correct">—</strong></div>
+            <div class="result-stat"><span>Total mistakes</span><strong id="res-errors">—</strong></div>
+            <div class="result-stat"><span>Accuracy</span><strong class="accent" id="res-accuracy">—</strong></div>
+          </div>
+          <div class="result-grade" id="result-grade"></div>
+          <button id="restart-btn" class="restart-btn" type="button">Train again <span>↗</span></button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>CHESS VISION TRAINER</span><span>FOCUS · RECOGNITION · REPETITION</span></footer>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
