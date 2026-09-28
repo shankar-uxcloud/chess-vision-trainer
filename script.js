@@ -1,953 +1,1233 @@
 /* =========================================================
-   CHESS VISION TRAINER — COMPLETE FIXED SCRIPT
-   Version 4.0
-   Features:
-   - Correct 8x8 chessboard
-   - File coordinates on TOP and BOTTOM
-   - Rank coordinates on LEFT and RIGHT
-   - 30s, 45s, 1m, 1m30s, 1m45s, 2m timers
-   - Dark, Light, Neon themes
-   - Live score, accuracy, streak and results
-   - Responsive board and keyboard shortcuts
+   VISION CHESS — COMPLETE TRAINING ENGINE
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  "use strict";
+"use strict";
 
-  // ========================================================
-  // 1. GET HTML ELEMENTS
-  // ========================================================
 
-  const $ = (id) => document.getElementById(id);
+/* =========================================================
+   DOM HELPERS
+========================================================= */
 
-  const board = $("chessboard");
-  const boardStage = board?.parentElement;
+const $ = (id) => document.getElementById(id);
 
-  const ranksLeft = $("rank-labels");
-  const ranksRight = $("rank-labels-right");
-  const fileLabels = $("file-labels");
 
-  const targetCoord = $("target-coord");
-  const targetHint = $("target-hint");
-  const targetWrapper = $("target-wrapper");
+/* =========================================================
+   STORAGE
+========================================================= */
 
-  const timerSelect = $("timer-select");
-  const startBtn = $("start-btn");
-  const restartBtn = $("restart-btn");
-  const themeToggle = $("theme-toggle");
+const STORAGE_KEYS = {
+    stats: "cvt-stats",
+    history: "cvt-history",
+    theme: "cvt-theme",
+    board: "cvt-board-theme",
+    sound: "cvt-sound"
+};
 
-  const status = $("session-status");
-  const progressBar = $("progress-bar");
-  const progressTime = $("progress-time");
+function loadStorage(key, fallback) {
+    try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : JSON.parse(value);
+    } catch (error) {
+        console.warn("Storage read failed:", error);
+        return fallback;
+    }
+}
 
-  const correctDisplay = $("score-correct");
-  const errorsDisplay = $("score-errors");
-  const accuracyDisplay = $("score-accuracy");
-  const timeDisplay = $("score-time");
+function saveStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn("Storage write failed:", error);
+    }
+}
 
-  const resultsPanel = $("results-panel");
-  const resCorrect = $("res-correct");
-  const resErrors = $("res-errors");
-  const resAccuracy = $("res-accuracy");
-  const resultGrade = $("result-grade");
 
-  const personalBest = $("personal-best");
-  const resStreak = $("res-streak");
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
-  // Verify required HTML elements.
+const state = {
+    running: false,
+    completed: false,
 
-  if (
-    !board ||
-    !ranksLeft ||
-    !ranksRight ||
-    !fileLabels ||
-    !timerSelect ||
-    !startBtn ||
-    !targetCoord
-  ) {
-    console.error(
-      "Chess Vision Trainer: Required HTML elements missing. " +
-      "Check your index.html IDs."
-    );
-    return;
-  }
+    timer: null,
+    toastTimer: null,
+    feedbackTimer: null,
 
-  // ========================================================
-  // 2. SETTINGS AND SESSION STATE
-  // ========================================================
+    duration: 60,
+    timeLeft: 60,
 
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    correct: 0,
+    mistakes: 0,
 
-  const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+    streak: 0,
+    bestSessionStreak: 0,
 
-  const durations = [
-    [30, "30 seconds"],
-    [45, "45 seconds"],
-    [60, "1 minute"],
-    [90, "1 minute 30 seconds"],
-    [105, "1 minute 45 seconds"],
-    [120, "2 minutes"]
-  ];
+    target: null,
+    lastCorrectSquare: null,
+    lastWrongSquare: null,
 
-  const themes = ["dark", "light", "neon"];
+    soundEnabled: true
+};
 
-  const tips = [
-    "Visualize the file first, then the rank. Avoid searching square by square.",
-    "Keep your eyes near the center of the board and use your peripheral vision.",
+
+let stats = loadStorage(STORAGE_KEYS.stats, {
+    totalCorrect: 0,
+    bestStreak: 0,
+    personalBest: 0,
+    totalSessions: 0
+});
+
+let history = loadStorage(STORAGE_KEYS.history, []);
+
+
+/* Validate stored values */
+
+if (!stats || typeof stats !== "object") {
+    stats = {
+        totalCorrect: 0,
+        bestStreak: 0,
+        personalBest: 0,
+        totalSessions: 0
+    };
+}
+
+if (!Array.isArray(history)) {
+    history = [];
+}
+
+
+/* =========================================================
+   BOARD CONFIGURATION
+========================================================= */
+
+const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
+
+const BOARD_SIZE = 8;
+
+const TIPS = [
     "Accuracy first, speed second. Smooth recognition becomes fast recognition.",
-    "Imagine each file as a vertical street and each rank as a horizontal street.",
-    "Try to picture the target square before moving your eyes to it."
-  ];
+    "Learn the files from a to h. Knowing the board structure builds confidence.",
+    "The center of the board is your reference point. Practice visualizing each square.",
+    "Do not rush every answer. Build a reliable connection between files and ranks.",
+    "Short daily practice sessions can help develop faster coordinate recognition.",
+    "Try to recognize a square instantly instead of counting every file and rank.",
+    "Look at the board as a complete grid. Train your eyes to move naturally.",
+    "Consistency is the secret. A few focused minutes can build a lasting habit."
+];
 
-  let duration = 60;
-  let timeLeft = 60;
 
-  let correct = 0;
-  let mistakes = 0;
+/* =========================================================
+   SOUND ENGINE
+========================================================= */
 
-  let streak = 0;
-  let bestStreak = 0;
+let audioContext = null;
 
-  let target = null;
-  let lastTarget = null;
+function playSound(type = "correct") {
+    if (!state.soundEnabled) return;
 
-  let running = false;
-  let answered = false;
+    try {
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
 
-  let timerInterval = null;
-  let answerTimeout = null;
+        if (!AudioContextClass) return;
 
-  let endTime = 0;
-  let currentTheme = "dark";
+        if (!audioContext) {
+            audioContext = new AudioContextClass();
+        }
 
-  // ========================================================
-  // 3. TIMER OPTIONS
-  // ========================================================
+        if (audioContext.state === "suspended") {
+            audioContext.resume();
+        }
 
-  function setupTimerOptions() {
-    timerSelect.innerHTML = "";
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
 
-    durations.forEach(([value, label]) => {
-      const option = document.createElement("option");
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
 
-      option.value = String(value);
-      option.textContent = label;
+        const now = audioContext.currentTime;
 
-      if (value === 60) {
-        option.selected = true;
-      }
+        if (type === "correct") {
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(660, now);
+            oscillator.frequency.setValueAtTime(880, now + 0.07);
 
-      timerSelect.appendChild(option);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.13, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.2);
+
+        } else if (type === "wrong") {
+            oscillator.type = "triangle";
+            oscillator.frequency.setValueAtTime(220, now);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.1, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.18);
+
+        } else if (type === "finish") {
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(523, now);
+            oscillator.frequency.setValueAtTime(659, now + 0.1);
+            oscillator.frequency.setValueAtTime(784, now + 0.2);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.12, now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.4);
+        }
+
+    } catch (error) {
+        console.warn("Audio unavailable:", error);
+    }
+}
+
+
+/* =========================================================
+   TOAST NOTIFICATIONS
+========================================================= */
+
+function showToast(message) {
+    const toast = $("toast");
+
+    $("toastMessage").textContent = message;
+
+    toast.classList.add("show");
+
+    clearTimeout(state.toastTimer);
+
+    state.toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2400);
+}
+
+
+/* =========================================================
+   BOARD CREATION
+========================================================= */
+
+function createCoordinates() {
+    $("topCoordinates").innerHTML = "";
+    $("bottomCoordinates").innerHTML = "";
+    $("leftCoordinates").innerHTML = "";
+    $("rightCoordinates").innerHTML = "";
+
+    FILES.forEach(file => {
+        const top = document.createElement("span");
+        const bottom = document.createElement("span");
+
+        top.textContent = file;
+        bottom.textContent = file;
+
+        $("topCoordinates").appendChild(top);
+        $("bottomCoordinates").appendChild(bottom);
     });
 
-    duration = 60;
-    timeLeft = 60;
-  }
+    RANKS.forEach(rank => {
+        const left = document.createElement("span");
+        const right = document.createElement("span");
 
-  // ========================================================
-  // 4. BUILD COORDINATE LABELS
-  // ========================================================
+        left.textContent = rank;
+        right.textContent = rank;
 
-  function createFileLabels(container) {
-    if (!container) return;
+        $("leftCoordinates").appendChild(left);
+        $("rightCoordinates").appendChild(right);
+    });
+}
+
+
+function createBoard() {
+    const board = $("chessboard");
+
+    board.innerHTML = "";
+
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+
+            const square = document.createElement("button");
+
+            const file = FILES[col];
+            const rank = RANKS[row];
+
+            const coordinate = `${file}${rank}`;
+
+            const isLight = (row + col) % 2 === 0;
+
+            square.type = "button";
+            square.className = `square ${isLight ? "light" : "dark"}`;
+
+            square.dataset.square = coordinate;
+
+            square.setAttribute("role", "gridcell");
+            square.setAttribute(
+                "aria-label",
+                `Square ${coordinate}`
+            );
+
+            square.setAttribute("aria-pressed", "false");
+
+            square.disabled = true;
+
+            square.addEventListener("click", () => {
+                handleSquareClick(coordinate, square);
+            });
+
+            board.appendChild(square);
+        }
+    }
+}
+
+
+/* =========================================================
+   BOARD HELPERS
+========================================================= */
+
+function getSquareElement(coordinate) {
+    return document.querySelector(
+        `.square[data-square="${coordinate}"]`
+    );
+}
+
+
+function clearSquareHighlights() {
+    document.querySelectorAll(".square").forEach(square => {
+        square.classList.remove(
+            "target-highlight",
+            "last-correct",
+            "last-wrong"
+        );
+
+        square.setAttribute("aria-pressed", "false");
+    });
+}
+
+
+function setBoardEnabled(enabled) {
+    document.querySelectorAll(".square").forEach(square => {
+        square.disabled = !enabled;
+    });
+}
+
+
+function setBoardTheme(theme) {
+    document.body.dataset.board = theme;
+
+    $("boardTheme").value = theme;
+
+    saveStorage(STORAGE_KEYS.board, theme);
+}
+
+
+function applyBoardTheme() {
+    const savedTheme = loadStorage(
+        STORAGE_KEYS.board,
+        "classic"
+    );
+
+    const allowed = [
+        "classic",
+        "wood",
+        "blue",
+        "green",
+        "purple",
+        "pink"
+    ];
+
+    setBoardTheme(
+        allowed.includes(savedTheme) ? savedTheme : "classic"
+    );
+}
+
+
+/* =========================================================
+   TARGET GENERATION
+========================================================= */
+
+function generateTarget() {
+    let coordinate;
+
+    do {
+        const file = FILES[Math.floor(Math.random() * 8)];
+        const rank = RANKS[Math.floor(Math.random() * 8)];
+
+        coordinate = `${file}${rank}`;
+
+    } while (coordinate === state.target);
+
+    state.target = coordinate;
+
+    $("targetCoordinate").textContent = coordinate;
+
+    $("targetHint").textContent =
+        "Locate the file and rank on the board";
+
+    $("targetFeedback").textContent = "";
+
+    clearSquareHighlights();
+}
+
+
+function resetTargetDisplay() {
+    state.target = null;
+
+    $("targetCoordinate").textContent = "—";
+
+    $("targetHint").textContent =
+        "Start your session to begin";
+
+    $("targetFeedback").textContent = "";
+
+    $("targetVisual").classList.remove("correct");
+
+    clearSquareHighlights();
+}
+
+
+/* =========================================================
+   SESSION TIMER
+========================================================= */
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return (
+        String(minutes).padStart(2, "0") +
+        ":" +
+        String(remainingSeconds).padStart(2, "0")
+    );
+}
+
+
+function updateTimerDisplay() {
+    $("timerDisplay").textContent = formatTime(state.timeLeft);
+
+    if (state.timeLeft <= 10 && state.running) {
+        $("timerDisplay").style.color = "var(--red)";
+    } else {
+        $("timerDisplay").style.color = "var(--accent)";
+    }
+}
+
+
+function startTimer() {
+    clearInterval(state.timer);
+
+    state.timer = setInterval(() => {
+        if (!state.running) return;
+
+        state.timeLeft--;
+
+        if (state.timeLeft < 0) {
+            state.timeLeft = 0;
+        }
+
+        updateTimerDisplay();
+        updateProgress();
+
+        if (state.timeLeft <= 0) {
+            finishTraining();
+        }
+
+    }, 1000);
+}
+
+
+/* =========================================================
+   SESSION STATISTICS
+========================================================= */
+
+function getAccuracy() {
+    const attempts = state.correct + state.mistakes;
+
+    if (attempts === 0) {
+        return 100;
+    }
+
+    return Math.round(
+        (state.correct / attempts) * 100
+    );
+}
+
+
+function updateSessionStats() {
+    $("sessionCorrect").textContent =
+        String(state.correct).padStart(2, "0");
+
+    $("sessionAccuracy").innerHTML =
+        `${getAccuracy()}<span>%</span>`;
+
+    $("sessionStreak").textContent =
+        String(state.streak).padStart(2, "0");
+
+    $("sessionAccuracy").style.color =
+        getAccuracy() >= 80
+            ? "var(--green)"
+            : "var(--orange)";
+
+    $("sessionStreak").style.color =
+        state.streak >= 5
+            ? "var(--orange)"
+            : "var(--text)";
+}
+
+
+function updateProgress() {
+    const elapsed = state.duration - state.timeLeft;
+
+    const progress = state.duration > 0
+        ? Math.min(
+            100,
+            Math.max(0, (elapsed / state.duration) * 100)
+        )
+        : 0;
+
+    $("progressFill").style.width = `${progress}%`;
+
+    $("progressText").textContent =
+        `${Math.round(progress)}%`;
+}
+
+
+function updateDashboardStats() {
+    $("totalCorrect").textContent =
+        stats.totalCorrect || 0;
+
+    $("bestStreak").textContent =
+        stats.bestStreak || 0;
+
+    $("personalBest").textContent =
+        stats.personalBest || 0;
+
+    $("sidebarBest").textContent =
+        stats.personalBest || 0;
+
+    $("totalSessions").textContent =
+        stats.totalSessions || 0;
+}
+
+
+/* =========================================================
+   SESSION RESET
+========================================================= */
+
+function resetSession() {
+    clearInterval(state.timer);
+    clearTimeout(state.feedbackTimer);
+
+    state.running = false;
+    state.completed = false;
+
+    state.duration = Number($("durationSelect").value);
+    state.timeLeft = state.duration;
+
+    state.correct = 0;
+    state.mistakes = 0;
+
+    state.streak = 0;
+    state.bestSessionStreak = 0;
+
+    state.target = null;
+
+    state.lastCorrectSquare = null;
+    state.lastWrongSquare = null;
+
+    updateTimerDisplay();
+    updateSessionStats();
+    updateProgress();
+
+    $("progressFill").style.width = "0%";
+
+    $("sessionState").classList.remove("running");
+    $("sessionStateText").textContent = "READY";
+
+    $("startBtnText").textContent = "Start training";
+
+    $("resultsPanel").classList.add("hidden");
+    $("newRecord").classList.add("hidden");
+
+    resetTargetDisplay();
+
+    setBoardEnabled(false);
+}
+
+
+/* =========================================================
+   START TRAINING
+========================================================= */
+
+function startTraining() {
+    if (state.running) {
+        finishTraining();
+        return;
+    }
+
+    resetSession();
+
+    state.duration = Number($("durationSelect").value);
+    state.timeLeft = state.duration;
+
+    state.running = true;
+    state.completed = false;
+
+    $("sessionState").classList.add("running");
+    $("sessionStateText").textContent = "LIVE";
+
+    $("startBtnText").textContent = "End session";
+
+    $("targetHint").textContent =
+        "Find the coordinate and click its square";
+
+    $("resultsPanel").classList.add("hidden");
+
+    setBoardEnabled(true);
+
+    generateTarget();
+
+    updateTimerDisplay();
+    updateSessionStats();
+
+    startTimer();
+
+    showToast("Training session started!");
+
+    playSound("correct");
+}
+
+
+/* =========================================================
+   HANDLE SQUARE CLICK
+========================================================= */
+
+function handleSquareClick(coordinate, square) {
+    if (!state.running) {
+        showToast("Start a session first!");
+        return;
+    }
+
+    if (!state.target) return;
+
+    if (coordinate === state.target) {
+        handleCorrectAnswer(square);
+    } else {
+        handleWrongAnswer(square);
+    }
+}
+
+
+/* =========================================================
+   CORRECT ANSWER
+========================================================= */
+
+function handleCorrectAnswer(square) {
+    state.correct++;
+
+    state.streak++;
+
+    state.bestSessionStreak = Math.max(
+        state.bestSessionStreak,
+        state.streak
+    );
+
+    stats.totalCorrect++;
+
+    stats.bestStreak = Math.max(
+        stats.bestStreak,
+        state.streak
+    );
+
+    state.lastCorrectSquare = state.target;
+
+    clearSquareHighlights();
+
+    square.classList.add("last-correct");
+
+    square.setAttribute("aria-pressed", "true");
+
+    $("targetPanel").classList.remove("wrong");
+    $("targetPanel").classList.add("correct");
+
+    $("targetFeedback").textContent = "✓ CORRECT";
+
+    $("targetFeedback").style.color = "var(--green)";
+
+    $("targetHint").textContent =
+        "Great recognition! Next coordinate coming...";
+
+    $("targetCoordinate").style.color = "var(--green)";
+
+    updateSessionStats();
+    updateDashboardStats();
+
+    saveStorage(STORAGE_KEYS.stats, stats);
+
+    playSound("correct");
+
+    if (state.streak > 0 && state.streak % 5 === 0) {
+        showToast(`${state.streak} in a row! Excellent!`);
+    }
+
+    clearTimeout(state.feedbackTimer);
+
+    state.feedbackTimer = setTimeout(() => {
+        if (!state.running) return;
+
+        $("targetPanel").classList.remove("correct");
+
+        $("targetCoordinate").style.color = "";
+
+        generateTarget();
+
+    }, 220);
+}
+
+
+/* =========================================================
+   WRONG ANSWER
+========================================================= */
+
+function handleWrongAnswer(square) {
+    state.mistakes++;
+
+    state.streak = 0;
+
+    state.lastWrongSquare = square.dataset.square;
+
+    clearSquareHighlights();
+
+    square.classList.add("last-wrong");
+
+    square.setAttribute("aria-pressed", "true");
+
+    $("targetPanel").classList.remove("correct");
+    $("targetPanel").classList.add("wrong");
+
+    $("targetFeedback").textContent = "✕ TRY AGAIN";
+
+    $("targetFeedback").style.color = "var(--red)";
+
+    $("targetHint").textContent =
+        `That was ${square.dataset.square}. Find ${state.target}.`;
+
+    $("targetCoordinate").style.color = "var(--red)";
+
+    updateSessionStats();
+
+    playSound("wrong");
+
+    clearTimeout(state.feedbackTimer);
+
+    state.feedbackTimer = setTimeout(() => {
+        $("targetPanel").classList.remove("wrong");
+
+        $("targetCoordinate").style.color = "";
+
+        $("targetFeedback").textContent = "";
+
+        $("targetHint").textContent =
+            "Try again — find the correct square";
+
+        clearSquareHighlights();
+
+    }, 450);
+}
+
+
+/* =========================================================
+   FINISH TRAINING
+========================================================= */
+
+function finishTraining() {
+    if (!state.running) return;
+
+    state.running = false;
+    state.completed = true;
+
+    clearInterval(state.timer);
+    clearTimeout(state.feedbackTimer);
+
+    state.timer = null;
+
+    $("sessionState").classList.remove("running");
+    $("sessionStateText").textContent = "COMPLETE";
+
+    $("startBtnText").textContent = "Train again";
+
+    setBoardEnabled(false);
+
+    $("targetPanel").classList.remove("correct", "wrong");
+
+    $("targetCoordinate").style.color = "";
+
+    $("targetHint").textContent =
+        "Session completed! Review your results below.";
+
+    $("targetFeedback").textContent = "";
+
+    clearSquareHighlights();
+
+    stats.totalSessions++;
+
+    const previousBest = stats.personalBest || 0;
+
+    const isNewRecord = state.correct > previousBest;
+
+    stats.personalBest = Math.max(
+        previousBest,
+        state.correct
+    );
+
+    saveStorage(STORAGE_KEYS.stats, stats);
+
+    const accuracy = getAccuracy();
+
+    const sessionResult = {
+        correct: state.correct,
+        mistakes: state.mistakes,
+        accuracy,
+        bestStreak: state.bestSessionStreak,
+        duration: state.duration,
+        date: new Date().toISOString()
+    };
+
+    history.unshift(sessionResult);
+
+    history = history.slice(0, 8);
+
+    saveStorage(STORAGE_KEYS.history, history);
+
+    updateDashboardStats();
+
+    renderHistory();
+
+    showResults(isNewRecord);
+
+    playSound("finish");
+
+    $("resultsPanel").scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+    });
+}
+
+
+/* =========================================================
+   RESULTS SCREEN
+========================================================= */
+
+function showResults(isNewRecord) {
+    $("resultCorrect").textContent = state.correct;
+
+    $("resultAccuracy").textContent =
+        `${getAccuracy()}%`;
+
+    $("resultStreak").textContent =
+        state.bestSessionStreak;
+
+    if (state.correct >= 30) {
+        $("resultTitle").textContent = "Outstanding vision!";
+
+        $("resultDescription").textContent =
+            "Incredible work! Keep challenging yourself and maintain that accuracy.";
+
+    } else if (state.correct >= 15) {
+        $("resultTitle").textContent = "Excellent progress!";
+
+        $("resultDescription").textContent =
+            "You're building strong coordinate recognition. Keep practicing consistently.";
+
+    } else if (state.correct > 0) {
+        $("resultTitle").textContent = "Well played!";
+
+        $("resultDescription").textContent =
+            "Every correct answer counts. Continue training to improve your board vision.";
+
+    } else {
+        $("resultTitle").textContent = "Every session counts!";
+
+        $("resultDescription").textContent =
+            "Keep practicing the files and ranks. Your next session is another opportunity to improve.";
+    }
+
+    if (isNewRecord) {
+        $("newRecord").classList.remove("hidden");
+    } else {
+        $("newRecord").classList.add("hidden");
+    }
+
+    $("resultsPanel").classList.remove("hidden");
+}
+
+
+/* =========================================================
+   SESSION HISTORY
+========================================================= */
+
+function renderHistory() {
+    const container = $("historyList");
 
     container.innerHTML = "";
 
-    files.forEach((file) => {
-      const label = document.createElement("span");
+    if (history.length === 0) {
+        const empty = document.createElement("div");
 
-      label.textContent = file;
-      label.className = "file-coordinate";
+        empty.className = "empty-history";
 
-      label.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 0;
-        width: 100%;
-        text-align: center;
-        font-family: 'DM Mono', monospace;
-        font-size: 12px;
-        line-height: 1;
-        color: var(--accent, #d6b66e);
-        user-select: none;
-      `;
-
-      container.appendChild(label);
-    });
-
-    // Force the labels into exactly eight equal columns.
-
-    container.style.display = "grid";
-    container.style.gridTemplateColumns = "repeat(8, minmax(0, 1fr))";
-    container.style.width = "100%";
-    container.style.boxSizing = "border-box";
-    container.style.margin = "0";
-    container.style.padding = "0";
-    container.style.gap = "0";
-  }
-
-  function setupCoordinateLayout() {
-    /*
-      IMPORTANT:
-      Keep the rank labels outside the board wrapper.
-      The board and its top/bottom labels share the
-      exact same width and eight-column grid.
-    */
-
-    const stage = board.parentElement;
-
-    if (!stage) return;
-
-    let wrapper = $("cv-board-coordinate-wrapper");
-
-    if (!wrapper) {
-      wrapper = document.createElement("div");
-      wrapper.id = "cv-board-coordinate-wrapper";
-      wrapper.className = "cv-board-coordinate-wrapper";
-
-      wrapper.style.cssText = `
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto minmax(0, 1fr) auto;
-        min-width: 0;
-        width: 100%;
-        align-self: stretch;
-        box-sizing: border-box;
-        gap: 0;
-      `;
-
-      // Insert wrapper where the original board was.
-
-      stage.insertBefore(wrapper, board);
-      wrapper.appendChild(board);
-    }
-
-    // Board is now the central item in the wrapper.
-
-    board.style.gridColumn = "1";
-    board.style.gridRow = "2";
-    board.style.display = "grid";
-    board.style.gridTemplateColumns = "repeat(8, minmax(0, 1fr))";
-    board.style.gridTemplateRows = "repeat(8, minmax(0, 1fr))";
-    board.style.aspectRatio = "1 / 1";
-    board.style.width = "100%";
-    board.style.height = "auto";
-    board.style.minWidth = "0";
-    board.style.boxSizing = "border-box";
-
-    // TOP FILE LABELS.
-
-    let topLabels = $("file-labels-top");
-
-    if (!topLabels) {
-      topLabels = document.createElement("div");
-      topLabels.id = "file-labels-top";
-      topLabels.className = "file-labels file-labels-top";
-
-      wrapper.insertBefore(topLabels, board);
-    } else {
-      wrapper.insertBefore(topLabels, board);
-    }
-
-    topLabels.style.gridRow = "1";
-    topLabels.style.gridColumn = "1";
-    topLabels.style.marginBottom = "8px";
-    topLabels.style.marginTop = "0";
-    topLabels.style.padding = "0";
-    topLabels.style.width = "100%";
-
-    createFileLabels(topLabels);
-
-    // BOTTOM FILE LABELS.
-
-    wrapper.appendChild(fileLabels);
-
-    fileLabels.classList.add("file-labels", "file-labels-bottom");
-
-    fileLabels.style.gridRow = "3";
-    fileLabels.style.gridColumn = "1";
-    fileLabels.style.marginTop = "8px";
-    fileLabels.style.marginBottom = "0";
-    fileLabels.style.padding = "0";
-    fileLabels.style.width = "100%";
-
-    createFileLabels(fileLabels);
-
-    // LEFT AND RIGHT RANK LABELS.
-
-    [ranksLeft, ranksRight].forEach((container) => {
-      container.innerHTML = "";
-
-      container.style.display = "grid";
-      container.style.gridTemplateRows = "repeat(8, minmax(0, 1fr))";
-      container.style.alignItems = "center";
-      container.style.justifyItems = "center";
-      container.style.alignSelf = "stretch";
-      container.style.minHeight = "0";
-      container.style.gap = "0";
-
-      ranks.forEach((rank) => {
-        const label = document.createElement("span");
-
-        label.textContent = rank;
-        label.className = "rank-coordinate";
-
-        label.style.cssText = `
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          height: 100%;
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          line-height: 1;
-          color: var(--accent, #d6b66e);
-          user-select: none;
+        empty.innerHTML = `
+            <span>♞</span>
+            <p>Your completed sessions will appear here.</p>
         `;
 
-        container.appendChild(label);
-      });
-    });
+        container.appendChild(empty);
 
-    /*
-      Preserve the existing board-stage structure:
-      left ranks | board wrapper | right ranks.
-    */
+        return;
+    }
 
-    stage.style.display = "grid";
-    stage.style.gridTemplateColumns =
-      "minmax(16px, 28px) minmax(0, 1fr) minmax(16px, 28px)";
-    stage.style.alignItems = "stretch";
-    stage.style.gap = "6px";
-    stage.style.width = "100%";
-    stage.style.minWidth = "0";
+    history.forEach((session, index) => {
+        const item = document.createElement("div");
 
-    ranksLeft.style.gridColumn = "1";
-    ranksLeft.style.gridRow = "1";
+        item.className = "history-item";
 
-    wrapper.style.gridColumn = "2";
-    wrapper.style.gridRow = "1";
+        const date = new Date(session.date);
 
-    ranksRight.style.gridColumn = "3";
-    ranksRight.style.gridRow = "1";
-  }
-
-  // ========================================================
-  // 5. BUILD THE 64-SQUARE CHESSBOARD
-  // ========================================================
-
-  function buildBoard() {
-    board.innerHTML = "";
-
-    setupCoordinateLayout();
-
-    for (let rank = 8; rank >= 1; rank--) {
-      for (let file = 0; file < 8; file++) {
-        const coordinate = files[file] + rank;
-
-        const square = document.createElement("button");
-
-        square.type = "button";
-
-        const isLight = (rank + file) % 2 === 0;
-
-        square.className =
-          "square " + (isLight ? "light" : "dark");
-
-        square.dataset.coordinate = coordinate;
-
-        square.setAttribute(
-          "aria-label",
-          "Chess square " + coordinate
+        const dateLabel = date.toLocaleDateString(
+            undefined,
+            {
+                month: "short",
+                day: "numeric"
+            }
         );
 
-        square.setAttribute("title", coordinate.toUpperCase());
-
-        square.style.minWidth = "0";
-        square.style.minHeight = "0";
-        square.style.width = "100%";
-        square.style.height = "100%";
-        square.style.aspectRatio = "1 / 1";
-        square.style.padding = "0";
-        square.style.margin = "0";
-        square.style.borderRadius = "0";
-        square.style.boxSizing = "border-box";
-        square.style.cursor = "pointer";
-        square.style.position = "relative";
-
-        square.addEventListener("click", () => {
-          handleSquareClick(coordinate, square);
-        });
-
-        board.appendChild(square);
-      }
-    }
-
-    console.log(
-      "Chess Vision Trainer: Created " +
-      board.children.length +
-      " squares and all board coordinates."
-    );
-  }
-
-  // ========================================================
-  // 6. FORMAT TIME
-  // ========================================================
-
-  function formatTime(seconds) {
-    seconds = Math.max(0, Math.floor(seconds));
-
-    const minutes = Math.floor(seconds / 60);
-    const remaining = seconds % 60;
-
-    return minutes + ":" + String(remaining).padStart(2, "0");
-  }
-
-  function formatTimeLong(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remaining = seconds % 60;
-
-    if (minutes === 0) {
-      return remaining + " seconds";
-    }
-
-    if (remaining === 0) {
-      return minutes + (minutes === 1 ? " minute" : " minutes");
-    }
-
-    return (
-      minutes +
-      (minutes === 1 ? " minute " : " minutes ") +
-      remaining +
-      " seconds"
-    );
-  }
-
-  // ========================================================
-  // 7. UPDATE LIVE STATISTICS
-  // ========================================================
-
-  function updateStats() {
-    if (correctDisplay) {
-      correctDisplay.textContent = correct;
-    }
-
-    if (errorsDisplay) {
-      errorsDisplay.textContent = mistakes;
-    }
-
-    const total = correct + mistakes;
-
-    const accuracy =
-      total === 0
-        ? null
-        : Math.round((correct / total) * 100);
-
-    if (accuracyDisplay) {
-      accuracyDisplay.textContent =
-        accuracy === null ? "—" : accuracy + "%";
-    }
-
-    if (timeDisplay) {
-      timeDisplay.textContent = formatTime(timeLeft);
-    }
-
-    if (progressTime) {
-      progressTime.textContent = formatTime(timeLeft);
-    }
-
-    const percentage =
-      duration > 0 ? (timeLeft / duration) * 100 : 0;
-
-    if (progressBar) {
-      progressBar.style.width = percentage + "%";
-
-      const track = progressBar.parentElement;
-
-      if (track) {
-        track.setAttribute(
-          "aria-valuenow",
-          String(Math.round(percentage))
+        const timeLabel = date.toLocaleTimeString(
+            undefined,
+            {
+                hour: "2-digit",
+                minute: "2-digit"
+            }
         );
-      }
 
-      progressBar.classList.toggle("danger", timeLeft <= 10 && running);
-    }
-  }
+        item.innerHTML = `
+            <div class="history-item-icon">♞</div>
 
-  // ========================================================
-  // 8. SESSION STATUS
-  // ========================================================
+            <div class="history-item-info">
+                <strong>Session ${history.length - index}</strong>
+                <span>${dateLabel} · ${timeLabel}</span>
+            </div>
 
-  function setStatus(message) {
-    if (!status) return;
+            <div class="history-item-score">
+                <strong>${session.correct}</strong>
+                <span>${session.accuracy}% accuracy</span>
+            </div>
+        `;
 
-    status.innerHTML = "";
-
-    const dot = document.createElement("i");
-
-    status.appendChild(dot);
-    status.appendChild(document.createTextNode(" " + message));
-  }
-
-  // ========================================================
-  // 9. GENERATE A RANDOM TARGET
-  // ========================================================
-
-  function generateTarget() {
-    let next;
-
-    do {
-      const randomFile = files[Math.floor(Math.random() * 8)];
-      const randomRank = Math.floor(Math.random() * 8) + 1;
-
-      next = randomFile + randomRank;
-    } while (next === lastTarget);
-
-    lastTarget = next;
-    target = next;
-
-    targetCoord.textContent = target.toUpperCase();
-
-    targetCoord.classList.remove("pop");
-
-    void targetCoord.offsetWidth;
-
-    targetCoord.classList.add("pop");
-
-    if (targetHint) {
-      targetHint.textContent =
-        "Find " + target.toUpperCase() + " on the board.";
-    }
-
-    if (targetWrapper) {
-      targetWrapper.setAttribute(
-        "aria-label",
-        "Find square " + target.toUpperCase()
-      );
-    }
-
-    answered = false;
-  }
-
-  // ========================================================
-  // 10. CLEAR SQUARE FEEDBACK
-  // ========================================================
-
-  function clearSquareFeedback() {
-    board.querySelectorAll(".square").forEach((square) => {
-      square.classList.remove(
-        "target-correct",
-        "target-wrong",
-        "correct",
-        "wrong"
-      );
+        container.appendChild(item);
     });
-  }
+}
 
-  // ========================================================
-  // 11. START OR RESTART TRAINING
-  // ========================================================
 
-  function startTraining() {
-    clearInterval(timerInterval);
-    clearTimeout(answerTimeout);
+/* =========================================================
+   CLEAR HISTORY
+========================================================= */
 
-    duration = Number(timerSelect.value) || 60;
-    timeLeft = duration;
-
-    correct = 0;
-    mistakes = 0;
-
-    streak = 0;
-    bestStreak = 0;
-
-    target = null;
-    lastTarget = null;
-
-    answered = false;
-    running = true;
-
-    clearSquareFeedback();
-
-    if (resultsPanel) {
-      resultsPanel.classList.add("hidden");
+function clearHistory() {
+    if (history.length === 0) {
+        showToast("No training history to clear.");
+        return;
     }
 
-    startBtn.disabled = true;
-
-    const btnText = startBtn.querySelector(".btn-text");
-
-    if (btnText) {
-      btnText.textContent = "Training...";
-    } else {
-      startBtn.textContent = "Training...";
-    }
-
-    timerSelect.disabled = true;
-
-    setStatus("TRAINING");
-
-    generateTarget();
-    updateStats();
-
-    endTime = Date.now() + duration * 1000;
-
-    timerInterval = setInterval(() => {
-      if (!running) return;
-
-      const remainingMs = endTime - Date.now();
-
-      timeLeft = Math.max(0, Math.ceil(remainingMs / 1000));
-
-      updateStats();
-
-      if (remainingMs <= 0) {
-        finishTraining();
-      }
-    }, 100);
-  }
-
-  // ========================================================
-  // 12. HANDLE BOARD SQUARE CLICKS
-  // ========================================================
-
-  function handleSquareClick(coordinate, square) {
-    if (!running || !target || answered) return;
-
-    // Correct square.
-
-    if (coordinate === target) {
-      answered = true;
-
-      correct++;
-      streak++;
-
-      bestStreak = Math.max(bestStreak, streak);
-
-      square.classList.remove("target-wrong", "wrong");
-      square.classList.add("target-correct", "correct");
-
-      if (targetHint) {
-        targetHint.textContent = "Correct! Find the next square.";
-      }
-
-      updateStats();
-
-      answerTimeout = setTimeout(() => {
-        square.classList.remove("target-correct", "correct");
-
-        if (running) {
-          generateTarget();
-        }
-      }, 180);
-
-    } else {
-      // Incorrect square.
-
-      mistakes++;
-      streak = 0;
-
-      square.classList.remove("target-correct", "correct");
-      square.classList.add("target-wrong", "wrong");
-
-      if (targetHint) {
-        targetHint.textContent =
-          "Not quite! Find " +
-          target.toUpperCase() +
-          " and try again.";
-      }
-
-      updateStats();
-
-      setTimeout(() => {
-        square.classList.remove("target-wrong", "wrong");
-      }, 350);
-    }
-  }
-
-  // ========================================================
-  // 13. FINISH TRAINING
-  // ========================================================
-
-  function finishTraining() {
-    if (!running) return;
-
-    running = false;
-
-    clearInterval(timerInterval);
-    clearTimeout(answerTimeout);
-
-    timerInterval = null;
-    answerTimeout = null;
-
-    timeLeft = 0;
-
-    updateStats();
-
-    setStatus("COMPLETE");
-
-    startBtn.disabled = false;
-    timerSelect.disabled = false;
-
-    const btnText = startBtn.querySelector(".btn-text");
-
-    if (btnText) {
-      btnText.textContent = "Start training";
-    } else {
-      startBtn.textContent = "Start training";
-    }
-
-    targetCoord.textContent = "♛";
-    targetCoord.classList.remove("pop");
-
-    if (targetHint) {
-      targetHint.textContent =
-        "Session completed! Review your results below.";
-    }
-
-    const total = correct + mistakes;
-
-    const accuracy =
-      total === 0
-        ? 0
-        : Math.round((correct / total) * 100);
-
-    if (resCorrect) {
-      resCorrect.textContent = correct;
-    }
-
-    if (resErrors) {
-      resErrors.textContent = mistakes;
-    }
-
-    if (resAccuracy) {
-      resAccuracy.textContent = accuracy + "%";
-    }
-
-    if (resStreak) {
-      resStreak.textContent = bestStreak;
-    }
-
-    // Save personal best locally.
-
-    const oldBest = Number(
-      localStorage.getItem("cvt-best") || 0
+    const confirmed = confirm(
+        "Clear all recent session history? Your personal best and lifetime statistics will remain."
     );
 
-    const newBest = Math.max(oldBest, correct);
+    if (!confirmed) return;
 
-    localStorage.setItem("cvt-best", String(newBest));
+    history = [];
 
-    if (personalBest) {
-      personalBest.textContent = newBest;
+    saveStorage(STORAGE_KEYS.history, history);
+
+    renderHistory();
+
+    showToast("Session history cleared.");
+}
+
+
+/* =========================================================
+   APPEARANCE THEMES
+========================================================= */
+
+function setAppearanceTheme(theme) {
+    const allowed = [
+        "dark",
+        "light",
+        "neon"
+    ];
+
+    if (!allowed.includes(theme)) {
+        theme = "dark";
     }
-
-    // Results message.
-
-    if (resultGrade) {
-      if (total === 0) {
-        resultGrade.textContent =
-          "Ready for your first training round?";
-      } else if (accuracy >= 90) {
-        resultGrade.textContent =
-          "Outstanding board vision! Keep it up.";
-      } else if (accuracy >= 75) {
-        resultGrade.textContent =
-          "Excellent progress. Your accuracy is improving!";
-      } else if (accuracy >= 50) {
-        resultGrade.textContent =
-          "Good effort! Keep practicing your coordinates.";
-      } else {
-        resultGrade.textContent =
-          "Every move is progress. Try another round!";
-      }
-    }
-
-    if (resultsPanel) {
-      resultsPanel.classList.remove("hidden");
-
-      setTimeout(() => {
-        resultsPanel.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-      }, 100);
-    }
-  }
-
-  // ========================================================
-  // 14. DARK / LIGHT / NEON THEME SWITCHER
-  // ========================================================
-
-  function applyTheme(theme) {
-    if (!themes.includes(theme)) {
-      theme = "dark";
-    }
-
-    currentTheme = theme;
-
-    document.body.classList.remove(
-      "theme-dark",
-      "theme-light",
-      "theme-neon"
-    );
-
-    document.body.classList.add("theme-" + theme);
 
     document.body.dataset.theme = theme;
-    document.documentElement.dataset.theme = theme;
 
-    localStorage.setItem("cvt-theme", theme);
+    $("appearanceTheme").value = theme;
 
-    const metaTheme = document.querySelector(
-      'meta[name="theme-color"]'
+    saveStorage(STORAGE_KEYS.theme, theme);
+}
+
+
+function applyAppearanceTheme() {
+    const savedTheme = loadStorage(
+        STORAGE_KEYS.theme,
+        "dark"
     );
 
-    if (metaTheme) {
-      const colors = {
-        dark: "#0b0d12",
-        light: "#f2f0eb",
-        neon: "#080713"
-      };
+    setAppearanceTheme(savedTheme);
+}
 
-      metaTheme.content = colors[theme];
+
+/* =========================================================
+   SOUND SETTING
+========================================================= */
+
+function applySoundSetting() {
+    const saved = loadStorage(
+        STORAGE_KEYS.sound,
+        true
+    );
+
+    state.soundEnabled = saved !== false;
+
+    $("soundToggle").checked = state.soundEnabled;
+}
+
+
+function toggleSound() {
+    state.soundEnabled = $("soundToggle").checked;
+
+    saveStorage(
+        STORAGE_KEYS.sound,
+        state.soundEnabled
+    );
+
+    if (state.soundEnabled) {
+        playSound("correct");
+        showToast("Sound effects enabled.");
+    } else {
+        showToast("Sound effects disabled.");
     }
+}
 
-    if (themeToggle) {
-      if (theme === "dark") {
-        themeToggle.textContent = "☼";
-        themeToggle.title = "Switch to light theme";
-        themeToggle.setAttribute(
-          "aria-label",
-          "Switch to light theme"
-        );
-      } else if (theme === "light") {
-        themeToggle.textContent = "☾";
-        themeToggle.title = "Switch to neon theme";
-        themeToggle.setAttribute(
-          "aria-label",
-          "Switch to neon theme"
-        );
-      } else {
-        themeToggle.textContent = "⚡";
-        themeToggle.title = "Switch to dark theme";
-        themeToggle.setAttribute(
-          "aria-label",
-          "Switch to dark theme"
-        );
-      }
+
+/* =========================================================
+   FULLSCREEN
+========================================================= */
+
+async function toggleFullscreen() {
+    try {
+        if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen();
+
+            $("fullscreenBtn").textContent = "⛶";
+
+        } else {
+            await document.exitFullscreen();
+
+            $("fullscreenBtn").textContent = "⛶";
+        }
+
+    } catch (error) {
+        showToast("Fullscreen is not available in this browser.");
     }
-  }
+}
 
-  function cycleTheme() {
-    const currentIndex = themes.indexOf(currentTheme);
 
-    const nextIndex = (currentIndex + 1) % themes.length;
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
-    applyTheme(themes[nextIndex]);
-  }
+function setupNavigation() {
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.addEventListener("click", () => {
+            document.querySelectorAll(".nav-item").forEach(nav => {
+                nav.classList.remove("active");
+            });
 
-  if (themeToggle) {
-    themeToggle.addEventListener("click", cycleTheme);
-  }
+            item.classList.add("active");
+        });
+    });
+}
 
-  // ========================================================
-  // 15. BUTTON AND TIMER EVENTS
-  // ========================================================
 
-  startBtn.addEventListener("click", startTraining);
+/* =========================================================
+   DAILY TRAINING TIP
+========================================================= */
 
-  if (restartBtn) {
-    restartBtn.addEventListener("click", startTraining);
-  }
+function setDailyTip() {
+    const day = new Date().getDate();
 
-  timerSelect.addEventListener("change", () => {
-    if (running) return;
+    const tipIndex = day % TIPS.length;
 
-    duration = Number(timerSelect.value) || 60;
-    timeLeft = duration;
+    $("tipText").textContent = TIPS[tipIndex];
+}
 
-    updateStats();
 
-    if (targetHint) {
-      targetHint.textContent =
-        "Ready for a " + formatTimeLong(duration) + " session.";
-    }
-  });
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
 
-  // ========================================================
-  // 16. KEYBOARD SHORTCUTS
-  // ========================================================
+function setupEventListeners() {
 
-  document.addEventListener("keydown", (event) => {
-    const activeTag =
-      document.activeElement?.tagName || "";
+    $("startBtn").addEventListener("click", () => {
+        startTraining();
+    });
 
-    const isTyping = [
-      "INPUT",
-      "SELECT",
-      "TEXTAREA"
-    ].includes(activeTag);
 
-    if (isTyping || event.repeat) return;
+    $("resultRestart").addEventListener("click", () => {
+        resetSession();
+        startTraining();
 
-    // R = start or restart training.
+        $("training").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    });
 
-    if (event.key.toLowerCase() === "r") {
-      startTraining();
-    }
 
-    // T = cycle themes.
+    $("durationSelect").addEventListener("change", () => {
+        if (state.running) {
+            showToast("End the current session to change duration.");
+            $("durationSelect").value = state.duration;
+            return;
+        }
 
-    if (event.key.toLowerCase() === "t") {
-      cycleTheme();
-    }
+        resetSession();
+    });
 
-    // Escape = finish current session.
 
-    if (event.key === "Escape" && running) {
-      finishTraining();
-    }
-  });
+    $("boardTheme").addEventListener("change", event => {
+        setBoardTheme(event.target.value);
 
-  // ========================================================
-  // 17. INITIALIZE APPLICATION
-  // ========================================================
+        showToast("Board theme updated.");
+    });
 
-  setupTimerOptions();
 
-  buildBoard();
+    $("appearanceTheme").addEventListener("change", event => {
+        setAppearanceTheme(event.target.value);
 
-  const savedTheme = localStorage.getItem("cvt-theme") || "dark";
+        showToast("Appearance updated.");
+    });
 
-  applyTheme(savedTheme);
 
-  updateStats();
+    $("soundToggle").addEventListener("change", () => {
+        toggleSound();
+    });
 
-  setStatus("READY");
 
-  targetCoord.textContent = "—";
+    $("fullscreenBtn").addEventListener("click", () => {
+        toggleFullscreen();
+    });
 
-  if (targetHint) {
-    targetHint.textContent =
-      "Start a session to reveal your first square.";
-  }
 
-  if (personalBest) {
-    personalBest.textContent =
-      Number(localStorage.getItem("cvt-best") || 0);
-  }
+    $("clearHistoryBtn").addEventListener("click", () => {
+        clearHistory();
+    });
 
-  const trainingTip = $("training-tip");
 
-  if (trainingTip) {
-    trainingTip.textContent =
-      tips[Math.floor(Math.random() * tips.length)];
-  }
+    document.addEventListener("fullscreenchange", () => {
+        $("fullscreenBtn").textContent =
+            document.fullscreenElement ? "⛶" : "⛶";
+    });
 
-  console.log(
-    "Chess Vision Trainer initialized successfully."
-  );
-});
+
+    /* Keyboard shortcuts */
+
+    document.addEventListener("keydown", event => {
+
+        const target = event.target;
+
+        const isTyping =
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT";
+
+        if (isTyping) return;
+
+        if (event.key.toLowerCase() === "r") {
+            event.preventDefault();
+
+            if (state.running) {
+                finishTraining();
+            } else {
+                resetSession();
+                startTraining();
+            }
+        }
+
+        if (event.key.toLowerCase() === "t") {
+            event.preventDefault();
+
+            toggleFullscreen();
+        }
+
+        if (event.key === "Escape" && state.running) {
+            finishTraining();
+        }
+    });
+}
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+function init() {
+
+    createCoordinates();
+
+    createBoard();
+
+    applyAppearanceTheme();
+
+    applyBoardTheme();
+
+    applySoundSetting();
+
+    updateDashboardStats();
+
+    renderHistory();
+
+    setDailyTip();
+
+    setupEventListeners();
+
+    setupNavigation();
+
+    resetSession();
+
+    updateDashboardStats();
+
+    console.log(
+        "%c♞ VISION CHESS",
+        "color:#b99aff;font-size:20px;font-weight:bold;"
+    );
+
+    console.log(
+        "%cChess Vision Trainer initialized successfully.",
+        "color:#5be1b1;font-size:12px;"
+    );
+}
+
+
+/* Start the app */
+
+document.addEventListener("DOMContentLoaded", init);
