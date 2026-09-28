@@ -1,126 +1,612 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0b0e12" />
-  <meta name="description" content="Train your chessboard visualization, square recognition, focus, and pattern awareness with Chess Vision Trainer." />
-  <title>Chess Vision Trainer — Train Your Board Vision</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090812">
+
+    <title>Chess Vision Trainer | Train Your Board Vision</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="ambient ambient-one"></div>
-  <div class="ambient ambient-two"></div>
 
-  <div class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="#" aria-label="Chess Vision Trainer home">
-        <span class="brand-mark">♞</span>
-        <span class="brand-copy"><strong>CHESS VISION</strong><small>TRAINING STUDIO</small></span>
-      </a>
-      <div class="topbar-right">
-        <span class="live-indicator"><i></i> FOCUS MODE</span>
-        <button class="icon-button" id="theme-toggle" type="button" aria-label="Toggle light mode" title="Toggle theme">☼</button>
-      </div>
-    </header>
+<div class="app-shell">
 
-    <main>
-      <section class="intro">
-        <div class="eyebrow"><span class="eyebrow-line"></span> SEE THE BOARD DIFFERENTLY</div>
-        <h1>Build your <em>board vision.</em></h1>
-        <p>Train your mind to recognize every square. Stay sharp, stay present, and let the patterns become instinct.</p>
-      </section>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
 
-      <section class="training-layout" aria-label="Chess vision training">
-        <div class="play-column">
-          <div class="panel training-panel">
-            <div class="panel-heading">
-              <div><span class="section-kicker">01 / TRAINING BOARD</span><h2>Square recognition</h2></div>
-              <span class="status-pill" id="session-status"><i></i> READY</span>
+        <a href="#" class="brand">
+            <div class="brand-icon">♞</div>
+
+            <div class="brand-copy">
+                <span class="brand-name">VISION<span class="brand-accent">CHESS</span></span>
+                <span class="brand-subtitle">TRAIN YOUR MIND</span>
+            </div>
+        </a>
+
+        <div class="sidebar-label">WORKSPACE</div>
+
+        <nav class="side-nav">
+            <a href="#training" class="nav-item active">
+                <span class="nav-icon">◈</span>
+                <span>Coordinate trainer</span>
+                <span class="nav-arrow">↗</span>
+            </a>
+
+            <a href="#statistics" class="nav-item">
+                <span class="nav-icon">▥</span>
+                <span>Statistics</span>
+            </a>
+
+            <a href="#how-to" class="nav-item">
+                <span class="nav-icon">◎</span>
+                <span>How to train</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-label sidebar-label-spaced">PREFERENCES</div>
+
+        <div class="side-settings">
+
+            <div class="side-setting-row">
+                <span class="side-setting-icon">◐</span>
+                <span>Board theme</span>
             </div>
 
-            <div class="board-stage">
-              <div class="board-frame">
-                <div class="rank-labels" id="rank-labels" aria-hidden="true"></div>
-                <!-- Top alphabets -->
-<div class="file-labels file-labels-top" id="file-labels-top"></div>
+            <select id="boardTheme" class="sidebar-select">
+                <option value="classic">Classic Rose</option>
+                <option value="wood">Warm Wood</option>
+                <option value="blue">Ocean Blue</option>
+                <option value="green">Forest Green</option>
+                <option value="purple">Royal Purple</option>
+                <option value="pink">Cotton Candy</option>
+            </select>
 
-<!-- Chessboard -->
-<div class="board" id="chessboard"></div>
-
-<!-- Bottom alphabets -->
-<div class="file-labels" id="file-labels"></div>
-                <div class="rank-labels rank-labels-right" id="rank-labels-right" aria-hidden="true"></div>
-              </div>
-              <div class="file-labels" id="file-labels" aria-hidden="true"></div>
+            <div class="side-setting-row">
+                <span class="side-setting-icon">◑</span>
+                <span>Appearance</span>
             </div>
 
-            <div class="board-legend"><span><i class="legend-dot light-dot"></i> Light square</span><span><i class="legend-dot dark-dot"></i> Dark square</span></div>
-          </div>
+            <select id="appearanceTheme" class="sidebar-select">
+                <option value="dark">Midnight</option>
+                <option value="light">Light</option>
+                <option value="neon">Neon</option>
+            </select>
 
-          <div class="score-panel" id="score-panel" aria-label="Live session statistics">
-            <div class="score-card" id="card-correct"><span class="metric-icon">✓</span><span class="score-value" id="score-correct">0</span><span class="score-name">Correct</span></div>
-            <div class="score-card" id="card-errors"><span class="metric-icon">×</span><span class="score-value" id="score-errors">0</span><span class="score-name">Mistakes</span></div>
-            <div class="score-card" id="card-accuracy"><span class="metric-icon">◎</span><span class="score-value" id="score-accuracy">—</span><span class="score-name">Accuracy</span></div>
-            <div class="score-card" id="card-time"><span class="metric-icon">◷</span><span class="score-value" id="score-time">1:00</span><span class="score-name">Time left</span></div>
-          </div>
+            <label class="sound-setting">
+                <span>
+                    <span class="side-setting-icon">♫</span>
+                    Sound effects
+                </span>
+
+                <input type="checkbox" id="soundToggle" checked>
+                <span class="toggle-ui"></span>
+            </label>
+
         </div>
 
-        <aside class="side-column">
-          <div class="panel mission-panel">
-            <div class="panel-heading compact"><div><span class="section-kicker">02 / YOUR TARGET</span><h2>Find the square</h2></div><span class="target-symbol">⌖</span></div>
-            <div class="target-wrapper" id="target-wrapper">
-              <div class="target-label">LOCATE THIS COORDINATE</div>
-              <div class="target-coord" id="target-coord">—</div>
-              <div class="target-hint" id="target-hint">Start a session to reveal your first square.</div>
-            </div>
-            <div class="progress-meta"><span>SESSION TIME</span><strong id="progress-time">01:00</strong></div>
-            <div class="progress-bar-track" role="progressbar" aria-label="Session time remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
-              <div class="progress-bar-fill" id="progress-bar"></div>
-            </div>
-            <div class="controls">
-              <label class="control-label" for="timer-select">Session duration</label>
-              <div class="control-row">
-                <div class="select-wrap"><select id="timer-select" class="timer-select">
-                  <option value="30">30 seconds</option>
-                  <option value="60" selected>60 seconds</option>
-                  <option value="120">2 minutes</option>
-                </select><span class="select-arrow">⌄</span></div>
-                <button id="start-btn" class="start-btn" type="button"><span class="btn-text">Start training</span><span class="btn-icon">↗</span></button>
-              </div>
-              <p class="keyboard-tip">KEYBOARD: PRESS <kbd>R</kbd> TO RESTART</p>
-            </div>
-          </div>
+        <div class="sidebar-bottom">
 
-          <div class="panel guide-panel">
-            <div class="guide-icon">♟</div>
-            <div><h3>How to train</h3><p>Read the coordinate above, then click its matching square on the board. Correct answers advance you to the next target.</p></div>
-          </div>
-        </aside>
-      </section>
+            <div class="sidebar-quote">
+                <span class="quote-mark">“</span>
+                <p>The board is a mirror of the mind.</p>
+                <span class="quote-author">TRAIN WITH INTENTION</span>
+            </div>
 
-      <section class="results-panel hidden" id="results-panel" aria-live="polite">
-        <div class="results-inner">
-          <div class="results-crown">♛</div>
-          <span class="section-kicker">SESSION REPORT</span>
-          <h2 class="results-title">Training complete.</h2>
-          <p class="results-copy">Every session builds sharper board awareness. Here's how you did.</p>
-          <div class="results-stats">
-            <div class="result-stat"><span>Correct answers</span><strong id="res-correct">—</strong></div>
-            <div class="result-stat"><span>Total mistakes</span><strong id="res-errors">—</strong></div>
-            <div class="result-stat"><span>Accuracy</span><strong class="accent" id="res-accuracy">—</strong></div>
-          </div>
-          <div class="result-grade" id="result-grade"></div>
-          <button id="restart-btn" class="restart-btn" type="button">Train again <span>↗</span></button>
+            <div class="sidebar-profile">
+                <div class="profile-avatar">♞</div>
+
+                <div class="profile-info">
+                    <strong>Chess Explorer</strong>
+                    <span>Vision trainee</span>
+                </div>
+
+                <span class="profile-status"></span>
+            </div>
+
         </div>
-      </section>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+
+            <div class="mobile-brand">
+                <div class="brand-icon">♞</div>
+                <span>VISION<span class="brand-accent">CHESS</span></span>
+            </div>
+
+            <div class="breadcrumb">
+                Workspace <span>/</span> Coordinate trainer
+            </div>
+
+            <div class="topbar-right">
+
+                <div class="live-status">
+                    <span class="status-dot"></span>
+                    <span>TRAINING READY</span>
+                </div>
+
+                <button class="icon-button" id="fullscreenBtn"
+                        title="Toggle fullscreen" aria-label="Toggle fullscreen">
+                    ⛶
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- WELCOME -->
+        <section class="welcome-section">
+
+            <div>
+                <div class="eyebrow">
+                    <span class="eyebrow-line"></span>
+                    YOUR DAILY CHESS PRACTICE
+                </div>
+
+                <h1>See the board.<br>
+                    <span>Own the game.</span>
+                </h1>
+
+                <p class="welcome-description">
+                    Sharpen your board vision, master coordinates,
+                    and build the instincts of a stronger player.
+                </p>
+            </div>
+
+            <div class="welcome-badge">
+                <div class="badge-orbit"></div>
+                <span class="badge-piece">♞</span>
+                <span class="badge-caption">THINK<br>BEYOND</span>
+            </div>
+
+        </section>
+
+
+        <!-- STAT CARDS -->
+        <section class="stats-grid" id="statistics">
+
+            <article class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">TOTAL CORRECT</span>
+                    <span class="stat-icon purple-icon">♛</span>
+                </div>
+
+                <div class="stat-value" id="totalCorrect">0</div>
+
+                <div class="stat-bottom">
+                    <span class="stat-description">Lifetime correct answers</span>
+                    <span class="stat-tag">ALL TIME</span>
+                </div>
+            </article>
+
+
+            <article class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">BEST STREAK</span>
+                    <span class="stat-icon orange-icon">♨</span>
+                </div>
+
+                <div class="stat-value" id="bestStreak">0</div>
+
+                <div class="stat-bottom">
+                    <span class="stat-description">Consecutive correct answers</span>
+                    <span class="stat-tag">RECORD</span>
+                </div>
+            </article>
+
+
+            <article class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">PERSONAL BEST</span>
+                    <span class="stat-icon green-icon">↗</span>
+                </div>
+
+                <div class="stat-value" id="personalBest">0</div>
+
+                <div class="stat-bottom">
+                    <span class="stat-description">Correct in one session</span>
+                    <span class="stat-tag">HIGH SCORE</span>
+                </div>
+            </article>
+
+
+            <article class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">TOTAL SESSIONS</span>
+                    <span class="stat-icon blue-icon">◷</span>
+                </div>
+
+                <div class="stat-value" id="totalSessions">0</div>
+
+                <div class="stat-bottom">
+                    <span class="stat-description">Training sessions completed</span>
+                    <span class="stat-tag">PROGRESS</span>
+                </div>
+            </article>
+
+        </section>
+
+
+        <!-- MAIN TRAINING LAYOUT -->
+        <section class="training-layout" id="training">
+
+            <!-- TRAINING BOARD PANEL -->
+            <div class="panel training-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <div class="section-kicker">
+                            <span>01</span> / TRAINING SESSION
+                        </div>
+
+                        <h2>Coordinate drill</h2>
+
+                        <p class="panel-subtitle">
+                            Train your eyes. Trust your instincts.
+                        </p>
+                    </div>
+
+                    <div class="session-state" id="sessionState">
+                        <span class="state-dot"></span>
+                        <span id="sessionStateText">READY</span>
+                    </div>
+
+                </div>
+
+
+                <!-- CONTROLS -->
+                <div class="training-controls">
+
+                    <div class="duration-control">
+                        <label for="durationSelect">SESSION DURATION</label>
+
+                        <select id="durationSelect">
+                            <option value="30">30 seconds</option>
+                            <option value="45">45 seconds</option>
+                            <option value="60" selected>60 seconds</option>
+                            <option value="90">90 seconds</option>
+                            <option value="105">105 seconds</option>
+                            <option value="120">120 seconds</option>
+                        </select>
+                    </div>
+
+                    <button id="startBtn" class="primary-button">
+                        <span id="startBtnText">Start training</span>
+                        <span class="button-arrow">↗</span>
+                    </button>
+
+                </div>
+
+
+                <!-- LIVE HUD -->
+                <div class="live-hud">
+
+                    <div class="hud-item">
+                        <span class="hud-label">CORRECT</span>
+                        <strong id="sessionCorrect">00</strong>
+                    </div>
+
+                    <div class="hud-divider"></div>
+
+                    <div class="hud-item">
+                        <span class="hud-label">ACCURACY</span>
+                        <strong id="sessionAccuracy">100<span>%</span></strong>
+                    </div>
+
+                    <div class="hud-divider"></div>
+
+                    <div class="hud-item">
+                        <span class="hud-label">STREAK</span>
+                        <strong id="sessionStreak">00</strong>
+                    </div>
+
+                    <div class="hud-divider"></div>
+
+                    <div class="hud-item hud-timer">
+                        <span class="hud-label">TIME LEFT</span>
+                        <strong id="timerDisplay">01:00</strong>
+                    </div>
+
+                </div>
+
+
+                <!-- TARGET DISPLAY -->
+                <div class="target-panel" id="targetPanel">
+
+                    <div class="target-left">
+                        <span class="target-label">FIND THIS SQUARE</span>
+                        <strong id="targetCoordinate">—</strong>
+                        <span class="target-hint" id="targetHint">
+                            Start your session to begin
+                        </span>
+                    </div>
+
+                    <div class="target-visual" id="targetVisual">
+                        <span class="target-visual-piece">♛</span>
+                        <div class="target-visual-glow"></div>
+                    </div>
+
+                    <div class="target-feedback" id="targetFeedback"></div>
+
+                </div>
+
+
+                <!-- PROGRESS -->
+                <div class="progress-section">
+
+                    <div class="progress-header">
+                        <span>SESSION PROGRESS</span>
+                        <strong id="progressText">0%</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+
+                </div>
+
+
+                <!-- BOARD -->
+                <div class="board-section">
+
+                    <div class="board-wrapper" id="boardWrapper">
+
+                        <div class="board-coordinates top-coordinates"
+                             id="topCoordinates"></div>
+
+                        <div class="board-middle">
+
+                            <div class="board-coordinates left-coordinates"
+                                 id="leftCoordinates"></div>
+
+                            <div class="chessboard" id="chessboard"
+                                 role="grid" aria-label="Chess coordinate training board">
+                            </div>
+
+                            <div class="board-coordinates right-coordinates"
+                                 id="rightCoordinates"></div>
+
+                        </div>
+
+                        <div class="board-coordinates bottom-coordinates"
+                             id="bottomCoordinates"></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BOARD FOOTER -->
+                <div class="board-footer">
+
+                    <div class="board-legend">
+                        <span class="legend-dot"></span>
+                        <span>Tap the correct square</span>
+                    </div>
+
+                    <div class="board-shortcut">
+                        <kbd>R</kbd>
+                        <span>Restart</span>
+                    </div>
+
+                </div>
+
+
+                <!-- RESULTS -->
+                <div class="results-panel hidden" id="resultsPanel">
+
+                    <div class="results-header">
+                        <div class="results-icon">♛</div>
+
+                        <div>
+                            <span class="section-kicker">SESSION COMPLETE</span>
+                            <h3 id="resultTitle">Well played!</h3>
+                        </div>
+                    </div>
+
+                    <p class="results-description" id="resultDescription">
+                        Great work. Keep training to improve your board vision.
+                    </p>
+
+                    <div class="results-grid">
+
+                        <div class="result-stat">
+                            <span>CORRECT</span>
+                            <strong id="resultCorrect">0</strong>
+                        </div>
+
+                        <div class="result-stat">
+                            <span>ACCURACY</span>
+                            <strong id="resultAccuracy">0%</strong>
+                        </div>
+
+                        <div class="result-stat">
+                            <span>BEST STREAK</span>
+                            <strong id="resultStreak">0</strong>
+                        </div>
+
+                    </div>
+
+                    <div class="result-record hidden" id="newRecord">
+                        ✦ NEW PERSONAL RECORD
+                    </div>
+
+                    <button class="primary-button result-restart" id="resultRestart">
+                        Train again <span class="button-arrow">↗</span>
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- RIGHT SIDEBAR -->
+            <aside class="right-column">
+
+                <!-- HOW TO -->
+                <article class="panel mission-panel" id="how-to">
+
+                    <div class="panel-heading compact-heading">
+
+                        <div>
+                            <div class="section-kicker">
+                                <span>02</span> / YOUR MISSION
+                            </div>
+
+                            <h2>How to train</h2>
+                        </div>
+
+                        <div class="mission-icon">♞</div>
+
+                    </div>
+
+                    <div class="mission-steps">
+
+                        <div class="mission-step">
+                            <div class="step-number">01</div>
+
+                            <div class="step-content">
+                                <strong>Read the coordinate</strong>
+                                <p>Look at the square displayed above the board.</p>
+                            </div>
+                        </div>
+
+                        <div class="mission-step">
+                            <div class="step-number">02</div>
+
+                            <div class="step-content">
+                                <strong>Find it on the board</strong>
+                                <p>Identify the correct file and rank, then click it.</p>
+                            </div>
+                        </div>
+
+                        <div class="mission-step">
+                            <div class="step-number">03</div>
+
+                            <div class="step-content">
+                                <strong>Build your accuracy</strong>
+                                <p>Correct answers advance to the next target. Keep your streak alive.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- PERSONAL BEST -->
+                <article class="panel personal-best-panel">
+
+                    <div class="section-kicker">YOUR PERSONAL BEST</div>
+
+                    <div class="personal-best-number" id="sidebarBest">0</div>
+
+                    <p>Correct answers in one session</p>
+
+                    <div class="best-divider"></div>
+
+                    <div class="best-footer">
+                        <span>ALL-TIME RECORD</span>
+                        <span class="best-arrow">↗</span>
+                    </div>
+
+                </article>
+
+
+                <!-- TRAINING TIP -->
+                <article class="panel tip-panel">
+
+                    <div class="tip-header">
+                        <span class="tip-spark">✦</span>
+                        <span class="section-kicker">TRAINING TIP</span>
+                    </div>
+
+                    <h3 id="tipText">
+                        Accuracy first, speed second. Smooth recognition becomes fast recognition.
+                    </h3>
+
+                    <div class="tip-footer">
+                        A LITTLE PRACTICE. EVERY DAY.
+                    </div>
+
+                </article>
+
+
+                <!-- SESSION HISTORY -->
+                <article class="panel history-panel">
+
+                    <div class="history-heading">
+                        <div>
+                            <div class="section-kicker">YOUR JOURNEY</div>
+                            <h3>Recent sessions</h3>
+                        </div>
+
+                        <span class="history-icon">◷</span>
+                    </div>
+
+                    <div id="historyList" class="history-list">
+                        <div class="empty-history">
+                            <span>♞</span>
+                            <p>Your completed sessions will appear here.</p>
+                        </div>
+                    </div>
+
+                    <button class="text-button" id="clearHistoryBtn">
+                        Clear history <span>↗</span>
+                    </button>
+
+                </article>
+
+            </aside>
+
+        </section>
+
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+
+            <div class="footer-brand">
+                <span class="footer-piece">♞</span>
+                VISION<span>CHESS</span>
+            </div>
+
+            <p>Every square matters. Every move begins with vision.</p>
+
+            <div class="footer-right">
+                BUILT FOR BETTER BOARD VISION
+            </div>
+
+        </footer>
+
     </main>
 
-    <footer class="footer"><span>CHESS VISION TRAINER</span><span>FOCUS · RECOGNITION · REPETITION</span></footer>
-  </div>
-  <script src="script.js"></script>
+</div>
+
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <span class="toast-icon">✦</span>
+    <span id="toastMessage">Great move!</span>
+</div>
+
+
+<script src="script.js"></script>
+
 </body>
 </html>
