@@ -1,100 +1,132 @@
 "use strict";
 
 /* ======================================================
-   VISIONCHESS — TRAINING ENGINE
-   (ULTRA + RADIO + LOCAL + HEAVY DARK + DRAGGABLE)
+   CHESS VISION TRAINER — ENGINE v3
 ====================================================== */
 
 const $ = id => document.getElementById(id);
 
 const KEYS = {
-    stats: "visionchess-stats-v3",
-    history: "visionchess-history-v3",
-    theme: "visionchess-theme-v3",
-    board: "visionchess-board-v3",
-    sound: "visionchess-sound-v3",
-    volume: "visionchess-volume-v3",
-    labels: "visionchess-labels-v3",
-    ticks: "visionchess-ticks-v3",
-    achievements: "visionchess-achievements-v3",
-    daily: "visionchess-daily-v3",
-    xp: "visionchess-xp-v3"
+    stats: "cvt-stats-v3",
+    history: "cvt-history-v3",
+    theme: "cvt-theme-v3",
+    board: "cvt-board-v3",
+    flip: "cvt-flip-v3",
+    labels: "cvt-labels-v3",
+    coords: "cvt-coords-v3",
+    sound: "cvt-sound-v3",
+    volume: "cvt-volume-v3",
+    ticks: "cvt-ticks-v3",
+    boardSize: "cvt-boardsize-v3",
+    achievements: "cvt-achievements-v3",
+    daily: "cvt-daily-v3",
+    xp: "cvt-xp-v3",
+    onboarded: "cvt-onboarded-v3"
 };
 
 const MUSIC_KEYS = {
-    volume: "visionchess-music-volume-v3",
-    track: "visionchess-music-track-v3",
-    open: "visionchess-music-open-v3",
-    source: "visionchess-music-source-v3",
-    lastLocalId: "visionchess-music-lastlocal-v3",
-    lastPosition: "visionchess-music-position-v3",
-    widgetPos: "visionchess-music-widgetpos-v1"
+    volume: "cvt-music-vol-v3",
+    track: "cvt-music-track-v3",
+    open: "cvt-music-open-v3",
+    source: "cvt-music-src-v3",
+    lastLocal: "cvt-music-last-v3",
+    position: "cvt-music-pos-v3",
+    widget: "cvt-music-widget-v3"
 };
 
-const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
-const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
+const FILES = ["a","b","c","d","e","f","g","h"];
+const RANKS = [8,7,6,5,4,3,2,1];
 
 const TIPS = [
     "Accuracy first, speed second. Smooth recognition becomes fast recognition.",
-    "Learn the files from a to h. Knowing the board structure builds confidence.",
-    "The center of the board is your reference point. Visualize each square.",
-    "Do not rush every answer. Build a reliable connection between files and ranks.",
-    "Short daily practice sessions help develop faster coordinate recognition.",
-    "Recognize a square instantly instead of counting every file and rank.",
+    "Learn the files from a to h. Board structure builds confidence.",
+    "The center is your reference point. Visualize each square from it.",
+    "Do not rush every answer. Build a reliable file-to-rank connection.",
+    "Short daily sessions develop faster coordinate recognition.",
+    "Recognize a square instantly instead of counting file and rank.",
     "Look at the board as a complete grid. Train your eyes to move naturally.",
-    "Consistency is the secret. A few focused minutes can build a lasting habit.",
-    "In knight mode, trace the L-shape: two squares one way, one square sideways.",
-    "Lo-fi beats and board vision — a calm mind sees clearly."
+    "Consistency is the secret. A few focused minutes each day compounds.",
+    "In knight mode, trace the L-shape: two squares one way, one sideways.",
+    "Chill music, calm mind, clear vision."
 ];
 
-const MODE_LABELS = {
-    find: "FIND THE SQUARE",
-    name: "NAME THE SQUARE",
-    knight: "KNIGHT VISION"
+const MODE_INFO = {
+    square:    { label: "Square Vision",        sub: "Find the coordinate on the board.",       targetLabel: "FIND THIS SQUARE" },
+    coordinate:{ label: "Coordinate Trainer",   sub: "Name the highlighted square.",           targetLabel: "NAME THIS SQUARE" },
+    reverse:   { label: "Reverse Coordinates",  sub: "Pick the correct coordinate.",           targetLabel: "IDENTIFY THIS SQUARE" },
+    knight:    { label: "Knight Vision",        sub: "Find every legal knight jump.",          targetLabel: "KNIGHT JUMPS FROM" },
+    blindfold: { label: "Blindfold Training",   sub: "No coordinates — pure visualization.",   targetLabel: "FIND THIS SQUARE" },
+    color:     { label: "Color Recognition",    sub: "Is the square light or dark?",           targetLabel: "SQUARE COLOR" },
+    custom:    { label: "Custom Practice",      sub: "Your configuration.",                    targetLabel: "TARGET" }
 };
 
 const MISSION_STEPS = {
-    find: [
-        { title: "Read the coordinate", text: "Look at the square displayed above the board." },
-        { title: "Find it on the board", text: "Identify the correct file and rank, then click it." },
-        { title: "Build your accuracy", text: "Correct answers advance to the next target. Keep your streak alive." }
+    square: [
+        { title: "Read the coordinate", text: "Look at the square shown above the board." },
+        { title: "Find it on the board", text: "Identify the file and rank, then click the square." },
+        { title: "Keep your streak", text: "Correct answers advance the target. Build accuracy." }
     ],
-    name: [
-        { title: "Read the highlighted square", text: "A square on the board will pulse with color." },
-        { title: "Choose the coordinate", text: "Pick the correct file and rank from the four options below." },
-        { title: "Trust your instinct", text: "The faster you recognize, the stronger your vision becomes." }
+    coordinate: [
+        { title: "Read the highlighted square", text: "A square on the board pulses with color." },
+        { title: "Choose the coordinate", text: "Pick the correct file and rank from four options." },
+        { title: "Trust your instinct", text: "Faster recognition means stronger vision." }
+    ],
+    reverse: [
+        { title: "Note the highlighted square", text: "Its coordinate is hidden from the board." },
+        { title: "Pick from six options", text: "Choose the correct algebraic notation." },
+        { title: "Stay sharp", text: "Six choices demand precise recall." }
     ],
     knight: [
-        { title: "See the knight", text: "A knight appears on the source square shown above." },
-        { title: "Click every legal jump", text: "Tap all squares a knight could move to. Miss none." },
-        { title: "Complete the set", text: "When every legal jump is found, the next position appears." }
+        { title: "See the knight", text: "A knight appears on the source square." },
+        { title: "Click every legal jump", text: "Tap all squares a knight could move to." },
+        { title: "Complete the set", text: "When every jump is found, the next position appears." }
+    ],
+    blindfold: [
+        { title: "Coordinates only", text: "Board labels and coordinates are hidden." },
+        { title: "Visualize the square", text: "Picture the file and rank in your mind." },
+        { title: "Click the board", text: "Trust your mental map — click where it is." }
+    ],
+    color: [
+        { title: "Read the coordinate", text: "A coordinate is shown above the board." },
+        { title: "Determine the color", text: "Is that square light or dark?" },
+        { title: "Choose quickly", text: "Pattern recognition beats calculation." }
+    ],
+    custom: [
+        { title: "Your rules", text: "Duration, mode, and difficulty are up to you." },
+        { title: "Train with focus", text: "Pick the mode you want to sharpen." },
+        { title: "Track progress", text: "Every session contributes to your stats." }
     ]
 };
 
 const ACHIEVEMENTS = [
-    { id: "first",      icon: "✦", title: "First Light",    desc: "First correct answer",          check: s => s.totalCorrect >= 1 },
-    { id: "streak10",   icon: "♨", title: "On Fire",        desc: "10 correct in a row",           check: s => s.bestStreak >= 10 },
-    { id: "streak25",   icon: "⚡", title: "Unstoppable",   desc: "25 correct in a row",           check: s => s.bestStreak >= 25 },
-    { id: "correct100", icon: "♛", title: "Century",        desc: "100 total correct",             check: s => s.totalCorrect >= 100 },
-    { id: "correct500", icon: "♚", title: "Vision Master",  desc: "500 total correct",             check: s => s.totalCorrect >= 500 },
-    { id: "session20",  icon: "◈", title: "Sharp Eye",      desc: "20 correct in one session",     check: s => s.personalBest >= 20 },
-    { id: "session40",  icon: "▥", title: "Grand Vision",   desc: "40 correct in one session",     check: s => s.personalBest >= 40 },
-    { id: "sessions10", icon: "◷", title: "Dedicated",      desc: "10 training sessions",          check: s => s.totalSessions >= 10 },
-    { id: "sessions50", icon: "◎", title: "Committed",      desc: "50 training sessions",          check: s => s.totalSessions >= 50 },
-    { id: "perfect",    icon: "♞", title: "Flawless",       desc: "100% accuracy, 15+ correct",    check: s => (s.flawless || 0) >= 1 }
+    { id: "first",    icon: "✦", title: "First Light",     desc: "Answer your first question correctly.",          check: s => s.totalCorrect >= 1 },
+    { id: "streak10", icon: "♨", title: "Warming Up",       desc: "10 correct answers in a row.",                   check: s => s.bestStreak >= 10 },
+    { id: "streak25", icon: "⚡", title: "Unstoppable",      desc: "25 correct answers in a row.",                   check: s => s.bestStreak >= 25 },
+    { id: "streak50", icon: "◈", title: "Locked In",        desc: "50 correct answers in a row.",                   check: s => s.bestStreak >= 50 },
+    { id: "c100",     icon: "♛", title: "Century",          desc: "100 correct answers total.",                     check: s => s.totalCorrect >= 100 },
+    { id: "c500",     icon: "♚", title: "Vision Master",    desc: "500 correct answers total.",                     check: s => s.totalCorrect >= 500 },
+    { id: "c1000",    icon: "◉", title: "Grandmaster Eye",  desc: "1000 correct answers total.",                    check: s => s.totalCorrect >= 1000 },
+    { id: "sess20",   icon: "▥", title: "Sharp Eye",        desc: "20 correct in one session.",                     check: s => s.personalBest >= 20 },
+    { id: "sess40",   icon: "◎", title: "Grand Vision",     desc: "40 correct in one session.",                     check: s => s.personalBest >= 40 },
+    { id: "sess10",   icon: "◷", title: "Dedicated",        desc: "Complete 10 sessions.",                          check: s => s.totalSessions >= 10 },
+    { id: "sess50",   icon: "◆", title: "Committed",        desc: "Complete 50 sessions.",                          check: s => s.totalSessions >= 50 },
+    { id: "perfect",  icon: "♞", title: "Flawless",         desc: "100% accuracy with 15+ correct in a session.",   check: s => (s.flawless || 0) >= 1 }
 ];
 
 const DEFAULT_STATS = {
     totalCorrect: 0,
+    totalMistakes: 0,
     bestStreak: 0,
     personalBest: 0,
     totalSessions: 0,
-    flawless: 0
+    flawless: 0,
+    totalTime: 0,
+    totalQuestions: 0
 };
 
 const DAILY_TARGET = 50;
 
-const MUSIC_TRACKS = [
+const MUSIC_STREAM = [
     { id: "jfKfPfyJRdk", name: "Lofi Girl · Beats to Relax" },
     { id: "4xDzrJKXOOY", name: "Synthwave Radio · Retro Chill" },
     { id: "lTRiuFIWV54", name: "Lofi Hip Hop · Study Beats" },
@@ -104,30 +136,25 @@ const MUSIC_TRACKS = [
     { id: "0vv7VcHVWSE", name: "Jazz Lofi · Smooth Grooves" }
 ];
 
-const IDB_NAME = "visionchess-music-db";
+const IDB_NAME = "cvt-music-db";
 const IDB_STORE = "tracks";
 const IDB_VERSION = 1;
 
 
 /* ======================================================
-   STORAGE HELPERS
+   STORAGE
 ====================================================== */
 
 function load(key, fallback) {
     try {
-        const value = localStorage.getItem(key);
-        return value === null ? fallback : JSON.parse(value);
-    } catch {
-        return fallback;
-    }
+        const v = localStorage.getItem(key);
+        return v === null ? fallback : JSON.parse(v);
+    } catch { return fallback; }
 }
 
 function save(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.warn("Could not save data:", error);
-    }
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (e) { console.warn("Save failed:", e); }
 }
 
 function todayKey() {
@@ -153,12 +180,12 @@ let xp = Number(load(KEYS.xp, 0)) || 0;
 
 let daily = load(KEYS.daily, null);
 if (!daily || daily.date !== todayKey()) {
-    daily = { date: todayKey(), count: 0, target: DAILY_TARGET };
+    daily = { date: todayKey(), count: 0 };
     save(KEYS.daily, daily);
 }
 
 const game = {
-    mode: "find",
+    mode: "square",
     running: false,
     paused: false,
     completed: false,
@@ -172,16 +199,17 @@ const game = {
     knightSource: null,
     knightRemaining: [],
     knightFound: [],
-    targetIndex: 0,
+    questionIndex: 0,
+    questionStartTime: 0,
+    reactionTimes: [],
     timer: null,
     feedbackTimer: null,
     toastTimer: null,
+    countdownTimer: null,
     sound: true,
-    volume: 0.5,
-    labels: false,
+    volume: 0.6,
     ticks: true,
-    lastTickSecond: -1,
-    typeBuffer: ""
+    lastTick: -1
 };
 
 let audioContext = null;
@@ -196,7 +224,6 @@ function playSound(type = "correct") {
     try {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return;
-
         if (!audioContext) audioContext = new AC();
         if (audioContext.state === "suspended") audioContext.resume();
 
@@ -204,37 +231,33 @@ function playSound(type = "correct") {
         const master = audioContext.createGain();
         master.connect(audioContext.destination);
 
-        const volume = Math.max(0, Math.min(1, game.volume));
-        let frequencies = [660, 880];
-        let duration = 0.18;
+        const vol = Math.max(0, Math.min(1, game.volume));
+        let freqs = [660, 880];
+        let dur = 0.18;
 
-        if (type === "wrong") { frequencies = [220]; duration = 0.16; }
-        else if (type === "finish") { frequencies = [523, 659, 784, 1046]; duration = 0.55; }
-        else if (type === "tick") { frequencies = [880]; duration = 0.06; }
-        else if (type === "achievement") { frequencies = [784, 988, 1318]; duration = 0.5; }
-        else if (type === "start") { frequencies = [440, 660]; duration = 0.2; }
+        if (type === "wrong") { freqs = [220, 180]; dur = 0.2; }
+        else if (type === "finish") { freqs = [523, 659, 784, 1046]; dur = 0.55; }
+        else if (type === "tick") { freqs = [880]; dur = 0.06; }
+        else if (type === "achievement") { freqs = [784, 988, 1318]; dur = 0.5; }
+        else if (type === "start") { freqs = [440, 660]; dur = 0.2; }
+        else if (type === "count") { freqs = [523]; dur = 0.12; }
 
-        frequencies.forEach((freq, index) => {
+        freqs.forEach((f, i) => {
             const osc = audioContext.createOscillator();
             const g = audioContext.createGain();
             osc.connect(g);
             g.connect(master);
             osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, now + index * 0.07);
-
-            const startAt = now + index * 0.07;
-            const endAt = startAt + duration / frequencies.length + 0.05;
-
+            const startAt = now + i * 0.06;
+            const endAt = startAt + dur / freqs.length + 0.05;
+            osc.frequency.setValueAtTime(f, startAt);
             g.gain.setValueAtTime(0.0001, startAt);
-            g.gain.exponentialRampToValueAtTime(Math.max(0.02, 0.14 * volume), startAt + 0.02);
+            g.gain.exponentialRampToValueAtTime(Math.max(0.02, 0.12 * vol), startAt + 0.02);
             g.gain.exponentialRampToValueAtTime(0.0001, endAt);
-
             osc.start(startAt);
             osc.stop(endAt + 0.03);
         });
-    } catch (error) {
-        console.warn("Audio unavailable:", error);
-    }
+    } catch (e) { console.warn("Audio:", e); }
 }
 
 
@@ -242,229 +265,132 @@ function playSound(type = "correct") {
    TOAST
 ====================================================== */
 
-function toast(message) {
-    $("toastMessage").textContent = message;
+function toast(msg) {
+    $("toastMessage").textContent = msg;
     $("toast").classList.add("show");
-
     clearTimeout(game.toastTimer);
-    game.toastTimer = setTimeout(() => {
-        $("toast").classList.remove("show");
-    }, 2400);
+    game.toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2600);
 }
 
 
 /* ======================================================
-   INDEXEDDB — LOCAL MUSIC STORAGE (PERMANENT)
+   INDEXEDDB
 ====================================================== */
 
-function openMusicDb() {
+function openDb() {
     return new Promise((resolve, reject) => {
-        if (!("indexedDB" in window)) {
-            reject(new Error("IndexedDB not supported"));
-            return;
-        }
+        if (!("indexedDB" in window)) return reject(new Error("No IndexedDB"));
         const req = indexedDB.open(IDB_NAME, IDB_VERSION);
-
         req.onupgradeneeded = () => {
             const db = req.result;
             if (!db.objectStoreNames.contains(IDB_STORE)) {
                 db.createObjectStore(IDB_STORE, { keyPath: "id" });
             }
         };
-
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
-        req.onblocked = () => reject(new Error("IndexedDB blocked"));
     });
 }
 
-async function dbAddTrack(file) {
-    const db = await openMusicDb();
+async function dbAdd(file) {
+    const db = await openDb();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(IDB_STORE, "readwrite");
         const store = tx.objectStore(IDB_STORE);
-
-        const id = "local-" + Date.now() + "-" +
-            Math.random().toString(36).slice(2, 8);
-
+        const id = "t-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
         const record = {
             id,
-            name: file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Untitled",
+            name: file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Track",
             type: file.type || "audio/mpeg",
             size: file.size,
             addedAt: Date.now(),
             blob: file
         };
-
         const req = store.add(record);
         req.onsuccess = () => resolve(record);
         req.onerror = () => reject(req.error);
     });
 }
 
-async function dbGetAllTracks() {
-    const db = await openMusicDb();
+async function dbAll() {
+    const db = await openDb();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(IDB_STORE, "readonly");
-        const store = tx.objectStore(IDB_STORE);
-        const req = store.getAll();
+        const req = tx.objectStore(IDB_STORE).getAll();
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
     });
 }
 
-async function dbDeleteTrack(id) {
-    const db = await openMusicDb();
+async function dbDel(id) {
+    const db = await openDb();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(IDB_STORE, "readwrite");
-        const store = tx.objectStore(IDB_STORE);
-        const req = store.delete(id);
+        const req = tx.objectStore(IDB_STORE).delete(id);
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
     });
 }
 
-function estimateMusicStorage() {
-    return new Promise(async resolve => {
-        let totalSize = 0;
-        try {
-            if (music.localTracks.length) {
-                music.localTracks.forEach(t => totalSize += t.size || 0);
-            }
-        } catch {}
-
-        let quotaText = "";
-        if (navigator.storage && navigator.storage.estimate) {
-            try {
-                const est = await navigator.storage.estimate();
-                if (est && est.quota) {
-                    quotaText = ` · ${Math.round((est.usage / est.quota) * 100)}% of browser`;
-                }
-            } catch {}
-        }
-        resolve({ size: totalSize, quotaText });
-    });
-}
-
-async function updateStorageInfo() {
-    const el = $("musicStorageSize");
-    if (!el) return;
-
-    if (!music.localTracks.length) {
-        el.textContent = "Stored in this website";
-        return;
-    }
-
-    const { size, quotaText } = await estimateMusicStorage();
-    el.textContent = `${formatBytes(size)}${quotaText}`;
-}
-
 
 /* ======================================================
-   CHILL RADIO (YouTube Stream + Persistent Local Files)
+   MUSIC
 ====================================================== */
 
 const music = {
-    yt: null,
-    ytReady: false,
-    ytApiLoaded: false,
-    streamPlaying: false,
-    streamIndex: 0,
-
-    localTracks: [],
-    localIndex: 0,
-    localPlaying: false,
-    localObjectUrl: null,
-    audioEl: null,
-
-    volume: 0.4,
-    panelOpen: false,
-    source: "stream"
+    yt: null, ytReady: false, ytApiLoaded: false,
+    streamPlaying: false, streamIndex: 0,
+    localTracks: [], localIndex: 0, localPlaying: false,
+    localUrl: null, audioEl: null,
+    volume: 0.4, panelOpen: false, source: "stream"
 };
 
-function loadYouTubeAPI() {
+function loadYtApi() {
     if (music.ytApiLoaded) return;
     music.ytApiLoaded = true;
-
-    if (window.YT && window.YT.Player) {
-        createYtPlayer();
-        return;
-    }
-
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    tag.async = true;
-    document.head.appendChild(tag);
+    if (window.YT && window.YT.Player) { createYt(); return; }
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    s.async = true;
+    document.head.appendChild(s);
 }
 
-window.onYouTubeIframeAPIReady = function () {
-    createYtPlayer();
-};
+window.onYouTubeIframeAPIReady = function () { createYt(); };
 
-function createYtPlayer() {
-    if (!window.YT || !window.YT.Player) return;
-    if (music.yt) return;
-
+function createYt() {
+    if (!window.YT || !window.YT.Player || music.yt) return;
     try {
         music.yt = new window.YT.Player("ytPlayerHidden", {
-            height: "1",
-            width: "1",
-            videoId: MUSIC_TRACKS[music.streamIndex].id,
+            height: "1", width: "1",
+            videoId: MUSIC_STREAM[music.streamIndex].id,
             playerVars: {
-                autoplay: 0,
-                controls: 0,
-                disablekb: 1,
-                fs: 0,
-                iv_load_policy: 3,
-                modestbranding: 1,
-                playsinline: 1,
-                rel: 0
+                autoplay: 0, controls: 0, disablekb: 1, fs: 0,
+                iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0
             },
             events: {
-                onReady: onYtReady,
-                onStateChange: onYtStateChange,
-                onError: onYtError
+                onReady: () => {
+                    music.ytReady = true;
+                    if (music.yt.setVolume) music.yt.setVolume(Math.round(music.volume * 100));
+                    updateMusicUI();
+                },
+                onStateChange: e => {
+                    if (!window.YT) return;
+                    if (e.data === window.YT.PlayerState.PLAYING) music.streamPlaying = true;
+                    else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) music.streamPlaying = false;
+                    updateMusicUI();
+                },
+                onError: () => {
+                    if (music.source !== "stream") return;
+                    toast("Track unavailable — playing another.");
+                    nextStream();
+                }
             }
         });
-    } catch (err) {
-        console.warn("YT player creation failed:", err);
-    }
+    } catch (e) { console.warn("YT:", e); }
 }
-
-function onYtReady() {
-    music.ytReady = true;
-    if (music.yt && music.yt.setVolume) {
-        music.yt.setVolume(Math.round(music.volume * 100));
-    }
-    updateMusicUI();
-}
-
-function onYtStateChange(event) {
-    if (!window.YT) return;
-    if (event.data === window.YT.PlayerState.PLAYING) {
-        music.streamPlaying = true;
-    } else if (
-        event.data === window.YT.PlayerState.PAUSED ||
-        event.data === window.YT.PlayerState.ENDED
-    ) {
-        music.streamPlaying = false;
-    }
-    updateMusicUI();
-}
-
-function onYtError() {
-    if (music.source !== "stream") return;
-    toast("Track unavailable — playing another.");
-    nextStreamTrack();
-}
-
-/* ---------- Stream controls ---------- */
 
 function playStream() {
-    if (!music.ytReady || !music.yt) {
-        toast("Radio is still loading...");
-        return;
-    }
+    if (!music.ytReady || !music.yt) { toast("Radio is loading..."); return; }
     try { music.yt.playVideo(); } catch (e) { console.warn(e); }
 }
 
@@ -473,998 +399,696 @@ function pauseStream() {
     try { music.yt.pauseVideo(); } catch (e) { console.warn(e); }
 }
 
-function setStreamTrack(index, autoplay) {
-    const total = MUSIC_TRACKS.length;
-    music.streamIndex = ((index % total) + total) % total;
+function setStream(idx, autoplay) {
+    const total = MUSIC_STREAM.length;
+    music.streamIndex = ((idx % total) + total) % total;
     save(MUSIC_KEYS.track, music.streamIndex);
     updateMusicUI();
-
     if (!music.ytReady || !music.yt) return;
     try {
-        const id = MUSIC_TRACKS[music.streamIndex].id;
+        const id = MUSIC_STREAM[music.streamIndex].id;
         if (autoplay && music.yt.loadVideoById) music.yt.loadVideoById(id);
         else if (music.yt.cueVideoById) music.yt.cueVideoById(id);
-    } catch (e) {
-        console.warn(e);
+    } catch (e) { console.warn(e); }
+}
+
+function nextStream() {
+    let n = music.streamIndex;
+    if (MUSIC_STREAM.length > 1) {
+        while (n === music.streamIndex) n = Math.floor(Math.random() * MUSIC_STREAM.length);
     }
+    setStream(n, true);
+    toast("♪ " + MUSIC_STREAM[music.streamIndex].name);
 }
 
-function nextStreamTrack() {
-    let next = music.streamIndex;
-    if (MUSIC_TRACKS.length > 1) {
-        while (next === music.streamIndex) {
-            next = Math.floor(Math.random() * MUSIC_TRACKS.length);
-        }
-    }
-    setStreamTrack(next, true);
-    toast(`♪ ${MUSIC_TRACKS[music.streamIndex].name}`);
-}
+function prevStream() { setStream(music.streamIndex - 1, true); }
 
-function prevStreamTrack() {
-    setStreamTrack(music.streamIndex - 1, true);
-}
-
-/* ---------- Local controls ---------- */
-
-async function loadLocalTracks() {
+async function loadLocal() {
     try {
-        const tracks = await dbGetAllTracks();
-        music.localTracks = tracks.sort((a, b) => a.addedAt - b.addedAt);
-        updateSavedBadge();
-    } catch (err) {
-        console.warn("Local track load failed:", err);
-        music.localTracks = [];
-    }
-    renderLocalTracks();
-    updateStorageInfo();
+        music.localTracks = (await dbAll()).sort((a, b) => a.addedAt - b.addedAt);
+    } catch (e) { music.localTracks = []; }
+    renderLocal();
 }
 
-function updateSavedBadge() {
-    const badge = $("musicSavedBadge");
-    if (!badge) return;
-    badge.classList.toggle("hidden", music.localTracks.length === 0);
-}
-
-function playLocalIndex(index) {
+function playLocalIdx(idx) {
     if (!music.localTracks.length) return;
-
     const total = music.localTracks.length;
-    music.localIndex = ((index % total) + total) % total;
+    music.localIndex = ((idx % total) + total) % total;
     const track = music.localTracks[music.localIndex];
-
     if (!music.audioEl) return;
-
-    if (music.localObjectUrl) {
-        URL.revokeObjectURL(music.localObjectUrl);
-        music.localObjectUrl = null;
-    }
-
+    if (music.localUrl) { URL.revokeObjectURL(music.localUrl); music.localUrl = null; }
     try {
         const url = URL.createObjectURL(track.blob);
-        music.localObjectUrl = url;
+        music.localUrl = url;
         music.audioEl.src = url;
         music.audioEl.volume = music.volume;
-        music.audioEl.play().catch(err => console.warn("Playback failed:", err));
-
-        save(MUSIC_KEYS.lastLocalId, track.id);
-    } catch (err) {
-        console.warn("Could not play local track:", err);
-        toast("Could not play that file.");
-    }
-
+        music.audioEl.play().catch(e => console.warn(e));
+        save(MUSIC_KEYS.lastLocal, track.id);
+    } catch (e) { console.warn(e); }
     updateMusicUI();
-    renderLocalTracks();
+    renderLocal();
 }
 
-function pauseLocal() {
-    if (!music.audioEl) return;
-    music.audioEl.pause();
-}
+function pauseLocal() { if (music.audioEl) music.audioEl.pause(); }
 
 function toggleLocal() {
     if (!music.audioEl) return;
-    if (music.localPlaying) {
-        pauseLocal();
+    if (music.localPlaying) pauseLocal();
+    else if (!music.audioEl.src) {
+        if (!music.localTracks.length) { toast("No local tracks — add files first."); return; }
+        playLocalIdx(music.localIndex);
     } else {
-        if (!music.audioEl.src) {
-            if (!music.localTracks.length) {
-                toast("No local tracks yet — add files first.");
-                return;
-            }
-            playLocalIndex(music.localIndex);
-        } else {
-            music.audioEl.play().catch(err => console.warn(err));
-        }
+        music.audioEl.play().catch(e => console.warn(e));
     }
 }
 
-function nextLocalTrack() {
-    if (!music.localTracks.length) return;
-    playLocalIndex(music.localIndex + 1);
-}
+function nextLocal() { if (music.localTracks.length) playLocalIdx(music.localIndex + 1); }
+function prevLocal() { if (music.localTracks.length) playLocalIdx(music.localIndex - 1); }
 
-function prevLocalTrack() {
-    if (!music.localTracks.length) return;
-    playLocalIndex(music.localIndex - 1);
-}
-
-async function restoreLastLocalTrack() {
-    const lastId = load(MUSIC_KEYS.lastLocalId, null);
-    if (!lastId) return;
-
-    const index = music.localTracks.findIndex(t => t.id === lastId);
-    if (index < 0) return;
-
-    music.localIndex = index;
-    const track = music.localTracks[index];
-
-    try {
-        if (music.localObjectUrl) {
-            URL.revokeObjectURL(music.localObjectUrl);
-            music.localObjectUrl = null;
-        }
-        const url = URL.createObjectURL(track.blob);
-        music.localObjectUrl = url;
-        music.audioEl.src = url;
-        music.audioEl.volume = music.volume;
-
-        const pos = load(MUSIC_KEYS.lastPosition, null);
-        if (pos && pos.id === track.id && pos.time > 1) {
-            const age = Date.now() - (pos.updatedAt || 0);
-            if (age < 24 * 60 * 60 * 1000) {
-                const seekWhenReady = () => {
-                    try { music.audioEl.currentTime = pos.time; } catch {}
-                    music.audioEl.removeEventListener("loadedmetadata", seekWhenReady);
-                };
-                music.audioEl.addEventListener("loadedmetadata", seekWhenReady);
-            }
-        }
-    } catch (err) {
-        console.warn("Could not restore last track:", err);
-    }
-
-    renderLocalTracks();
-    updateMusicUI();
-}
-
-function savePlaybackPosition() {
-    if (music.source !== "local") return;
-    if (!music.audioEl || !music.audioEl.src) return;
-    const track = music.localTracks[music.localIndex];
-    if (!track) return;
-
-    save(MUSIC_KEYS.lastLocalId, track.id);
-    save(MUSIC_KEYS.lastPosition, {
-        id: track.id,
-        time: music.audioEl.currentTime || 0,
-        updatedAt: Date.now()
-    });
-}
-
-/* ---------- Shared controls ---------- */
-
-function musicIsPlaying() {
+function isMusicPlaying() {
     return music.source === "stream" ? music.streamPlaying : music.localPlaying;
 }
 
 function togglePlay() {
     if (music.source === "stream") {
-        if (music.streamPlaying) pauseStream();
-        else playStream();
+        if (music.streamPlaying) pauseStream(); else playStream();
     } else {
         toggleLocal();
     }
 }
 
-function nextTrack() {
-    if (music.source === "stream") nextStreamTrack();
-    else nextLocalTrack();
-}
+function nextMusic() { music.source === "stream" ? nextStream() : nextLocal(); }
+function prevMusic() { music.source === "stream" ? prevStream() : prevLocal(); }
 
-function prevTrack() {
-    if (music.source === "stream") prevStreamTrack();
-    else prevLocalTrack();
-}
-
-function setMusicVolume(vol) {
-    music.volume = Math.max(0, Math.min(1, vol));
+function setMusicVol(v) {
+    music.volume = Math.max(0, Math.min(1, v));
     save(MUSIC_KEYS.volume, music.volume);
-
-    if (music.yt && music.yt.setVolume) {
-        music.yt.setVolume(Math.round(music.volume * 100));
-    }
-    if (music.audioEl) {
-        music.audioEl.volume = music.volume;
-    }
-
-    const volVal = $("musicVolVal");
-    if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
+    if (music.yt && music.yt.setVolume) music.yt.setVolume(Math.round(music.volume * 100));
+    if (music.audioEl) music.audioEl.volume = music.volume;
+    const el = $("musicVolVal");
+    if (el) el.textContent = Math.round(music.volume * 100) + "%";
 }
 
-function switchSource(source) {
-    if (!["stream", "local"].includes(source)) return;
-    if (music.source === source) return;
-
-    if (source === "local") {
-        pauseStream();
-    } else {
-        pauseLocal();
-        savePlaybackPosition();
-    }
-
-    music.source = source;
-    save(MUSIC_KEYS.source, source);
-
-    document.querySelectorAll(".music-tab").forEach(tab => {
-        const active = tab.dataset.source === source;
-        tab.classList.toggle("active", active);
-        tab.setAttribute("aria-selected", active ? "true" : "false");
+function switchSource(src) {
+    if (!["stream", "local"].includes(src) || music.source === src) return;
+    if (src === "local") pauseStream();
+    else { pauseLocal(); saveMusicPos(); }
+    music.source = src;
+    save(MUSIC_KEYS.source, src);
+    document.querySelectorAll(".music-tab").forEach(t => {
+        const on = t.dataset.source === src;
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
     });
-
-    $("musicLocalSection").classList.toggle("hidden", source !== "local");
-
+    $("musicLocalSection").classList.toggle("hidden", src !== "local");
     updateMusicUI();
-    clampMusicWidget();
+    clampWidget();
 }
 
 function updateMusicUI() {
-    const source = music.source;
-
-    const nowLabel = $("musicNowLabel");
-    const nameEl = $("musicTrackName");
-
-    if (source === "stream") {
-        if (nowLabel) nowLabel.textContent = "NOW PLAYING · STREAM";
-        if (nameEl) nameEl.textContent = MUSIC_TRACKS[music.streamIndex].name;
+    const labelEl = $("musicNowLabel");
+    const trackEl = $("musicTrackName");
+    if (music.source === "stream") {
+        if (labelEl) labelEl.textContent = "NOW PLAYING · STREAM";
+        if (trackEl) trackEl.textContent = MUSIC_STREAM[music.streamIndex].name;
         if ($("musicFootText")) $("musicFootText").textContent = "♞ Train with chill beats";
     } else {
-        if (nowLabel) nowLabel.textContent = "NOW PLAYING · LOCAL";
-        if (nameEl) {
-            const track = music.localTracks[music.localIndex];
-            nameEl.textContent = track ? track.name : "No local tracks yet";
+        if (labelEl) labelEl.textContent = "NOW PLAYING · LOCAL";
+        if (trackEl) {
+            const t = music.localTracks[music.localIndex];
+            trackEl.textContent = t ? t.name : "No local tracks";
         }
-        if ($("musicFootText")) $("musicFootText").textContent = "♞ Your music · saved in this site";
+        if ($("musicFootText")) $("musicFootText").textContent = "♞ Your music · saved locally";
     }
-
-    const playBtn = $("musicPlay");
-    if (playBtn) playBtn.textContent = musicIsPlaying() ? "❚❚" : "▶";
-
+    const pb = $("musicPlay");
+    if (pb) pb.textContent = isMusicPlaying() ? "❚❚" : "▶";
     const fab = $("musicFab");
-    if (fab) fab.classList.toggle("playing", musicIsPlaying());
-
-    const topBtn = $("musicTopBtn");
-    if (topBtn) topBtn.classList.toggle("playing", musicIsPlaying());
+    if (fab) fab.classList.toggle("playing", isMusicPlaying());
+    const tb = $("musicTopBtn");
+    if (tb) tb.classList.toggle("playing", isMusicPlaying());
 }
 
-function openMusicPanel() {
-    const panel = $("musicPanel");
-    const fab = $("musicFab");
-    if (!panel || !fab) return;
-    panel.classList.remove("hidden");
-    fab.classList.add("active");
+function openPanel() {
+    $("musicPanel").classList.remove("hidden");
+    $("musicFab").classList.add("active");
     music.panelOpen = true;
     save(MUSIC_KEYS.open, true);
-    // Re-clamp because the widget just got bigger
-    requestAnimationFrame(() => {
-        clampMusicWidget();
-        applyMusicPosition();
-    });
+    requestAnimationFrame(() => { clampWidget(); applyWidgetPos(); });
 }
 
-function closeMusicPanel() {
-    const panel = $("musicPanel");
-    const fab = $("musicFab");
-    if (!panel || !fab) return;
-    panel.classList.add("hidden");
-    fab.classList.remove("active");
+function closePanel() {
+    $("musicPanel").classList.add("hidden");
+    $("musicFab").classList.remove("active");
     music.panelOpen = false;
     save(MUSIC_KEYS.open, false);
 }
 
-function toggleMusicPanel() {
-    if (music.panelOpen) closeMusicPanel();
-    else openMusicPanel();
+function togglePanel() { music.panelOpen ? closePanel() : openPanel(); }
+
+function fmtBytes(b) {
+    if (!b) return "0 KB";
+    const kb = b / 1024;
+    if (kb < 1024) return kb.toFixed(0) + " KB";
+    return (kb / 1024).toFixed(1) + " MB";
 }
 
-/* ---------- Local tracks UI ---------- */
-
-function formatBytes(bytes) {
-    if (!bytes) return "0 KB";
-    const kb = bytes / 1024;
-    if (kb < 1024) return `${kb.toFixed(0)} KB`;
-    const mb = kb / 1024;
-    return `${mb.toFixed(1)} MB`;
-}
-
-function renderLocalTracks() {
+function renderLocal() {
     const list = $("musicTrackList");
-    const countEl = $("musicTrackCount");
+    const cnt = $("musicTrackCount");
     if (!list) return;
-
-    if (countEl) countEl.textContent = music.localTracks.length;
-
+    if (cnt) cnt.textContent = music.localTracks.length;
     list.innerHTML = "";
 
     if (!music.localTracks.length) {
-        list.innerHTML = `
-            <div class="music-empty">
-                <span>♪</span>
-                No local tracks yet.<br>
-                Click <strong>+ Add files</strong> to import MP3s, WAVs, and more.<br>
-                <em>They will be saved inside this website.</em>
-            </div>
-        `;
+        list.innerHTML = '<div class="music-empty"><span>♪</span>No local tracks yet. Click <strong>+ Add</strong> to import MP3s, WAVs, and more.</div>';
         return;
     }
 
-    music.localTracks.forEach((track, index) => {
+    music.localTracks.forEach((t, i) => {
         const item = document.createElement("button");
         item.type = "button";
-        item.className = "music-track-item" +
-            (index === music.localIndex && music.source === "local" ? " active" : "");
-        item.dataset.id = track.id;
+        item.className = "music-track-item" + (i === music.localIndex && music.source === "local" ? " active" : "");
+        item.dataset.id = t.id;
 
         const icon = document.createElement("div");
         icon.className = "music-track-icon";
-        icon.textContent = index === music.localIndex && music.localPlaying ? "❚❚" : "♪";
+        icon.textContent = (i === music.localIndex && music.localPlaying) ? "❚❚" : "♪";
 
         const meta = document.createElement("div");
         meta.className = "music-track-meta";
-
         const name = document.createElement("div");
         name.className = "music-track-name";
-        name.textContent = track.name;
-
+        name.textContent = t.name;
         const size = document.createElement("div");
         size.className = "music-track-size";
-        const ext = (track.type || "").split("/")[1] || "audio";
-        size.textContent = `${formatBytes(track.size)} · ${ext.toUpperCase()}`;
-
+        const ext = (t.type || "").split("/")[1] || "audio";
+        size.textContent = fmtBytes(t.size) + " · " + ext.toUpperCase();
         meta.append(name, size);
 
         const del = document.createElement("button");
         del.type = "button";
         del.className = "music-track-del";
-        del.setAttribute("aria-label", "Remove track");
         del.textContent = "×";
-        del.addEventListener("click", event => {
-            event.stopPropagation();
-            removeLocalTrack(track.id);
-        });
+        del.setAttribute("aria-label", "Remove track");
+        del.addEventListener("click", e => { e.stopPropagation(); removeLocal(t.id); });
 
         item.append(icon, meta, del);
-
         item.addEventListener("click", () => {
             if (music.source !== "local") switchSource("local");
-            playLocalIndex(index);
+            playLocalIdx(i);
         });
-
         list.appendChild(item);
     });
 }
 
 async function addLocalFiles(files) {
     if (!files || !files.length) return;
+    try { await openDb(); } catch { toast("Local storage unavailable."); return; }
 
-    try {
-        await openMusicDb();
-    } catch (err) {
-        toast("Local storage not available in this browser.");
-        return;
-    }
-
-    let added = 0;
-    let skipped = 0;
-
-    for (const file of files) {
-        if (!file.type.startsWith("audio/") && !/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(file.name)) {
-            skipped++;
-            continue;
+    let added = 0, skipped = 0;
+    for (const f of files) {
+        if (!f.type.startsWith("audio/") && !/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(f.name)) {
+            skipped++; continue;
         }
-
-        if (file.size > 30 * 1024 * 1024) {
-            const ok = confirm(`"${file.name}" is ${formatBytes(file.size)}. Add anyway?`);
-            if (!ok) { skipped++; continue; }
+        if (f.size > 30 * 1024 * 1024) {
+            if (!confirm('"' + f.name + '" is ' + fmtBytes(f.size) + '. Add anyway?')) { skipped++; continue; }
         }
-
         try {
-            const record = await dbAddTrack(file);
-            music.localTracks.push(record);
+            music.localTracks.push(await dbAdd(f));
             added++;
-        } catch (err) {
-            console.warn("Add failed:", err);
-            if (err && err.name === "QuotaExceededError") {
-                toast("Not enough browser storage. Remove some tracks first.");
-                break;
-            }
+        } catch (e) {
+            if (e && e.name === "QuotaExceededError") { toast("Storage full. Remove some tracks."); break; }
             skipped++;
         }
     }
-
     music.localTracks.sort((a, b) => a.addedAt - b.addedAt);
-    renderLocalTracks();
-    updateSavedBadge();
-    updateStorageInfo();
-
+    renderLocal();
     if (added) {
-        toast(`Saved ${added} track${added > 1 ? "s" : ""} inside this website${skipped ? ` · ${skipped} skipped` : ""}.`);
+        toast("Saved " + added + " track" + (added > 1 ? "s" : "") + (skipped ? " · " + skipped + " skipped" : "") + ".");
         if (music.source !== "local") switchSource("local");
-    } else if (skipped) {
-        toast("No audio files added.");
-    }
+    } else if (skipped) toast("No audio files added.");
 }
 
-async function removeLocalTrack(id) {
-    const track = music.localTracks.find(t => t.id === id);
-    if (!track) return;
-
-    if (!confirm(`Remove "${track.name}" from your saved tracks?`)) return;
-
-    try {
-        await dbDeleteTrack(id);
-    } catch (err) {
-        console.warn(err);
-    }
-
-    const wasActive = music.source === "local" &&
-        music.localTracks[music.localIndex]?.id === id;
-
-    music.localTracks = music.localTracks.filter(t => t.id !== id);
-
+async function removeLocal(id) {
+    const t = music.localTracks.find(x => x.id === id);
+    if (!t) return;
+    if (!confirm('Remove "' + t.name + '"?')) return;
+    try { await dbDel(id); } catch (e) { console.warn(e); }
+    const wasActive = music.source === "local" && music.localTracks[music.localIndex]?.id === id;
+    music.localTracks = music.localTracks.filter(x => x.id !== id);
     if (wasActive) {
         pauseLocal();
-        if (music.localObjectUrl) {
-            URL.revokeObjectURL(music.localObjectUrl);
-            music.localObjectUrl = null;
-        }
+        if (music.localUrl) { URL.revokeObjectURL(music.localUrl); music.localUrl = null; }
         if (music.audioEl) music.audioEl.src = "";
-        const lastId = load(MUSIC_KEYS.lastLocalId, null);
-        if (lastId === id) {
-            save(MUSIC_KEYS.lastLocalId, null);
-            save(MUSIC_KEYS.lastPosition, null);
-        }
     }
-
-    if (music.localIndex >= music.localTracks.length) {
-        music.localIndex = Math.max(0, music.localTracks.length - 1);
-    }
-
-    renderLocalTracks();
-    updateSavedBadge();
-    updateStorageInfo();
+    if (music.localIndex >= music.localTracks.length) music.localIndex = Math.max(0, music.localTracks.length - 1);
+    renderLocal();
     updateMusicUI();
     toast("Track removed.");
 }
 
-
-/* ======================================================
-   DRAGGABLE MUSIC WIDGET
-====================================================== */
-
-const dragState = {
-    offsetX: 0,
-    offsetY: 0,
-    dragging: false,
-    moved: false,
-    justDragged: false,
-    pointerId: null,
-    startX: 0,
-    startY: 0,
-    startOffsetX: 0,
-    startOffsetY: 0
-};
-
-function applyMusicPosition() {
-    const widget = $("musicWidget");
-    if (!widget) return;
-    widget.style.transform = `translate(${dragState.offsetX}px, ${dragState.offsetY}px)`;
+function saveMusicPos() {
+    if (music.source !== "local" || !music.audioEl || !music.audioEl.src) return;
+    const t = music.localTracks[music.localIndex];
+    if (!t) return;
+    save(MUSIC_KEYS.lastLocal, t.id);
+    save(MUSIC_KEYS.position, { id: t.id, time: music.audioEl.currentTime || 0, updatedAt: Date.now() });
 }
 
-function clampMusicWidget() {
-    const widget = $("musicWidget");
-    if (!widget) return;
+async function restoreLocal() {
+    const lastId = load(MUSIC_KEYS.lastLocal, null);
+    if (!lastId) return;
+    const idx = music.localTracks.findIndex(x => x.id === lastId);
+    if (idx < 0) return;
+    music.localIndex = idx;
+    const t = music.localTracks[idx];
+    try {
+        if (music.localUrl) { URL.revokeObjectURL(music.localUrl); music.localUrl = null; }
+        const url = URL.createObjectURL(t.blob);
+        music.localUrl = url;
+        music.audioEl.src = url;
+        music.audioEl.volume = music.volume;
+        const pos = load(MUSIC_KEYS.position, null);
+        if (pos && pos.id === t.id && pos.time > 1 && Date.now() - (pos.updatedAt || 0) < 24 * 60 * 60 * 1000) {
+            const seek = () => {
+                try { music.audioEl.currentTime = pos.time; } catch {}
+                music.audioEl.removeEventListener("loadedmetadata", seek);
+            };
+            music.audioEl.addEventListener("loadedmetadata", seek);
+        }
+    } catch (e) { console.warn(e); }
+    renderLocal();
+    updateMusicUI();
+}
 
-    const rect = widget.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const margin = 8;
 
+/* ======================================================
+   DRAGGABLE WIDGET
+====================================================== */
+
+const drag = {
+    offsetX: 0, offsetY: 0,
+    dragging: false, moved: false,
+    justDragged: false, pointerId: null,
+    startX: 0, startY: 0,
+    startOffsetX: 0, startOffsetY: 0
+};
+
+function applyWidgetPos() {
+    const w = $("musicWidget");
+    if (w) w.style.transform = "translate(" + drag.offsetX + "px, " + drag.offsetY + "px)";
+}
+
+function clampWidget() {
+    const w = $("musicWidget");
+    if (!w) return;
+    const r = w.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight, m = 10;
     let dx = 0, dy = 0;
-    if (rect.left < margin) dx = margin - rect.left;
-    if (rect.right > vw - margin) dx = (vw - margin) - rect.right;
-    if (rect.top < margin) dy = margin - rect.top;
-    if (rect.bottom > vh - margin) dy = (vh - margin) - rect.bottom;
-
-    if (dx !== 0) dragState.offsetX += dx;
-    if (dy !== 0) dragState.offsetY += dy;
-
-    if (dx !== 0 || dy !== 0) {
-        applyMusicPosition();
+    if (r.left < m) dx = m - r.left;
+    if (r.right > vw - m) dx = (vw - m) - r.right;
+    if (r.top < m) dy = m - r.top;
+    if (r.bottom > vh - m) dy = (vh - m) - r.bottom;
+    if (dx || dy) {
+        drag.offsetX += dx;
+        drag.offsetY += dy;
+        applyWidgetPos();
     }
 }
 
-function saveMusicPosition() {
-    save(MUSIC_KEYS.widgetPos, {
-        x: dragState.offsetX,
-        y: dragState.offsetY
-    });
+function saveWidgetPos() {
+    save(MUSIC_KEYS.widget, { x: drag.offsetX, y: drag.offsetY });
 }
 
-function resetMusicPosition() {
-    dragState.offsetX = 0;
-    dragState.offsetY = 0;
-    applyMusicPosition();
-    saveMusicPosition();
+function resetWidgetPos() {
+    drag.offsetX = 0;
+    drag.offsetY = 0;
+    applyWidgetPos();
+    saveWidgetPos();
     toast("Music position reset.");
 }
 
-function setupMusicDrag() {
-    const widget = $("musicWidget");
+function setupDrag() {
+    const w = $("musicWidget");
     const fab = $("musicFab");
-    if (!widget || !fab) return;
+    if (!w || !fab) return;
 
-    // Restore saved position
-    const saved = load(MUSIC_KEYS.widgetPos, { x: 0, y: 0 });
-    dragState.offsetX = Number(saved.x) || 0;
-    dragState.offsetY = Number(saved.y) || 0;
-    applyMusicPosition();
+    const saved = load(MUSIC_KEYS.widget, { x: 0, y: 0 });
+    drag.offsetX = Number(saved.x) || 0;
+    drag.offsetY = Number(saved.y) || 0;
+    applyWidgetPos();
 
-    const DRAG_THRESHOLD = 5;
+    const THRESH = 5;
 
-    function onPointerDown(e) {
+    function onDown(e) {
         if (e.pointerType === "mouse" && e.button !== 0) return;
-
-        dragState.dragging = true;
-        dragState.moved = false;
-        dragState.pointerId = e.pointerId;
-        dragState.startX = e.clientX;
-        dragState.startY = e.clientY;
-        dragState.startOffsetX = dragState.offsetX;
-        dragState.startOffsetY = dragState.offsetY;
-
-        widget.classList.add("dragging");
-
-        try {
-            fab.setPointerCapture(e.pointerId);
-        } catch {}
+        drag.dragging = true;
+        drag.moved = false;
+        drag.pointerId = e.pointerId;
+        drag.startX = e.clientX;
+        drag.startY = e.clientY;
+        drag.startOffsetX = drag.offsetX;
+        drag.startOffsetY = drag.offsetY;
+        w.classList.add("dragging");
+        try { fab.setPointerCapture(e.pointerId); } catch {}
     }
 
-    function onPointerMove(e) {
-        if (!dragState.dragging) return;
-        if (e.pointerId !== dragState.pointerId) return;
-
-        const dx = e.clientX - dragState.startX;
-        const dy = e.clientY - dragState.startY;
-
-        if (!dragState.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-        dragState.moved = true;
-
-        dragState.offsetX = dragState.startOffsetX + dx;
-        dragState.offsetY = dragState.startOffsetY + dy;
-        applyMusicPosition();
+    function onMove(e) {
+        if (!drag.dragging || e.pointerId !== drag.pointerId) return;
+        const dx = e.clientX - drag.startX;
+        const dy = e.clientY - drag.startY;
+        if (!drag.moved && Math.hypot(dx, dy) < THRESH) return;
+        drag.moved = true;
+        drag.offsetX = drag.startOffsetX + dx;
+        drag.offsetY = drag.startOffsetY + dy;
+        applyWidgetPos();
     }
 
-    function onPointerUp(e) {
-        if (!dragState.dragging) return;
-        if (e.pointerId !== dragState.pointerId) return;
-
-        dragState.dragging = false;
-        dragState.pointerId = null;
-        widget.classList.remove("dragging");
-
-        if (dragState.moved) {
-            clampMusicWidget();
-            saveMusicPosition();
-            dragState.justDragged = true;
-            setTimeout(() => { dragState.justDragged = false; }, 60);
+    function onUp(e) {
+        if (!drag.dragging || e.pointerId !== drag.pointerId) return;
+        drag.dragging = false;
+        drag.pointerId = null;
+        w.classList.remove("dragging");
+        if (drag.moved) {
+            clampWidget();
+            saveWidgetPos();
+            drag.justDragged = true;
+            setTimeout(() => drag.justDragged = false, 60);
         }
     }
 
-    fab.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+    fab.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
 
-    // Block click right after a drag
     fab.addEventListener("click", e => {
-        if (dragState.justDragged) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-        }
-        toggleMusicPanel();
+        if (drag.justDragged) { e.preventDefault(); e.stopPropagation(); return; }
+        togglePanel();
     }, true);
 
-    // Reset button
-    const resetBtn = $("musicResetPos");
-    if (resetBtn) {
-        resetBtn.addEventListener("click", resetMusicPosition);
-    }
+    const rb = $("musicResetPos");
+    if (rb) rb.addEventListener("click", resetWidgetPos);
 
-    // Re-clamp on window resize
-    window.addEventListener("resize", () => {
-        clampMusicWidget();
-        saveMusicPosition();
-    });
+    window.addEventListener("resize", () => { clampWidget(); saveWidgetPos(); });
 }
-
-
-/* ======================================================
-   SETUP MUSIC (main)
-====================================================== */
 
 async function setupMusic() {
     music.volume = Number(load(MUSIC_KEYS.volume, 0.4));
     if (isNaN(music.volume)) music.volume = 0.4;
-
     music.streamIndex = Number(load(MUSIC_KEYS.track, 0)) || 0;
-    if (music.streamIndex < 0 || music.streamIndex >= MUSIC_TRACKS.length) {
-        music.streamIndex = 0;
-    }
-
+    if (music.streamIndex < 0 || music.streamIndex >= MUSIC_STREAM.length) music.streamIndex = 0;
     music.source = load(MUSIC_KEYS.source, "stream");
     if (!["stream", "local"].includes(music.source)) music.source = "stream";
 
     music.audioEl = $("localAudio");
     if (music.audioEl) {
         music.audioEl.volume = music.volume;
-
-        music.audioEl.addEventListener("play", () => {
-            music.localPlaying = true;
-            updateMusicUI();
-            renderLocalTracks();
-        });
-        music.audioEl.addEventListener("pause", () => {
-            music.localPlaying = false;
-            savePlaybackPosition();
-            updateMusicUI();
-            renderLocalTracks();
-        });
+        music.audioEl.addEventListener("play", () => { music.localPlaying = true; updateMusicUI(); renderLocal(); });
+        music.audioEl.addEventListener("pause", () => { music.localPlaying = false; saveMusicPos(); updateMusicUI(); renderLocal(); });
         music.audioEl.addEventListener("ended", () => {
-            if (music.localTracks.length > 1) {
-                playLocalIndex(music.localIndex + 1);
-            } else {
-                music.localPlaying = false;
-                updateMusicUI();
-                renderLocalTracks();
-            }
+            if (music.localTracks.length > 1) playLocalIdx(music.localIndex + 1);
+            else { music.localPlaying = false; updateMusicUI(); renderLocal(); }
         });
         music.audioEl.addEventListener("timeupdate", () => {
             const t = Math.floor(music.audioEl.currentTime);
-            if (t > 0 && t % 5 === 0) savePlaybackPosition();
+            if (t > 0 && t % 5 === 0) saveMusicPos();
         });
-        music.audioEl.addEventListener("error", () => {
-            console.warn("Local audio error");
-            music.localPlaying = false;
-            updateMusicUI();
-        });
+        music.audioEl.addEventListener("error", () => { music.localPlaying = false; updateMusicUI(); });
     }
 
     const volEl = $("musicVolume");
     if (volEl) {
         volEl.value = String(Math.round(music.volume * 100));
-        volEl.addEventListener("input", e => {
-            setMusicVolume(Number(e.target.value) / 100);
-        });
+        volEl.addEventListener("input", e => setMusicVol(Number(e.target.value) / 100));
     }
-    const volVal = $("musicVolVal");
-    if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
+    const vv = $("musicVolVal");
+    if (vv) vv.textContent = Math.round(music.volume * 100) + "%";
 
-    // Top bar button
-    const topBtn = $("musicTopBtn");
-    if (topBtn) {
-        topBtn.addEventListener("click", () => {
-            if (!music.panelOpen) openMusicPanel();
-            else closeMusicPanel();
-        });
-    }
+    const tb = $("musicTopBtn");
+    if (tb) tb.addEventListener("click", () => music.panelOpen ? closePanel() : openPanel());
 
-    // Close button
-    const closeBtn = $("musicCloseBtn");
-    if (closeBtn) closeBtn.addEventListener("click", closeMusicPanel);
+    const cb = $("musicCloseBtn");
+    if (cb) cb.addEventListener("click", closePanel);
 
-    // Transport
-    const playBtn = $("musicPlay");
-    if (playBtn) playBtn.addEventListener("click", togglePlay);
+    const pb = $("musicPlay");
+    if (pb) pb.addEventListener("click", togglePlay);
 
-    const nextBtn = $("musicNext");
-    if (nextBtn) nextBtn.addEventListener("click", nextTrack);
+    const nb = $("musicNext");
+    if (nb) nb.addEventListener("click", nextMusic);
 
-    const prevBtn = $("musicPrev");
-    if (prevBtn) prevBtn.addEventListener("click", prevTrack);
+    const prb = $("musicPrev");
+    if (prb) prb.addEventListener("click", prevMusic);
 
-    // Source tabs
-    document.querySelectorAll(".music-tab").forEach(tab => {
-        tab.addEventListener("click", () => switchSource(tab.dataset.source));
+    document.querySelectorAll(".music-tab").forEach(t => {
+        t.addEventListener("click", () => switchSource(t.dataset.source));
     });
 
-    // Local file input
-    const addBtn = $("musicAddBtn");
-    const fileInput = $("musicFileInput");
-    if (addBtn && fileInput) {
-        addBtn.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", async event => {
-            const files = Array.from(event.target.files || []);
+    const ab = $("musicAddBtn");
+    const fi = $("musicFileInput");
+    if (ab && fi) {
+        ab.addEventListener("click", () => fi.click());
+        fi.addEventListener("change", async e => {
+            const files = Array.from(e.target.files || []);
             await addLocalFiles(files);
-            event.target.value = "";
+            e.target.value = "";
         });
     }
 
-    // Apply initial source state
-    document.querySelectorAll(".music-tab").forEach(tab => {
-        const active = tab.dataset.source === music.source;
-        tab.classList.toggle("active", active);
-        tab.setAttribute("aria-selected", active ? "true" : "false");
+    document.querySelectorAll(".music-tab").forEach(t => {
+        const on = t.dataset.source === music.source;
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
     });
     $("musicLocalSection").classList.toggle("hidden", music.source !== "local");
 
-    // Setup drag FIRST (before panel opens, so position applies correctly)
-    setupMusicDrag();
+    setupDrag();
+    if (load(MUSIC_KEYS.open, false)) openPanel();
 
-    // Restore panel open state
-    const wasOpen = load(MUSIC_KEYS.open, false);
-    if (wasOpen) {
-        openMusicPanel();
-    }
-
-    // Load saved local tracks
-    await loadLocalTracks();
-
-    if (music.localTracks.length) {
-        await restoreLastLocalTrack();
-    }
+    await loadLocal();
+    if (music.localTracks.length) await restoreLocal();
 
     updateMusicUI();
-    updateSavedBadge();
-
-    loadYouTubeAPI();
+    loadYtApi();
 }
 
 
 /* ======================================================
-   COORDINATES AND BOARD
+   BOARD
 ====================================================== */
 
-function createCoordinates() {
-    $("topCoordinates").innerHTML = "";
-    $("bottomCoordinates").innerHTML = "";
-    $("leftCoordinates").innerHTML = "";
-    $("rightCoordinates").innerHTML = "";
-
-    FILES.forEach(file => {
-        ["topCoordinates", "bottomCoordinates"].forEach(id => {
+function buildCoords() {
+    ["topCoordinates","bottomCoordinates","leftCoordinates","rightCoordinates"].forEach(id => {
+        const el = $(id); if (el) el.innerHTML = "";
+    });
+    FILES.forEach(f => {
+        ["topCoordinates","bottomCoordinates"].forEach(id => {
             const el = document.createElement("span");
-            el.textContent = file;
+            el.textContent = f;
             $(id).appendChild(el);
         });
     });
-
-    RANKS.forEach(rank => {
-        ["leftCoordinates", "rightCoordinates"].forEach(id => {
+    RANKS.forEach(r => {
+        ["leftCoordinates","rightCoordinates"].forEach(id => {
             const el = document.createElement("span");
-            el.textContent = rank;
+            el.textContent = r;
             $(id).appendChild(el);
         });
     });
 }
 
-function createBoard() {
-    const board = $("chessboard");
-    board.innerHTML = "";
-
+function buildBoard() {
+    const b = $("chessboard");
+    b.innerHTML = "";
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const file = FILES[col];
             const rank = RANKS[row];
-            const coordinate = `${file}${rank}`;
+            const coord = file + rank;
 
-            const square = document.createElement("button");
-            square.type = "button";
-            square.className =
-                "square " + ((row + col) % 2 === 0 ? "light" : "dark");
-            square.dataset.square = coordinate;
-            square.setAttribute("role", "gridcell");
-            square.setAttribute("aria-label", `Square ${coordinate}`);
-            square.setAttribute("aria-pressed", "false");
-            square.disabled = true;
+            const sq = document.createElement("button");
+            sq.type = "button";
+            sq.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
+            sq.dataset.square = coord;
+            sq.setAttribute("role", "gridcell");
+            sq.setAttribute("aria-label", "Square " + coord);
+            sq.disabled = true;
 
-            const label = document.createElement("span");
-            label.className = "square-label";
-            label.textContent = coordinate;
-            square.appendChild(label);
+            const lbl = document.createElement("span");
+            lbl.className = "square-label";
+            lbl.textContent = coord;
+            sq.appendChild(lbl);
 
-            square.addEventListener("click", () => handleSquare(coordinate, square));
-            board.appendChild(square);
+            sq.addEventListener("click", () => handleSquare(coord, sq));
+            b.appendChild(sq);
         }
     }
 }
 
 function clearHighlights() {
-    document.querySelectorAll(".square").forEach(square => {
-        square.classList.remove(
-            "last-correct",
-            "last-wrong",
-            "target-highlight",
-            "knight-source",
-            "knight-found"
-        );
-        square.setAttribute("aria-pressed", "false");
+    document.querySelectorAll(".square").forEach(sq => {
+        sq.classList.remove("last-correct","last-wrong","target-highlight","knight-source","knight-found");
     });
 }
 
-function enableBoard(enabled) {
-    document.querySelectorAll(".square").forEach(square => {
-        square.disabled = !enabled;
-    });
+function enableBoard(on) {
+    document.querySelectorAll(".square").forEach(sq => { sq.disabled = !on; });
 }
 
-function highlightSquare(coordinate, className) {
-    const sq = document.querySelector(`.square[data-square="${coordinate}"]`);
-    if (sq) sq.classList.add(className);
+function hl(coord, cls) {
+    const sq = document.querySelector('.square[data-square="' + coord + '"]');
+    if (sq) sq.classList.add(cls);
 }
 
-
-/* ======================================================
-   THEMES
-====================================================== */
-
-function setAppearance(theme) {
-    const allowed = ["dark", "light", "neon", "heavy"];
-    if (!allowed.includes(theme)) theme = "dark";
-    document.body.dataset.theme = theme;
-    $("appearanceTheme").value = theme;
-    save(KEYS.theme, theme);
+function isLightSquare(coord) {
+    const f = FILES.indexOf(coord[0]);
+    const r = RANKS.indexOf(Number(coord[1]));
+    return (f + r) % 2 === 0;
 }
-
-function setBoardTheme(theme) {
-    const allowed = ["rose", "classic", "wood", "blue", "purple", "pink"];
-    if (!allowed.includes(theme)) theme = "rose";
-    document.body.dataset.board = theme;
-    $("boardTheme").value = theme;
-    save(KEYS.board, theme);
-}
-
-function setLabels(enabled) {
-    game.labels = !!enabled;
-    document.body.classList.toggle("show-labels", game.labels);
-    $("labelsToggle").checked = game.labels;
-    save(KEYS.labels, game.labels);
-}
-
-
-/* ======================================================
-   KNIGHT LOGIC
-====================================================== */
 
 function knightMoves(coord) {
-    const fileIdx = FILES.indexOf(coord[0]);
-    const rankIdx = RANKS.indexOf(Number(coord[1]));
-    const offsets = [
-        [1, 2], [2, 1], [2, -1], [1, -2],
-        [-1, -2], [-2, -1], [-2, 1], [-1, 2]
-    ];
-    const valid = [];
-    for (const [df, dr] of offsets) {
-        const f = fileIdx + df;
-        const r = rankIdx + dr;
-        if (f >= 0 && f < 8 && r >= 0 && r < 8) {
-            valid.push(`${FILES[f]}${RANKS[r]}`);
-        }
+    const fi = FILES.indexOf(coord[0]);
+    const ri = RANKS.indexOf(Number(coord[1]));
+    const off = [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]];
+    const out = [];
+    for (const [df, dr] of off) {
+        const f = fi + df, r = ri + dr;
+        if (f >= 0 && f < 8 && r >= 0 && r < 8) out.push(FILES[f] + RANKS[r]);
     }
-    return valid;
+    return out;
 }
 
 function randomSquare() {
-    const file = FILES[Math.floor(Math.random() * 8)];
-    const rank = RANKS[Math.floor(Math.random() * 8)];
-    return `${file}${rank}`;
+    return FILES[Math.floor(Math.random() * 8)] + RANKS[Math.floor(Math.random() * 8)];
 }
 
 
 /* ======================================================
-   TARGET GENERATION
+   TARGETS
 ====================================================== */
 
-function generateTarget() {
-    if (game.mode === "find") generateFindTarget();
-    else if (game.mode === "name") generateNameTarget();
-    else if (game.mode === "knight") generateKnightTarget();
+function genTarget() {
+    const mode = game.mode;
+    game.questionStartTime = Date.now();
+    if (mode === "square" || mode === "blindfold") genSquareTarget();
+    else if (mode === "coordinate" || mode === "reverse") genNameTarget(mode === "reverse" ? 6 : 4);
+    else if (mode === "knight") genKnightTarget();
+    else if (mode === "color") genColorTarget();
+    else genSquareTarget();
 }
 
-function generateFindTarget() {
-    let coordinate;
-    let attempts = 0;
-    do {
-        coordinate = randomSquare();
-        attempts++;
-    } while (coordinate === game.target && attempts < 20);
+function updateQuestionNumber() {
+    $("targetNumber").textContent = "QUESTION " + String(game.questionIndex).padStart(2, "0");
+}
 
-    game.target = coordinate;
-    game.targetIndex++;
+function genSquareTarget() {
+    let coord;
+    let tries = 0;
+    do { coord = randomSquare(); tries++; } while (coord === game.target && tries < 20);
+    game.target = coord;
+    game.questionIndex++;
+    updateQuestionNumber();
 
-    $("targetLabelText").textContent = "FIND THIS SQUARE";
+    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
     $("targetCoordinate").classList.remove("muted");
-    $("targetCoordinate").textContent = coordinate;
+    $("targetCoordinate").textContent = coord;
     $("targetHint").textContent = "Click the matching square on the board.";
     $("targetFeedback").textContent = "";
-    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
-
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
-    $("typeBuffer").textContent = "";
-
-    $("targetPanel").classList.remove("correct", "wrong");
+    $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
 }
 
-function generateNameTarget() {
-    const coordinate = randomSquare();
-    game.target = coordinate;
-    game.targetIndex++;
+function genNameTarget(count) {
+    const coord = randomSquare();
+    game.target = coord;
+    game.questionIndex++;
+    updateQuestionNumber();
 
-    $("targetLabelText").textContent = "NAME THIS SQUARE";
+    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = "?";
     $("targetHint").textContent = "Which coordinate is highlighted?";
     $("targetFeedback").textContent = "";
-    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
-
-    $("targetPanel").classList.remove("correct", "wrong");
+    $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
-    highlightSquare(coordinate, "target-highlight");
+    hl(coord, "target-highlight");
 
-    const choices = new Set([coordinate]);
-    while (choices.size < 4) choices.add(randomSquare());
+    const choices = new Set([coord]);
+    let tries = 0;
+    while (choices.size < count && tries < 50) { choices.add(randomSquare()); tries++; }
     const arr = Array.from(choices).sort(() => Math.random() - 0.5);
 
     const grid = $("choiceGrid");
     grid.innerHTML = "";
     grid.classList.remove("hidden");
+    grid.style.gridTemplateColumns = count > 4 ? "repeat(3, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))";
 
-    arr.forEach(coord => {
+    arr.forEach(c => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "choice-btn";
-        btn.textContent = coord;
-        btn.dataset.choice = coord;
-        btn.addEventListener("click", () => handleChoice(coord, btn));
+        btn.textContent = c;
+        btn.dataset.choice = c;
+        btn.addEventListener("click", () => handleChoice(c, btn));
         grid.appendChild(btn);
     });
-
-    $("typeBuffer").textContent = "";
 }
 
-function generateKnightTarget() {
-    let source;
-    let attempts = 0;
-    do {
-        source = randomSquare();
-        attempts++;
-    } while (
-        (source === game.knightSource || knightMoves(source).length < 2) &&
-        attempts < 40
-    );
+function genKnightTarget() {
+    let src;
+    let tries = 0;
+    do { src = randomSquare(); tries++; }
+    while ((src === game.knightSource || knightMoves(src).length < 2) && tries < 40);
 
-    game.knightSource = source;
-    game.target = source;
-    game.targetIndex++;
-    game.knightRemaining = knightMoves(source);
+    game.knightSource = src;
+    game.target = src;
+    game.questionIndex++;
+    game.knightRemaining = knightMoves(src);
     game.knightFound = [];
 
-    $("targetLabelText").textContent = "KNIGHT JUMPS FROM";
+    updateQuestionNumber();
+    $("targetLabelText").textContent = MODE_INFO.knight.targetLabel;
     $("targetCoordinate").classList.remove("muted");
-    $("targetCoordinate").textContent = source;
+    $("targetCoordinate").textContent = src;
     $("targetHint").textContent = "Click every square this knight can move to.";
     $("targetFeedback").textContent = "";
-    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
-
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
-    $("typeBuffer").textContent = "";
-
-    $("targetPanel").classList.remove("correct", "wrong");
+    $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
-    highlightSquare(source, "knight-source");
+    hl(src, "knight-source");
+}
+
+function genColorTarget() {
+    const coord = randomSquare();
+    game.target = coord;
+    game.questionIndex++;
+    updateQuestionNumber();
+
+    $("targetLabelText").textContent = MODE_INFO.color.targetLabel;
+    $("targetCoordinate").classList.remove("muted");
+    $("targetCoordinate").textContent = coord;
+    $("targetHint").textContent = "Is this square light or dark?";
+    $("targetFeedback").textContent = "";
+    $("targetPanel").classList.remove("correct","wrong");
+    clearHighlights();
+
+    const grid = $("choiceGrid");
+    grid.innerHTML = "";
+    grid.classList.remove("hidden");
+    grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+
+    [["light","Light"],["dark","Dark"]].forEach(([val, label]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = label;
+        btn.dataset.choice = val;
+        btn.addEventListener("click", () => handleColorChoice(val, btn));
+        grid.appendChild(btn);
+    });
 }
 
 function resetTarget() {
@@ -1472,76 +1096,253 @@ function resetTarget() {
     game.knightSource = null;
     game.knightRemaining = [];
     game.knightFound = [];
-    game.targetIndex = 0;
-
+    game.questionIndex = 0;
     $("targetCoordinate").classList.add("muted");
     $("targetCoordinate").textContent = "—";
-    $("targetHint").textContent = "Start your session to begin.";
+    $("targetHint").textContent = "Press Start to begin your session.";
     $("targetFeedback").textContent = "";
-    $("targetNumber").textContent = "TARGET / 00";
-    $("targetLabelText").textContent = "FIND THIS SQUARE";
-
-    $("targetPanel").classList.remove("correct", "wrong");
+    $("targetNumber").textContent = "QUESTION 00";
+    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
+    $("targetPanel").classList.remove("correct","wrong");
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
-    $("typeBuffer").textContent = "";
-
     clearHighlights();
 }
 
 
 /* ======================================================
-   TIMER AND PROGRESS
+   ANSWER HANDLING
 ====================================================== */
 
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+function recordReaction() {
+    if (game.questionStartTime) {
+        const rt = Date.now() - game.questionStartTime;
+        if (rt > 0 && rt < 30000) game.reactionTimes.push(rt);
+    }
 }
 
-function updateTimer() {
-    $("timerDisplay").textContent = formatTime(game.timeLeft);
-    $("timerDisplay").style.color =
-        game.timeLeft <= 10 && game.running && !game.paused
-            ? "var(--red)"
-            : "var(--accent)";
+function handleSquare(coord, sq) {
+    if (!game.running || game.paused || !game.target) return;
+    if (game.mode === "square" || game.mode === "blindfold") {
+        if (coord === game.target) correctFind(sq);
+        else wrongSquare(sq);
+    } else if (game.mode === "knight") {
+        if (coord === game.knightSource || game.knightFound.includes(coord)) return;
+        if (game.knightRemaining.includes(coord)) correctKnight(coord, sq);
+        else wrongSquare(sq);
+    }
 }
 
-function updateProgress() {
-    const elapsed = game.duration - game.timeLeft;
-    const percentage = Math.min(100, Math.max(0, (elapsed / game.duration) * 100));
-    $("progressFill").style.width = `${percentage}%`;
-    $("progressText").textContent = `${Math.round(percentage)}%`;
+function handleChoice(coord, btn) {
+    if (!game.running || game.paused) return;
+    if (game.mode !== "coordinate" && game.mode !== "reverse") return;
+    if (coord === game.target) { btn.classList.add("correct"); correctName(btn); }
+    else {
+        btn.classList.add("wrong");
+        game.mistakes++;
+        game.streak = 0;
+        updateLive();
+        playSound("wrong");
+        $("targetPanel").classList.add("wrong");
+        $("targetFeedback").textContent = "✕ WRONG";
+        $("targetFeedback").style.color = "var(--red)";
+        setTimeout(() => btn.classList.remove("wrong"), 500);
+        clearTimeout(game.feedbackTimer);
+        game.feedbackTimer = setTimeout(() => {
+            if (!game.running) return;
+            $("targetPanel").classList.remove("wrong");
+            $("targetFeedback").textContent = "";
+        }, 500);
+    }
 }
 
-function runTimer() {
-    clearInterval(game.timer);
-    game.timer = setInterval(() => {
-        if (!game.running || game.paused) return;
+function handleColorChoice(val, btn) {
+    if (!game.running || game.paused || !game.target) return;
+    const isLight = isLightSquare(game.target);
+    const correct = (val === "light" && isLight) || (val === "dark" && !isLight);
+    if (correct) { btn.classList.add("correct"); correctColor(btn); }
+    else {
+        btn.classList.add("wrong");
+        game.mistakes++;
+        game.streak = 0;
+        updateLive();
+        playSound("wrong");
+        $("targetPanel").classList.add("wrong");
+        $("targetFeedback").textContent = "✕ WRONG";
+        $("targetFeedback").style.color = "var(--red)";
+        setTimeout(() => btn.classList.remove("wrong"), 500);
+        clearTimeout(game.feedbackTimer);
+        game.feedbackTimer = setTimeout(() => {
+            if (!game.running) return;
+            $("targetPanel").classList.remove("wrong");
+            $("targetFeedback").textContent = "";
+        }, 500);
+    }
+}
 
-        game.timeLeft = Math.max(0, game.timeLeft - 1);
-        updateTimer();
-        updateProgress();
+function onCorrectBase() {
+    recordReaction();
+    game.correct++;
+    game.streak++;
+    game.bestStreak = Math.max(game.bestStreak, game.streak);
+    stats.totalCorrect++;
+    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
+    updateLive();
+    updateDashboard();
+    bumpDaily(1);
+    save(KEYS.stats, stats);
+    playSound("correct");
+    if (game.streak > 0 && game.streak % 5 === 0) toast(game.streak + " in a row!");
+}
 
-        if (
-            game.ticks &&
-            game.timeLeft <= 10 &&
-            game.timeLeft > 0 &&
-            game.timeLeft !== game.lastTickSecond
-        ) {
-            game.lastTickSecond = game.timeLeft;
-            playSound("tick");
+function correctFind(sq) {
+    onCorrectBase();
+    clearHighlights();
+    sq.classList.add("last-correct");
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ CORRECT";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Next target coming...";
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("correct");
+        genTarget();
+    }, 320);
+}
+
+function correctName(btn) {
+    onCorrectBase();
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ CORRECT";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Next target coming...";
+    setTimeout(() => btn.classList.remove("correct"), 400);
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("correct");
+        genTarget();
+    }, 480);
+}
+
+function correctColor(btn) {
+    onCorrectBase();
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ CORRECT";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Next target coming...";
+    setTimeout(() => btn.classList.remove("correct"), 400);
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("correct");
+        genTarget();
+    }, 420);
+}
+
+function correctKnight(coord, sq) {
+    game.knightFound.push(coord);
+    game.knightRemaining = game.knightRemaining.filter(c => c !== coord);
+    sq.classList.add("knight-found");
+
+    game.correct++;
+    game.streak++;
+    game.bestStreak = Math.max(game.bestStreak, game.streak);
+    stats.totalCorrect++;
+    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
+    updateLive();
+    updateDashboard();
+    bumpDaily(1);
+    save(KEYS.stats, stats);
+
+    if (game.knightRemaining.length === 0) {
+        recordReaction();
+        $("targetPanel").classList.add("correct");
+        $("targetFeedback").textContent = "✓ ALL JUMPS FOUND";
+        $("targetFeedback").style.color = "var(--green)";
+        $("targetHint").textContent = "Next knight coming...";
+        playSound("correct");
+        clearTimeout(game.feedbackTimer);
+        game.feedbackTimer = setTimeout(() => {
+            if (!game.running) return;
+            $("targetPanel").classList.remove("correct");
+            genTarget();
+        }, 480);
+    } else {
+        playSound("correct");
+        $("targetHint").textContent =
+            game.knightFound.length + " / " +
+            (game.knightFound.length + game.knightRemaining.length) + " jumps found.";
+    }
+}
+
+function wrongSquare(sq) {
+    game.mistakes++;
+    stats.totalMistakes++;
+    game.streak = 0;
+
+    clearHighlights();
+    if (game.mode === "knight" && game.knightSource) {
+        hl(game.knightSource, "knight-source");
+        game.knightFound.forEach(c => hl(c, "knight-found"));
+    }
+
+    sq.classList.add("last-wrong");
+    $("targetPanel").classList.add("wrong");
+    $("targetFeedback").textContent = "✕ TRY AGAIN";
+    $("targetFeedback").style.color = "var(--red)";
+
+    if (game.mode === "square" || game.mode === "blindfold") {
+        $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + ".";
+    } else if (game.mode === "knight") {
+        $("targetHint").textContent = sq.dataset.square + " is not a legal jump. Keep looking.";
+    }
+
+    updateLive();
+    playSound("wrong");
+
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("wrong");
+        $("targetFeedback").textContent = "";
+        if (game.mode === "square" || game.mode === "blindfold") {
+            $("targetHint").textContent = "Try again — find the correct square.";
+            clearHighlights();
+        } else if (game.mode === "knight") {
+            $("targetHint").textContent =
+                game.knightFound.length + " / " +
+                (game.knightFound.length + game.knightRemaining.length) + " jumps found.";
+            sq.classList.remove("last-wrong");
         }
-
-        if (game.timeLeft === 0) finishTraining();
-    }, 1000);
+    }, 520);
 }
 
 
 /* ======================================================
-   ACCURACY / LIVE STATS
+   TIMER + PROGRESS
 ====================================================== */
+
+function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+}
+
+function updateTimer() {
+    $("timerDisplay").textContent = fmtTime(game.timeLeft);
+    $("timerDisplay").style.color =
+        game.timeLeft <= 10 && game.running && !game.paused
+            ? "var(--red)" : "var(--gold)";
+}
+
+function updateProgress() {
+    const elapsed = game.duration - game.timeLeft;
+    const pct = Math.min(100, Math.max(0, (elapsed / game.duration) * 100));
+    $("progressFill").style.width = pct + "%";
+    $("progressText").textContent = Math.round(pct) + "%";
+}
 
 function accuracy() {
     const attempts = game.correct + game.mistakes;
@@ -1549,20 +1350,24 @@ function accuracy() {
     return Math.round((game.correct / attempts) * 100);
 }
 
-function updateLiveStats() {
+function updateLive() {
     $("sessionCorrect").textContent = String(game.correct).padStart(2, "0");
-    $("sessionAccuracy").innerHTML = `${accuracy()}<small>%</small>`;
-    $("sessionAccuracy").style.color =
-        accuracy() >= 80 ? "var(--green)" : "var(--orange)";
+    $("sessionAccuracy").innerHTML = accuracy() + "<small>%</small>";
+    $("sessionAccuracy").style.color = accuracy() >= 80 ? "var(--green)" : "var(--gold)";
     $("sessionStreak").textContent = String(game.streak).padStart(2, "0");
 }
 
 function updateDashboard() {
+    $("statStreak").textContent = stats.bestStreak || 0;
+    $("statBest").textContent = stats.personalBest || 0;
+    $("statSessions").textContent = stats.totalSessions || 0;
+    const totalAtt = stats.totalCorrect + (stats.totalMistakes || 0);
+    $("statAccuracy").textContent = totalAtt > 0 ? Math.round(stats.totalCorrect / totalAtt * 100) + "%" : "—";
     $("totalCorrect").textContent = stats.totalCorrect || 0;
     $("bestStreak").textContent = stats.bestStreak || 0;
     $("personalBest").textContent = stats.personalBest || 0;
-    $("sidebarBest").textContent = stats.personalBest || 0;
     $("totalSessions").textContent = stats.totalSessions || 0;
+    $("sidebarBest").textContent = stats.personalBest || 0;
 }
 
 
@@ -1570,34 +1375,33 @@ function updateDashboard() {
    XP / LEVEL
 ====================================================== */
 
-function levelInfo(totalXp) {
-    const level = Math.floor(totalXp / 250) + 1;
-    const intoLevel = totalXp - (level - 1) * 250;
-    const toNext = 250 - intoLevel;
-    return { level, intoLevel, toNext, progress: intoLevel / 250 };
+function levelInfo(x) {
+    const level = Math.floor(x / 250) + 1;
+    const into = x - (level - 1) * 250;
+    return { level, into, toNext: 250 - into, progress: into / 250 };
 }
 
-function levelTitle(level) {
-    if (level >= 20) return "Grandmaster";
-    if (level >= 15) return "Master";
-    if (level >= 10) return "Strategist";
-    if (level >= 7) return "Tactician";
-    if (level >= 4) return "Apprentice";
+function levelTitle(l) {
+    if (l >= 20) return "Grandmaster";
+    if (l >= 15) return "Master";
+    if (l >= 10) return "Strategist";
+    if (l >= 7) return "Tactician";
+    if (l >= 4) return "Apprentice";
     return "Novice";
 }
 
 function updateLevelUI() {
     const info = levelInfo(xp);
-    $("levelLabel").textContent = `LEVEL ${info.level}`;
-    $("levelNext").textContent = `${info.toNext} XP TO NEXT`;
-    $("levelBarFill").style.width = `${info.progress * 100}%`;
+    $("levelLabel").textContent = "LEVEL " + info.level;
+    $("levelNext").textContent = info.toNext + " XP TO NEXT";
+    $("levelBarFill").style.width = (info.progress * 100) + "%";
     $("profileTitle").textContent = levelTitle(info.level);
-    $("profileXp").textContent = `${xp} XP · Level ${info.level}`;
+    $("profileXp").textContent = xp + " XP · Level " + info.level;
 }
 
-function addXp(amount) {
-    if (amount <= 0) return;
-    xp += amount;
+function addXp(n) {
+    if (n <= 0) return;
+    xp += n;
     save(KEYS.xp, xp);
     updateLevelUI();
 }
@@ -1609,18 +1413,19 @@ function addXp(amount) {
 
 function updateDailyUI() {
     const pct = Math.min(1, daily.count / DAILY_TARGET);
-    const circumference = 2 * Math.PI * 33;
-    $("goalRingFill").style.strokeDashoffset = String(circumference * (1 - pct));
-    $("goalPercent").textContent = `${Math.round(pct * 100)}%`;
+    const c = 2 * Math.PI * 33;
+    $("goalRingFill").style.strokeDashoffset = String(c * (1 - pct));
+    $("goalPercent").textContent = Math.round(pct * 100) + "%";
     $("goalCurrent").textContent = daily.count;
     $("goalTarget").textContent = DAILY_TARGET;
+    $("sidebarGoalCount").textContent = daily.count;
+    $("sidebarGoalTarget").textContent = DAILY_TARGET;
+    $("sidebarGoalFill").style.width = (pct * 100) + "%";
 }
 
-function bumpDaily(amount = 1) {
-    if (daily.date !== todayKey()) {
-        daily = { date: todayKey(), count: 0, target: DAILY_TARGET };
-    }
-    daily.count += amount;
+function bumpDaily(n) {
+    if (daily.date !== todayKey()) daily = { date: todayKey(), count: 0 };
+    daily.count += n;
     save(KEYS.daily, daily);
     updateDailyUI();
 }
@@ -1631,54 +1436,38 @@ function bumpDaily(amount = 1) {
 ====================================================== */
 
 function renderAchievements() {
-    const grid = $("achievementsGrid");
-    grid.innerHTML = "";
-
+    const g = $("achievementsGrid");
+    if (!g) return;
+    g.innerHTML = "";
     ACHIEVEMENTS.forEach(a => {
-        const unlockedFlag = unlocked.includes(a.id);
+        const on = unlocked.includes(a.id);
         const el = document.createElement("div");
-        el.className = "achievement" + (unlockedFlag ? " unlocked" : "");
-
-        const icon = document.createElement("div");
-        icon.className = "achievement-icon";
-        icon.textContent = a.icon;
-
-        const text = document.createElement("div");
-        text.className = "achievement-text";
-
-        const title = document.createElement("strong");
-        title.textContent = a.title;
-
-        const desc = document.createElement("span");
-        desc.textContent = a.desc;
-
-        text.append(title, desc);
-        el.append(icon, text);
-        grid.appendChild(el);
+        el.className = "achievement" + (on ? " unlocked" : "");
+        el.innerHTML =
+            '<div class="achievement-icon">' + a.icon + '</div>' +
+            '<div class="achievement-text"><strong>' + a.title + '</strong><span>' + a.desc + '</span></div>';
+        g.appendChild(el);
     });
-
-    $("achievementCount").textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
+    const sum = $("achievementSummary");
+    if (sum) sum.textContent = unlocked.length + " of " + ACHIEVEMENTS.length + " unlocked";
 }
 
 function checkAchievements() {
-    const newlyUnlocked = [];
+    const newly = [];
     ACHIEVEMENTS.forEach(a => {
         if (!unlocked.includes(a.id) && a.check(stats)) {
             unlocked.push(a.id);
-            newlyUnlocked.push(a);
+            newly.push(a);
         }
     });
-
-    if (newlyUnlocked.length) {
+    if (newly.length) {
         save(KEYS.achievements, unlocked);
         renderAchievements();
-        newlyUnlocked.forEach((a, i) => {
-            setTimeout(() => {
-                toast(`✦ Achievement unlocked: ${a.title}`);
-                playSound("achievement");
-                fireConfetti(40);
-            }, i * 400);
-        });
+        newly.forEach((a, i) => setTimeout(() => {
+            toast("✦ Unlocked: " + a.title);
+            playSound("achievement");
+            fireConfetti(50);
+        }, i * 400));
     }
 }
 
@@ -1687,100 +1476,100 @@ function checkAchievements() {
    CONFETTI
 ====================================================== */
 
-function fireConfetti(count = 80) {
+let confettiRaf = null;
+
+function fireConfetti(count) {
+    count = count || 80;
     const canvas = $("confettiCanvas");
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas.classList.add("active");
 
-    const colors = ["#bd9aff", "#9970ef", "#52e5b0", "#ffb86c", "#78a9ff", "#ff718e"];
-    const particles = [];
-
+    const colors = ["#3ddc97","#24b47e","#e8b458","#4a9eff","#a78bfa","#ff6b81"];
+    const parts = [];
     for (let i = 0; i < count; i++) {
-        particles.push({
-            x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
-            y: window.innerHeight / 2 - 40,
-            vx: (Math.random() - 0.5) * 8,
-            vy: Math.random() * -8 - 3,
-            size: Math.random() * 7 + 4,
+        parts.push({
+            x: window.innerWidth / 2 + (Math.random() - 0.5) * 240,
+            y: window.innerHeight / 2 - 50,
+            vx: (Math.random() - 0.5) * 9,
+            vy: Math.random() * -9 - 3,
+            size: Math.random() * 8 + 4,
             color: colors[Math.floor(Math.random() * colors.length)],
             rot: Math.random() * Math.PI,
             vrot: (Math.random() - 0.5) * 0.3,
             life: 0,
-            maxLife: 90 + Math.random() * 40
+            max: 90 + Math.random() * 40
         });
     }
 
-    let raf;
-    const gravity = 0.28;
+    const grav = 0.28;
+    if (confettiRaf) cancelAnimationFrame(confettiRaf);
 
     function frame() {
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         let alive = 0;
-        particles.forEach(p => {
-            if (p.life > p.maxLife) return;
+        parts.forEach(p => {
+            if (p.life > p.max) return;
             alive++;
             p.life++;
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += gravity;
+            p.vy += grav;
             p.vx *= 0.995;
             p.rot += p.vrot;
-
-            const alpha = Math.max(0, 1 - p.life / p.maxLife);
+            const a = Math.max(0, 1 - p.life / p.max);
             ctx.save();
-            ctx.globalAlpha = alpha;
+            ctx.globalAlpha = a;
             ctx.translate(p.x, p.y);
             ctx.rotate(p.rot);
             ctx.fillStyle = p.color;
             ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
             ctx.restore();
         });
-
-        if (alive > 0) raf = requestAnimationFrame(frame);
+        if (alive > 0) confettiRaf = requestAnimationFrame(frame);
         else {
-            cancelAnimationFrame(raf);
+            cancelAnimationFrame(confettiRaf);
+            confettiRaf = null;
             ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            canvas.classList.remove("active");
         }
     }
-
-    cancelAnimationFrame(raf);
     frame();
 }
 
 
 /* ======================================================
-   RESET SESSION
+   SESSION
 ====================================================== */
 
 function resetSession() {
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
+    clearInterval(game.countdownTimer);
     game.timer = null;
     game.running = false;
     game.paused = false;
     game.completed = false;
-
     game.duration = Number($("durationSelect").value) || 60;
     game.timeLeft = game.duration;
-
     game.correct = 0;
     game.mistakes = 0;
     game.streak = 0;
     game.bestStreak = 0;
-    game.lastTickSecond = -1;
-    game.typeBuffer = "";
+    game.lastTick = -1;
+    game.reactionTimes = [];
+    game.questionIndex = 0;
 
     $("sessionStateText").textContent = "READY";
-    $("topStatus").textContent = "TRAINING READY";
-    $("startBtnText").textContent = "Start training";
-    $("pauseBtnText").textContent = "Pause";
+    $("topStatus").textContent = "READY";
+    $("startBtnText").textContent = "Start session";
+    $("pauseBtn").textContent = "Pause";
     $("pauseBtn").disabled = true;
-
     $("pauseOverlay").classList.add("hidden");
+    $("countdownOverlay").classList.add("hidden");
     $("resultsPanel").classList.add("hidden");
     $("newRecord").classList.add("hidden");
 
@@ -1792,23 +1581,44 @@ function resetSession() {
     updateTimer();
     updateProgress();
     resetTarget();
-
     enableBoard(false);
 }
 
-
-/* ======================================================
-   START / PAUSE / FINISH
-====================================================== */
-
-function startTraining() {
-    if (game.running) {
-        finishTraining();
-        return;
-    }
+function startSession() {
+    if (game.running) { finishSession(); return; }
 
     resetSession();
+    const mode = game.mode;
 
+    // Apply mode-specific board visibility
+    if (mode === "blindfold") {
+        document.body.setAttribute("data-labels", "false");
+        document.body.setAttribute("data-coords", "hidden");
+    } else {
+        document.body.setAttribute("data-labels", load(KEYS.labels, false) ? "true" : "false");
+        document.body.setAttribute("data-coords", load(KEYS.coords, true) !== false ? "visible" : "hidden");
+    }
+
+    $("countdownOverlay").classList.remove("hidden");
+    let count = 3;
+    $("countdownNumber").textContent = count;
+    playSound("count");
+
+    clearInterval(game.countdownTimer);
+    game.countdownTimer = setInterval(() => {
+        count--;
+        if (count > 0) {
+            $("countdownNumber").textContent = count;
+            playSound("count");
+        } else {
+            clearInterval(game.countdownTimer);
+            $("countdownOverlay").classList.add("hidden");
+            beginPlay();
+        }
+    }, 800);
+}
+
+function beginPlay() {
     game.duration = Number($("durationSelect").value) || 60;
     game.timeLeft = game.duration;
     game.running = true;
@@ -1819,48 +1629,56 @@ function startTraining() {
     $("startBtnText").textContent = "End session";
     $("pauseBtn").disabled = false;
 
-    enableBoard(game.mode !== "name");
-
-    generateTarget();
-    updateLiveStats();
+    enableBoard(game.mode !== "coordinate" && game.mode !== "reverse" && game.mode !== "color");
+    genTarget();
+    updateLive();
     updateTimer();
-
-    runTimer();
-
-    toast(`Session started · ${MODE_LABELS[game.mode]}`);
     playSound("start");
 
-    if (music.panelOpen && !musicIsPlaying()) {
+    clearInterval(game.timer);
+    game.timer = setInterval(tick, 1000);
+
+    if (music.panelOpen && !isMusicPlaying()) {
         if (music.source === "stream" && music.ytReady) playStream();
         else if (music.source === "local" && music.localTracks.length) {
-            if (!music.audioEl.src) playLocalIndex(music.localIndex);
+            if (!music.audioEl.src) playLocalIdx(music.localIndex);
             else music.audioEl.play().catch(() => {});
         }
     }
 }
 
+function tick() {
+    if (!game.running || game.paused) return;
+    game.timeLeft = Math.max(0, game.timeLeft - 1);
+    updateTimer();
+    updateProgress();
+    if (game.ticks && game.timeLeft <= 10 && game.timeLeft > 0 && game.timeLeft !== game.lastTick) {
+        game.lastTick = game.timeLeft;
+        playSound("tick");
+    }
+    if (game.timeLeft === 0) finishSession();
+}
+
 function togglePause() {
     if (!game.running) return;
     game.paused = !game.paused;
-
     if (game.paused) {
         $("pauseOverlay").classList.remove("hidden");
-        $("pauseBtnText").textContent = "Resume";
+        $("pauseBtn").textContent = "Resume";
         $("sessionStateText").textContent = "PAUSED";
         $("topStatus").textContent = "PAUSED";
         enableBoard(false);
     } else {
         $("pauseOverlay").classList.add("hidden");
-        $("pauseBtnText").textContent = "Pause";
+        $("pauseBtn").textContent = "Pause";
         $("sessionStateText").textContent = "LIVE";
         $("topStatus").textContent = "TRAINING LIVE";
-        enableBoard(game.mode !== "name");
+        enableBoard(game.mode !== "coordinate" && game.mode !== "reverse" && game.mode !== "color");
     }
 }
 
-function finishTraining() {
+function finishSession() {
     if (!game.running) return;
-
     game.running = false;
     game.paused = false;
     game.completed = true;
@@ -1873,36 +1691,39 @@ function finishTraining() {
     $("topStatus").textContent = "SESSION COMPLETE";
     $("startBtnText").textContent = "Train again";
     $("pauseBtn").disabled = true;
-    $("pauseBtnText").textContent = "Pause";
+    $("pauseBtn").textContent = "Pause";
     $("pauseOverlay").classList.add("hidden");
-
     enableBoard(false);
-    $("targetPanel").classList.remove("correct", "wrong");
-    $("targetHint").textContent = "Session completed! Review your results below.";
+    $("targetPanel").classList.remove("correct","wrong");
+    $("targetHint").textContent = "Session complete! Review your results below.";
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden");
     clearHighlights();
 
     stats.totalSessions++;
-
-    const previousBest = stats.personalBest || 0;
-    const newRecord = game.correct > previousBest;
-
-    stats.personalBest = Math.max(previousBest, game.correct);
+    const prevBest = stats.personalBest || 0;
+    const newRecord = game.correct > prevBest;
+    stats.personalBest = Math.max(prevBest, game.correct);
     stats.bestStreak = Math.max(stats.bestStreak || 0, game.bestStreak);
 
     const acc = accuracy();
-    if (acc === 100 && game.correct >= 15) {
-        stats.flawless = (stats.flawless || 0) + 1;
-    }
+    if (acc === 100 && game.correct >= 15) stats.flawless = (stats.flawless || 0) + 1;
 
-    let gainedXp = game.correct * 4;
-    if (game.bestStreak >= 10) gainedXp += 30;
-    if (game.bestStreak >= 20) gainedXp += 40;
-    if (acc === 100 && game.correct >= 15) gainedXp += 60;
-    if (newRecord && game.correct > 0) gainedXp += 25;
+    stats.totalTime = (stats.totalTime || 0) + game.duration;
+    stats.totalQuestions = (stats.totalQuestions || 0) + game.correct + game.mistakes;
 
-    addXp(gainedXp);
+    let gained = game.correct * 4;
+    if (game.bestStreak >= 10) gained += 30;
+    if (game.bestStreak >= 20) gained += 40;
+    if (game.bestStreak >= 30) gained += 60;
+    if (acc === 100 && game.correct >= 15) gained += 60;
+    if (newRecord && game.correct > 0) gained += 25;
+
+    addXp(gained);
+
+    const avgRt = game.reactionTimes.length
+        ? Math.round(game.reactionTimes.reduce((a, b) => a + b, 0) / game.reactionTimes.length)
+        : 0;
 
     const result = {
         correct: game.correct,
@@ -1911,249 +1732,52 @@ function finishTraining() {
         bestStreak: game.bestStreak,
         duration: game.duration,
         mode: game.mode,
-        xp: gainedXp,
+        xp: gained,
+        avgReaction: avgRt,
         date: new Date().toISOString()
     };
 
     history.unshift(result);
-    history = history.slice(0, 10);
+    history = history.slice(0, 50);
 
     save(KEYS.stats, stats);
     save(KEYS.history, history);
 
     updateDashboard();
     renderHistory();
-    renderChart();
+    renderAnalytics();
     updateLevelUI();
     checkAchievements();
-
-    showResults(newRecord, gainedXp);
+    showResults(newRecord, gained, avgRt);
 
     playSound("finish");
+    if (newRecord && game.correct > 0) fireConfetti(140);
+    else if (game.correct >= 20) fireConfetti(80);
 
-    if (newRecord && game.correct > 0) fireConfetti(120);
-    else if (game.correct >= 20) fireConfetti(70);
-
-    $("resultsPanel").scrollIntoView({
-        behavior: "smooth",
-        block: "nearest"
-    });
+    $("resultsPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-
-/* ======================================================
-   ANSWER HANDLING
-====================================================== */
-
-function handleSquare(coordinate, square) {
-    if (!game.running || game.paused || !game.target) return;
-
-    if (game.mode === "find") {
-        if (coordinate === game.target) correctFind(square);
-        else wrongSquare(square);
-    } else if (game.mode === "knight") {
-        if (coordinate === game.knightSource) return;
-        if (game.knightFound.includes(coordinate)) return;
-        if (game.knightRemaining.includes(coordinate)) {
-            correctKnightStep(coordinate, square);
-        } else {
-            wrongSquare(square);
-        }
-    }
-}
-
-function handleChoice(coord, btn) {
-    if (!game.running || game.paused || game.mode !== "name") return;
-
-    if (coord === game.target) {
-        btn.classList.add("correct");
-        correctName(btn);
-    } else {
-        btn.classList.add("wrong");
-        game.mistakes++;
-        game.streak = 0;
-        updateLiveStats();
-        playSound("wrong");
-
-        $("targetPanel").classList.add("wrong");
-        $("targetFeedback").textContent = "✕ WRONG";
-        $("targetFeedback").style.color = "var(--red)";
-
-        setTimeout(() => btn.classList.remove("wrong"), 500);
-    }
-}
-
-function correctFind(square) {
-    game.correct++;
-    game.streak++;
-    game.bestStreak = Math.max(game.bestStreak, game.streak);
-    stats.totalCorrect++;
-    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
-
-    clearHighlights();
-    square.classList.add("last-correct");
-    square.setAttribute("aria-pressed", "true");
-
-    $("targetPanel").classList.add("correct");
-    $("targetFeedback").textContent = "✓ CORRECT";
-    $("targetFeedback").style.color = "var(--green)";
-    $("targetHint").textContent = "Excellent! Next coordinate coming...";
-
-    updateLiveStats();
-    updateDashboard();
-    bumpDaily(1);
-    save(KEYS.stats, stats);
-    playSound("correct");
-
-    if (game.streak > 0 && game.streak % 5 === 0) toast(`${game.streak} in a row!`);
-
-    clearTimeout(game.feedbackTimer);
-    game.feedbackTimer = setTimeout(() => {
-        if (!game.running) return;
-        generateTarget();
-    }, 220);
-}
-
-function correctName(btn) {
-    game.correct++;
-    game.streak++;
-    game.bestStreak = Math.max(game.bestStreak, game.streak);
-    stats.totalCorrect++;
-    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
-
-    $("targetPanel").classList.add("correct");
-    $("targetFeedback").textContent = "✓ CORRECT";
-    $("targetFeedback").style.color = "var(--green)";
-    $("targetHint").textContent = "Excellent! Next square coming...";
-
-    updateLiveStats();
-    updateDashboard();
-    bumpDaily(1);
-    save(KEYS.stats, stats);
-    playSound("correct");
-
-    setTimeout(() => btn.classList.remove("correct"), 400);
-
-    if (game.streak > 0 && game.streak % 5 === 0) toast(`${game.streak} in a row!`);
-
-    clearTimeout(game.feedbackTimer);
-    game.feedbackTimer = setTimeout(() => {
-        if (!game.running) return;
-        generateTarget();
-    }, 420);
-}
-
-function correctKnightStep(coordinate, square) {
-    game.knightFound.push(coordinate);
-    game.knightRemaining = game.knightRemaining.filter(c => c !== coordinate);
-
-    square.classList.add("knight-found");
-
-    game.correct++;
-    game.streak++;
-    game.bestStreak = Math.max(game.bestStreak, game.streak);
-    stats.totalCorrect++;
-    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
-
-    updateLiveStats();
-    updateDashboard();
-    bumpDaily(1);
-    save(KEYS.stats, stats);
-
-    if (game.knightRemaining.length === 0) {
-        $("targetPanel").classList.add("correct");
-        $("targetFeedback").textContent = "✓ ALL JUMPS FOUND";
-        $("targetFeedback").style.color = "var(--green)";
-        $("targetHint").textContent = "Nice! Next knight incoming...";
-        playSound("correct");
-
-        clearTimeout(game.feedbackTimer);
-        game.feedbackTimer = setTimeout(() => {
-            if (!game.running) return;
-            generateTarget();
-        }, 420);
-    } else {
-        playSound("correct");
-        $("targetHint").textContent =
-            `${game.knightFound.length} / ${game.knightFound.length + game.knightRemaining.length} jumps found.`;
-    }
-}
-
-function wrongSquare(square) {
-    game.mistakes++;
-    game.streak = 0;
-
-    clearHighlights();
-
-    if (game.mode === "knight" && game.knightSource) {
-        highlightSquare(game.knightSource, "knight-source");
-        game.knightFound.forEach(c => highlightSquare(c, "knight-found"));
-    }
-
-    square.classList.add("last-wrong");
-    square.setAttribute("aria-pressed", "true");
-
-    $("targetPanel").classList.add("wrong");
-    $("targetFeedback").textContent = "✕ TRY AGAIN";
-    $("targetFeedback").style.color = "var(--red)";
-
-    if (game.mode === "find") {
-        $("targetHint").textContent = `That was ${square.dataset.square}. Find ${game.target}.`;
-    } else if (game.mode === "knight") {
-        $("targetHint").textContent = `${square.dataset.square} is not a legal jump. Keep looking.`;
-    }
-
-    updateLiveStats();
-    playSound("wrong");
-
-    clearTimeout(game.feedbackTimer);
-    game.feedbackTimer = setTimeout(() => {
-        if (!game.running) return;
-        $("targetPanel").classList.remove("wrong");
-        $("targetFeedback").textContent = "";
-
-        if (game.mode === "find") {
-            $("targetHint").textContent = "Try again — find the correct square.";
-            clearHighlights();
-        } else if (game.mode === "knight") {
-            $("targetHint").textContent =
-                `${game.knightFound.length} / ${game.knightFound.length + game.knightRemaining.length} jumps found.`;
-            square.classList.remove("last-wrong");
-        } else if (game.mode === "name") {
-            clearHighlights();
-            if (game.target) highlightSquare(game.target, "target-highlight");
-        }
-    }, 480);
-}
-
-
-/* ======================================================
-   RESULTS
-====================================================== */
-
-function showResults(newRecord, gainedXp) {
+function showResults(newRecord, gained, avgRt) {
     $("resultCorrect").textContent = game.correct;
-    $("resultAccuracy").textContent = `${accuracy()}%`;
+    $("resultAccuracy").textContent = accuracy() + "%";
     $("resultStreak").textContent = game.bestStreak;
-    $("resultXp").textContent = `+${gainedXp} XP earned`;
-    $("resultMode").textContent = `MODE · ${MODE_LABELS[game.mode]}`;
+    $("resultXp").textContent = "+" + gained;
 
     if (game.correct >= 30) {
         $("resultTitle").textContent = "Outstanding vision!";
-        $("resultDescription").textContent =
-            "Excellent work! Keep challenging yourself and maintain that accuracy.";
-    } else if (game.correct >= 15) {
-        $("resultTitle").textContent = "Excellent progress!";
-        $("resultDescription").textContent =
-            "You're building strong coordinate recognition. Keep practicing consistently.";
+        $("resultDescription").textContent = "Elite performance. Keep challenging yourself at this level.";
+    } else if (game.correct >= 20) {
+        $("resultTitle").textContent = "Excellent session!";
+        $("resultDescription").textContent = "Your recognition speed is sharpening fast.";
+    } else if (game.correct >= 10) {
+        $("resultTitle").textContent = "Good progress!";
+        $("resultDescription").textContent = "You are building reliable board vision. Stay consistent.";
     } else if (game.correct > 0) {
         $("resultTitle").textContent = "Well played!";
-        $("resultDescription").textContent =
-            "Every correct answer counts. Keep developing your board vision.";
+        $("resultDescription").textContent = "Every correct answer strengthens your vision.";
     } else {
         $("resultTitle").textContent = "Every session counts!";
-        $("resultDescription").textContent =
-            "Practice the files and ranks. Your next session is another opportunity.";
+        $("resultDescription").textContent = "Review the file and rank layout, then try again.";
     }
 
     $("newRecord").classList.toggle("hidden", !newRecord);
@@ -2162,126 +1786,40 @@ function showResults(newRecord, gainedXp) {
 
 
 /* ======================================================
-   HISTORY + CHART
+   VIEW ROUTING
 ====================================================== */
 
-function renderHistory() {
-    const container = $("historyList");
-    container.innerHTML = "";
+const VIEW_TITLES = {
+    dashboard: ["Home", "Dashboard"],
+    training: ["Workspace", "Training"],
+    analytics: ["Workspace", "Analytics"],
+    achievements: ["Workspace", "Achievements"],
+    settings: ["Workspace", "Settings"]
+};
 
-    if (!history.length) {
-        container.innerHTML = `
-            <div class="empty-history">
-                <span>♞</span>
-                <p>Your completed sessions will appear here.</p>
-            </div>
-        `;
-        return;
-    }
-
-    history.forEach((session, index) => {
-        const date = new Date(session.date);
-        const dateText = date.toLocaleDateString(undefined, {
-            month: "short", day: "numeric"
-        });
-        const timeText = date.toLocaleTimeString(undefined, {
-            hour: "2-digit", minute: "2-digit"
-        });
-
-        const item = document.createElement("div");
-        item.className = "history-item";
-
-        const icon = document.createElement("div");
-        icon.className = "history-item-icon";
-        icon.textContent = "♞";
-
-        const info = document.createElement("div");
-        info.className = "history-item-info";
-
-        const title = document.createElement("strong");
-        title.textContent = `Session ${history.length - index} · ${MODE_LABELS[session.mode || "find"].split(" ")[0]}`;
-
-        const dateLabel = document.createElement("span");
-        dateLabel.textContent = `${dateText} · ${timeText}`;
-
-        info.append(title, dateLabel);
-
-        const score = document.createElement("div");
-        score.className = "history-item-score";
-
-        const correct = document.createElement("strong");
-        correct.textContent = session.correct;
-
-        const accuracyLabel = document.createElement("span");
-        accuracyLabel.textContent = `${session.accuracy}% accuracy`;
-
-        score.append(correct, accuracyLabel);
-
-        item.append(icon, info, score);
-        container.appendChild(item);
+function setView(name) {
+    if (!VIEW_TITLES[name]) name = "dashboard";
+    document.body.dataset.view = name;
+    document.querySelectorAll(".view").forEach(v => {
+        v.classList.toggle("active", v.dataset.view === name);
     });
-}
-
-function renderChart() {
-    const chart = $("historyChart");
-    chart.innerHTML = "";
-
-    if (!history.length) {
-        chart.style.height = "40px";
-        return;
-    }
-
-    chart.style.height = "68px";
-
-    const recent = history.slice(0, 10).reverse();
-    const max = Math.max(...recent.map(s => s.correct), 1);
-
-    recent.forEach((session, i) => {
-        const bar = document.createElement("div");
-        bar.className = "chart-bar";
-        const heightPct = Math.max(6, (session.correct / max) * 100);
-        bar.style.height = `${heightPct}%`;
-
-        const label = document.createElement("span");
-        label.textContent = session.correct;
-        bar.appendChild(label);
-
-        bar.title = `${session.correct} correct · ${session.accuracy}% accuracy`;
-
-        bar.style.transitionDelay = `${i * 40}ms`;
-        chart.appendChild(bar);
+    document.querySelectorAll(".nav-link").forEach(l => {
+        l.classList.toggle("active", l.dataset.nav === name);
     });
+    $("breadcrumbParent").textContent = VIEW_TITLES[name][0];
+    $("breadcrumbCurrent").textContent = VIEW_TITLES[name][1];
+    document.body.classList.remove("sidebar-open");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (name === "analytics") renderAnalytics();
+    if (name === "achievements") renderAchievements();
 }
 
-function clearHistory() {
-    if (!history.length) {
-        toast("No session history to clear.");
-        return;
-    }
-    if (!confirm(
-        "Clear your recent session history? Your lifetime stats and personal best will remain."
-    )) return;
-
-    history = [];
-    save(KEYS.history, history);
-    renderHistory();
-    renderChart();
-    toast("Session history cleared.");
-}
-
-
-/* ======================================================
-   NAVIGATION
-====================================================== */
-
-function setupNavigation() {
-    document.querySelectorAll(".nav-link").forEach(link => {
-        link.addEventListener("click", () => {
-            document.querySelectorAll(".nav-link").forEach(item =>
-                item.classList.remove("active")
-            );
-            link.classList.add("active");
-            document.body.classList.remove("sidebar-open");
+function setupNav() {
+    document.querySelectorAll("[data-nav]").forEach(el => {
+        el.addEventListener("click", e => {
+            e.preventDefault();
+            setView(el.dataset.nav);
         });
     });
 
@@ -2289,152 +1827,357 @@ function setupNavigation() {
         document.body.classList.toggle("sidebar-open");
     });
 
-    document.addEventListener("click", event => {
-        if (
-            document.body.classList.contains("sidebar-open") &&
-            !event.target.closest(".sidebar") &&
-            !event.target.closest("#mobileMenu")
-        ) {
+    document.addEventListener("click", e => {
+        if (document.body.classList.contains("sidebar-open") &&
+            !e.target.closest(".sidebar") &&
+            !e.target.closest("#mobileMenu")) {
             document.body.classList.remove("sidebar-open");
         }
+    });
+
+    document.querySelectorAll("[data-action='quick-train']").forEach(el => {
+        el.addEventListener("click", () => {
+            setView("training");
+            setTimeout(() => startSession(), 320);
+        });
+    });
+
+    document.querySelectorAll(".mode-card").forEach(el => {
+        el.addEventListener("click", () => {
+            setMode(el.dataset.mode);
+            setView("training");
+            setTimeout(() => startSession(), 320);
+        });
     });
 }
 
 
 /* ======================================================
-   FULLSCREEN
-====================================================== */
-
-async function toggleFullscreen() {
-    try {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        } else {
-            await document.exitFullscreen();
-        }
-    } catch {
-        toast("Fullscreen is not available in this browser.");
-    }
-}
-
-
-/* ======================================================
-   KEYBOARD SHORTCUTS
-====================================================== */
-
-function setupKeyboard() {
-    document.addEventListener("keydown", event => {
-        const target = event.target;
-        if (
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.tagName === "SELECT"
-        ) return;
-
-        const key = event.key.toLowerCase();
-
-        if (key === "r") {
-            event.preventDefault();
-            if (game.running) finishTraining();
-            else startTraining();
-            return;
-        }
-
-        if (event.code === "Space") {
-            event.preventDefault();
-            if (game.running) togglePause();
-            else startTraining();
-            return;
-        }
-
-        if (key === "f") {
-            event.preventDefault();
-            toggleFullscreen();
-            return;
-        }
-
-        if (key === "m") {
-            event.preventDefault();
-            toggleMusicPanel();
-            return;
-        }
-
-        if (event.key === "Escape") {
-            document.body.classList.remove("sidebar-open");
-            if (game.paused) togglePause();
-            else if (game.running) togglePause();
-        }
-    });
-}
-
-
-/* ======================================================
-   MODE SWITCHING
+   MODE
 ====================================================== */
 
 function setMode(mode) {
-    if (!["find", "name", "knight"].includes(mode)) return;
-    if (game.running) {
-        toast("Finish the current session to change mode.");
-        return;
-    }
+    if (!MODE_INFO[mode]) return;
+    if (game.running) { toast("Finish the current session to change mode."); return; }
 
     game.mode = mode;
-
-    document.querySelectorAll(".mode-btn").forEach(btn => {
-        const active = btn.dataset.mode === mode;
-        btn.classList.toggle("active", active);
-        btn.setAttribute("aria-selected", active ? "true" : "false");
+    document.querySelectorAll(".mode-btn").forEach(b => {
+        const on = b.dataset.mode === mode;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
     });
 
-    renderMissionSteps();
+    $("trainingTitle").textContent = MODE_INFO[mode].label;
+    $("trainingSub").textContent = MODE_INFO[mode].sub;
+    $("targetLabelText").textContent = MODE_INFO[mode].targetLabel;
+
+    renderMission();
     resetSession();
 }
 
-function renderMissionSteps() {
+function renderMission() {
     const steps = MISSION_STEPS[game.mode];
-    const container = $("missionSteps");
-    container.innerHTML = "";
-
-    steps.forEach((step, i) => {
+    const c = $("missionSteps");
+    c.innerHTML = "";
+    steps.forEach((s, i) => {
         const el = document.createElement("div");
         el.className = "mission-step";
-
-        const num = document.createElement("span");
-        num.className = "step-number";
-        num.textContent = String(i + 1).padStart(2, "0");
-
-        const body = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = step.title;
-        const text = document.createElement("p");
-        text.textContent = step.text;
-
-        body.append(title, text);
-        el.append(num, body);
-        container.appendChild(el);
+        el.innerHTML =
+            '<span class="step-number">' + String(i + 1).padStart(2, "0") + '</span>' +
+            '<div><strong>' + s.title + '</strong><p>' + s.text + '</p></div>';
+        c.appendChild(el);
     });
-
-    $("missionTitle").textContent = game.mode === "find"
-        ? "How to train"
-        : game.mode === "name"
-            ? "Name the square"
-            : "Knight vision";
+    $("missionTitle").textContent = MODE_INFO[game.mode].label;
 }
 
 
 /* ======================================================
-   DAILY TIP
+   THEMES / SETTINGS
 ====================================================== */
 
-function setDailyTip() {
-    const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-    $("tipText").textContent = TIPS[day % TIPS.length];
+function setTheme(t) {
+    if (!["dark","light","neon","heavy"].includes(t)) t = "dark";
+    document.body.dataset.theme = t;
+    $("appearanceTheme").value = t;
+    save(KEYS.theme, t);
+}
+
+function setBoardTheme(t) {
+    if (!["emerald","walnut","ice","rose","midnight","classic"].includes(t)) t = "emerald";
+    document.body.dataset.board = t;
+    $("boardTheme").value = t;
+    save(KEYS.board, t);
+}
+
+function setFlip(on) {
+    document.body.dataset.flip = on ? "true" : "false";
+    $("flipToggle").checked = on;
+    save(KEYS.flip, on);
+}
+
+function setLabels(on) {
+    document.body.dataset.labels = on ? "true" : "false";
+    $("labelsToggle").checked = on;
+    save(KEYS.labels, on);
+}
+
+function setCoords(on) {
+    document.body.dataset.coords = on ? "visible" : "hidden";
+    $("coordsToggle").checked = on;
+    save(KEYS.coords, on);
+}
+
+function setBoardSize(pct) {
+    const w = $("boardWrapper");
+    if (w) w.style.maxWidth = (660 * pct / 100) + "px";
+    $("boardSize").value = pct;
+    save(KEYS.boardSize, pct);
+}
+
+function setupSettings() {
+    $("appearanceTheme").addEventListener("change", e => {
+        setTheme(e.target.value);
+        toast("Theme: " + e.target.options[e.target.selectedIndex].text);
+    });
+
+    $("boardTheme").addEventListener("change", e => {
+        setBoardTheme(e.target.value);
+        toast("Board theme updated.");
+    });
+
+    $("boardSize").addEventListener("input", e => setBoardSize(Number(e.target.value)));
+
+    $("flipToggle").addEventListener("change", e => {
+        setFlip(e.target.checked);
+        toast(e.target.checked ? "Board flipped." : "Board reset.");
+    });
+
+    $("labelsToggle").addEventListener("change", e => {
+        setLabels(e.target.checked);
+        toast(e.target.checked ? "Labels shown." : "Labels hidden.");
+    });
+
+    $("coordsToggle").addEventListener("change", e => {
+        setCoords(e.target.checked);
+        toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden.");
+    });
+
+    $("soundToggle").addEventListener("change", e => {
+        game.sound = e.target.checked;
+        save(KEYS.sound, game.sound);
+        if (game.sound) playSound("correct");
+        toast(game.sound ? "Sound on." : "Sound off.");
+    });
+
+    $("volumeRange").addEventListener("input", e => {
+        game.volume = Number(e.target.value) / 100;
+        save(KEYS.volume, game.volume);
+    });
+
+    $("ticksToggle").addEventListener("change", e => {
+        game.ticks = e.target.checked;
+        save(KEYS.ticks, game.ticks);
+        toast(game.ticks ? "Ticks on." : "Ticks off.");
+    });
 }
 
 
 /* ======================================================
-   EXPORT / IMPORT
+   ANALYTICS
+====================================================== */
+
+function renderAnalytics() {
+    const total = stats.totalCorrect || 0;
+    const totalAtt = total + (stats.totalMistakes || 0);
+    const acc = totalAtt > 0 ? Math.round(total / totalAtt * 100) : 0;
+
+    $("anTotal").textContent = total;
+    $("anAccuracy").textContent = totalAtt > 0 ? acc + "%" : "—";
+
+    const validRts = history.filter(h => h.avgReaction > 0);
+    const avgRt = validRts.length
+        ? Math.round(validRts.reduce((a, h) => a + h.avgReaction, 0) / validRts.length)
+        : 0;
+    $("anReaction").textContent = avgRt > 0 ? (avgRt / 1000).toFixed(2) + "s" : "—";
+
+    const totalMin = Math.round((stats.totalTime || 0) / 60);
+    $("anTime").textContent = totalMin >= 60
+        ? Math.floor(totalMin / 60) + "h " + (totalMin % 60) + "m"
+        : totalMin + "m";
+
+    renderChartBars("chartCorrect", history.slice(0, 12).reverse().map(h => h.correct));
+    renderChartBars("chartAccuracy", history.slice(0, 12).reverse().map(h => h.accuracy), 100);
+
+    const modeCounts = {};
+    history.forEach(h => { modeCounts[h.mode] = (modeCounts[h.mode] || 0) + h.correct; });
+    const modeArr = Object.entries(modeCounts).map(([k, v]) => ({ label: k.slice(0, 4), val: v }));
+    renderModeChart("chartModes", modeArr);
+
+    renderActivityChart();
+}
+
+function renderChartBars(id, values, maxOverride) {
+    const c = $(id);
+    if (!c) return;
+    c.innerHTML = "";
+    if (!values.length) {
+        c.innerHTML = '<div class="chart-empty">No sessions yet</div>';
+        return;
+    }
+    const max = maxOverride || Math.max(...values, 1);
+    values.forEach((v, i) => {
+        const bar = document.createElement("div");
+        bar.className = "chart-bar";
+        bar.style.height = Math.max(6, (v / max) * 100) + "%";
+        const label = document.createElement("span");
+        label.textContent = v;
+        bar.appendChild(label);
+        bar.style.transitionDelay = (i * 40) + "ms";
+        c.appendChild(bar);
+    });
+}
+
+function renderModeChart(id, arr) {
+    const c = $(id);
+    if (!c) return;
+    c.innerHTML = "";
+    if (!arr.length) {
+        c.innerHTML = '<div class="chart-empty">No mode data yet</div>';
+        return;
+    }
+    const max = Math.max(...arr.map(a => a.val), 1);
+    arr.forEach((a, i) => {
+        const bar = document.createElement("div");
+        bar.className = "chart-bar mode-bar";
+        bar.style.height = Math.max(6, (a.val / max) * 100) + "%";
+        const label = document.createElement("span");
+        label.textContent = a.label;
+        bar.appendChild(label);
+        bar.title = a.label + ": " + a.val;
+        bar.style.transitionDelay = (i * 40) + "ms";
+        c.appendChild(bar);
+    });
+}
+
+function renderActivityChart() {
+    const c = $("chartActivity");
+    if (!c) return;
+    c.innerHTML = "";
+
+    const days = {};
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const k = d.getFullYear() + "-" +
+            String(d.getMonth() + 1).padStart(2, "0") + "-" +
+            String(d.getDate()).padStart(2, "0");
+        days[k] = 0;
+    }
+
+    history.forEach(h => {
+        const d = new Date(h.date);
+        const k = d.getFullYear() + "-" +
+            String(d.getMonth() + 1).padStart(2, "0") + "-" +
+            String(d.getDate()).padStart(2, "0");
+        if (k in days) days[k] += h.correct;
+    });
+
+    const entries = Object.entries(days);
+    const max = Math.max(...entries.map(e => e[1]), 1);
+
+    entries.forEach(([k, v], i) => {
+        const bar = document.createElement("div");
+        bar.className = "chart-bar";
+        bar.style.height = Math.max(5, (v / max) * 100) + "%";
+        const label = document.createElement("span");
+        label.textContent = k.slice(-2);
+        bar.appendChild(label);
+        bar.title = k + ": " + v + " correct";
+        bar.style.transitionDelay = (i * 30) + "ms";
+        c.appendChild(bar);
+    });
+}
+
+function renderHistory() {
+    const list = $("historyList");
+    const dash = $("dashboardHistory");
+    if (list) list.innerHTML = "";
+    if (dash) dash.innerHTML = "";
+
+    if (!history.length) {
+        const empty = '<div class="empty-state"><span>♞</span><p>No sessions yet — start training to record your first one.</p></div>';
+        if (list) list.innerHTML = empty;
+        if (dash) dash.innerHTML = empty;
+        return;
+    }
+
+    history.slice(0, 10).forEach((s, i) => {
+        const d = new Date(s.date);
+        const dateTxt = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        const timeTxt = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+
+        const html =
+            '<div class="history-item-icon">♞</div>' +
+            '<div class="history-item-info">' +
+                '<strong>' + (MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training") + '</strong>' +
+                '<span>' + dateTxt + ' · ' + timeTxt + ' · ' + Math.round(s.duration / 60) + 'm</span>' +
+            '</div>' +
+            '<div class="history-item-score">' +
+                '<strong>' + s.correct + '</strong>' +
+                '<span>' + s.accuracy + '% accuracy</span>' +
+            '</div>';
+
+        const item1 = document.createElement("div");
+        item1.className = "history-item";
+        item1.innerHTML = html;
+        if (list) list.appendChild(item1);
+
+        if (i < 5 && dash) {
+            const item2 = document.createElement("div");
+            item2.className = "history-item";
+            item2.innerHTML = html;
+            dash.appendChild(item2);
+        }
+    });
+}
+
+function clearHistory() {
+    if (!history.length) { toast("No history to clear."); return; }
+    openConfirm(
+        "Clear session history?",
+        "Your lifetime stats and personal best will remain.",
+        () => {
+            history = [];
+            save(KEYS.history, history);
+            renderHistory();
+            renderAnalytics();
+            toast("Session history cleared.");
+        }
+    );
+}
+
+
+/* ======================================================
+   CONFIRM MODAL
+====================================================== */
+
+let confirmCallback = null;
+
+function openConfirm(title, msg, cb) {
+    $("confirmTitle").textContent = title;
+    $("confirmMessage").textContent = msg;
+    confirmCallback = cb;
+    $("confirmOverlay").classList.remove("hidden");
+}
+
+function closeConfirm() {
+    $("confirmOverlay").classList.add("hidden");
+    confirmCallback = null;
+}
+
+
+/* ======================================================
+   EXPORT / IMPORT / RESET
 ====================================================== */
 
 function exportData() {
@@ -2445,80 +2188,63 @@ function exportData() {
         settings: {
             theme: document.body.dataset.theme,
             board: document.body.dataset.board,
+            flip: document.body.dataset.flip === "true",
+            labels: document.body.dataset.labels === "true",
+            coords: document.body.dataset.coords !== "hidden",
             sound: game.sound,
             volume: game.volume,
-            labels: game.labels,
             ticks: game.ticks,
+            boardSize: Number($("boardSize").value),
             musicVolume: music.volume,
             musicTrack: music.streamIndex,
             musicSource: music.source,
-            musicWidgetPos: {
-                x: dragState.offsetX,
-                y: dragState.offsetY
-            }
+            musicWidget: { x: drag.offsetX, y: drag.offsetY }
         }
     };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json"
-    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = `visionchess-backup-${todayKey()}.json`;
+    a.download = "cvt-backup-" + todayKey() + ".json";
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-
-    toast("Backup exported. (Local music files stay saved inside this website.)");
+    toast("Backup exported.");
 }
 
 function importData(file) {
-    const reader = new FileReader();
-    reader.onload = e => {
+    const r = new FileReader();
+    r.onload = e => {
         try {
             const data = JSON.parse(e.target.result);
             if (!data || typeof data !== "object") throw new Error("Bad file");
 
             if (data.stats) { stats = { ...DEFAULT_STATS, ...data.stats }; save(KEYS.stats, stats); }
-            if (Array.isArray(data.history)) { history = data.history.slice(0, 10); save(KEYS.history, history); }
+            if (Array.isArray(data.history)) { history = data.history.slice(0, 50); save(KEYS.history, history); }
             if (typeof data.xp === "number") { xp = data.xp; save(KEYS.xp, xp); }
             if (Array.isArray(data.unlocked)) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
             if (data.daily && data.daily.date) { daily = data.daily; save(KEYS.daily, daily); }
 
             if (data.settings) {
-                if (data.settings.theme) setAppearance(data.settings.theme);
-                if (data.settings.board) setBoardTheme(data.settings.board);
-                if (typeof data.settings.sound === "boolean") {
-                    game.sound = data.settings.sound;
-                    $("soundToggle").checked = game.sound;
-                    save(KEYS.sound, game.sound);
-                }
-                if (typeof data.settings.volume === "number") {
-                    game.volume = data.settings.volume;
-                    $("volumeRange").value = String(Math.round(game.volume * 100));
-                    save(KEYS.volume, game.volume);
-                }
-                if (typeof data.settings.labels === "boolean") setLabels(data.settings.labels);
-                if (typeof data.settings.ticks === "boolean") {
-                    game.ticks = data.settings.ticks;
-                    $("ticksToggle").checked = game.ticks;
-                    save(KEYS.ticks, game.ticks);
-                }
-                if (typeof data.settings.musicVolume === "number") {
-                    setMusicVolume(data.settings.musicVolume);
-                    const mv = $("musicVolume");
-                    if (mv) mv.value = String(Math.round(music.volume * 100));
-                }
-                if (typeof data.settings.musicTrack === "number") setStreamTrack(data.settings.musicTrack, false);
-                if (typeof data.settings.musicSource === "string") switchSource(data.settings.musicSource);
-                if (data.settings.musicWidgetPos) {
-                    dragState.offsetX = Number(data.settings.musicWidgetPos.x) || 0;
-                    dragState.offsetY = Number(data.settings.musicWidgetPos.y) || 0;
-                    applyMusicPosition();
-                    saveMusicPosition();
+                const s = data.settings;
+                if (s.theme) setTheme(s.theme);
+                if (s.board) setBoardTheme(s.board);
+                if (typeof s.flip === "boolean") setFlip(s.flip);
+                if (typeof s.labels === "boolean") setLabels(s.labels);
+                if (typeof s.coords === "boolean") setCoords(s.coords);
+                if (typeof s.sound === "boolean") { game.sound = s.sound; $("soundToggle").checked = s.sound; save(KEYS.sound, s.sound); }
+                if (typeof s.volume === "number") { game.volume = s.volume; $("volumeRange").value = Math.round(s.volume * 100); save(KEYS.volume, s.volume); }
+                if (typeof s.ticks === "boolean") { game.ticks = s.ticks; $("ticksToggle").checked = s.ticks; save(KEYS.ticks, s.ticks); }
+                if (typeof s.boardSize === "number") setBoardSize(s.boardSize);
+                if (typeof s.musicVolume === "number") { setMusicVol(s.musicVolume); const el = $("musicVolume"); if (el) el.value = Math.round(s.musicVolume * 100); }
+                if (typeof s.musicTrack === "number") setStream(s.musicTrack, false);
+                if (typeof s.musicSource === "string") switchSource(s.musicSource);
+                if (s.musicWidget) {
+                    drag.offsetX = Number(s.musicWidget.x) || 0;
+                    drag.offsetY = Number(s.musicWidget.y) || 0;
+                    applyWidgetPos();
+                    saveWidgetPos();
                 }
             }
 
@@ -2527,135 +2253,210 @@ function importData(file) {
             updateDailyUI();
             renderAchievements();
             renderHistory();
-            renderChart();
+            renderAnalytics();
             resetSession();
-
-            toast("Backup imported successfully.");
+            toast("Backup imported.");
         } catch (err) {
             console.warn(err);
             toast("Import failed — invalid file.");
         }
     };
-    reader.readAsText(file);
+    r.readAsText(file);
+}
+
+function resetProgress() {
+    openConfirm(
+        "Reset all progress?",
+        "This will permanently delete your stats, history, XP, and achievements.",
+        () => {
+            stats = { ...DEFAULT_STATS };
+            history = [];
+            unlocked = [];
+            xp = 0;
+            daily = { date: todayKey(), count: 0 };
+            save(KEYS.stats, stats);
+            save(KEYS.history, history);
+            save(KEYS.achievements, unlocked);
+            save(KEYS.xp, xp);
+            save(KEYS.daily, daily);
+            updateDashboard();
+            updateLevelUI();
+            updateDailyUI();
+            renderAchievements();
+            renderHistory();
+            renderAnalytics();
+            toast("Progress reset.");
+        }
+    );
 }
 
 
 /* ======================================================
-   INITIALIZE APP
+   KEYBOARD
 ====================================================== */
 
-async function init() {
-    createCoordinates();
-    createBoard();
+function setupKeyboard() {
+    document.addEventListener("keydown", e => {
+        const t = e.target;
+        if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") return;
 
-    setAppearance(load(KEYS.theme, "dark"));
-    setBoardTheme(load(KEYS.board, "rose"));
+        const k = e.key.toLowerCase();
+
+        if (k === "r") {
+            e.preventDefault();
+            if (game.running) finishSession();
+            else startSession();
+        } else if (e.code === "Space") {
+            e.preventDefault();
+            if (game.running) togglePause();
+            else startSession();
+        } else if (k === "f") {
+            e.preventDefault();
+            toggleFullscreen();
+        } else if (k === "m") {
+            e.preventDefault();
+            togglePanel();
+        } else if (e.key === "Escape") {
+            document.body.classList.remove("sidebar-open");
+            if (game.paused) togglePause();
+            else if (game.running) togglePause();
+        }
+    });
+}
+
+async function toggleFullscreen() {
+    try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+    } catch { toast("Fullscreen unavailable."); }
+}
+
+
+/* ======================================================
+   ONBOARDING
+====================================================== */
+
+function checkOnboarding() {
+    if (!load(KEYS.onboarded, false)) {
+        $("onboarding").classList.remove("hidden");
+    }
+}
+
+function completeOnboarding() {
+    save(KEYS.onboarded, true);
+    $("onboarding").classList.add("hidden");
+    toast("Welcome! Choose a mode to begin.");
+}
+
+
+/* ======================================================
+   DAILY TIP
+====================================================== */
+
+function setTip() {
+    const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+    const el = $("tipText");
+    if (el) el.textContent = TIPS[day % TIPS.length];
+}
+
+
+/* ======================================================
+   INIT
+====================================================== */
+
+function init() {
+    buildCoords();
+    buildBoard();
+
+    // Restore settings
+    setTheme(load(KEYS.theme, "dark"));
+    setBoardTheme(load(KEYS.board, "emerald"));
+    setFlip(load(KEYS.flip, false));
     setLabels(load(KEYS.labels, false));
+    setCoords(load(KEYS.coords, true) !== false);
+    setBoardSize(Number(load(KEYS.boardSize, 100)) || 100);
 
     game.sound = load(KEYS.sound, true) !== false;
     $("soundToggle").checked = game.sound;
 
-    game.volume = Number(load(KEYS.volume, 0.5));
-    if (isNaN(game.volume)) game.volume = 0.5;
-    $("volumeRange").value = String(Math.round(game.volume * 100));
+    game.volume = Number(load(KEYS.volume, 0.6));
+    if (isNaN(game.volume)) game.volume = 0.6;
+    $("volumeRange").value = Math.round(game.volume * 100);
 
     game.ticks = load(KEYS.ticks, true) !== false;
     $("ticksToggle").checked = game.ticks;
 
-    $("startBtn").addEventListener("click", startTraining);
+    // Session buttons
+    $("startBtn").addEventListener("click", startSession);
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
-
     $("resultRestart").addEventListener("click", () => {
-        startTraining();
+        startSession();
         $("training").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     $("durationSelect").addEventListener("change", () => {
         if (game.running) {
             $("durationSelect").value = game.duration;
-            toast("Finish the current session to change duration.");
+            toast("Finish the current session first.");
             return;
         }
         resetSession();
     });
 
-    $("appearanceTheme").addEventListener("change", event => {
-        setAppearance(event.target.value);
-        toast(event.target.value === "heavy"
-            ? "Heavy Dark theme activated."
-            : "Appearance updated.");
+    // Mode buttons
+    document.querySelectorAll(".mode-btn").forEach(b => {
+        b.addEventListener("click", () => setMode(b.dataset.mode));
     });
 
-    $("boardTheme").addEventListener("change", event => {
-        setBoardTheme(event.target.value);
-        toast("Board theme updated.");
-    });
-
-    $("volumeRange").addEventListener("input", event => {
-        game.volume = Number(event.target.value) / 100;
-        save(KEYS.volume, game.volume);
-    });
-
-    $("volumeRange").addEventListener("change", () => {
-        toast(`Volume: ${Math.round(game.volume * 100)}%`);
-        if (game.sound) playSound("correct");
-    });
-
-    $("soundToggle").addEventListener("change", () => {
-        game.sound = $("soundToggle").checked;
-        save(KEYS.sound, game.sound);
-        if (game.sound) playSound("correct");
-        toast(game.sound ? "Sound enabled." : "Sound disabled.");
-    });
-
-    $("labelsToggle").addEventListener("change", () => {
-        setLabels($("labelsToggle").checked);
-        toast(game.labels ? "Square labels shown." : "Square labels hidden.");
-    });
-
-    $("ticksToggle").addEventListener("change", () => {
-        game.ticks = $("ticksToggle").checked;
-        save(KEYS.ticks, game.ticks);
-        toast(game.ticks ? "Countdown ticks on." : "Countdown ticks off.");
-    });
-
-    document.querySelectorAll(".mode-btn").forEach(btn => {
-        btn.addEventListener("click", () => setMode(btn.dataset.mode));
-    });
-
-    $("fullscreenBtn").addEventListener("click", toggleFullscreen);
-    $("clearHistoryBtn").addEventListener("click", clearHistory);
-
-    $("exportBtn").addEventListener("click", exportData);
-    $("importBtn").addEventListener("click", () => $("importFile").click());
-    $("importFile").addEventListener("change", event => {
-        const file = event.target.files && event.target.files[0];
-        if (file) importData(file);
-        event.target.value = "";
-    });
-
-    setupNavigation();
+    // Nav
+    setupNav();
+    setupSettings();
     setupKeyboard();
 
-    await setupMusic();
+    // Confirm modal
+    $("confirmCancel").addEventListener("click", closeConfirm);
+    $("confirmOk").addEventListener("click", () => {
+        const cb = confirmCallback;
+        closeConfirm();
+        if (cb) cb();
+    });
 
-    setDailyTip();
-    renderMissionSteps();
+    // Onboarding
+    $("onboardingStart").addEventListener("click", completeOnboarding);
 
+    // Fullscreen
+    $("fullscreenBtn").addEventListener("click", toggleFullscreen);
+
+    // History / data
+    $("clearHistoryBtn").addEventListener("click", clearHistory);
+    $("exportBtn").addEventListener("click", exportData);
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", e => {
+        const f = e.target.files && e.target.files[0];
+        if (f) importData(f);
+        e.target.value = "";
+    });
+    $("resetBtn").addEventListener("click", resetProgress);
+
+    // Init music (async)
+    setupMusic();
+
+    setTip();
+    renderMission();
     resetSession();
     updateDashboard();
     updateLevelUI();
     updateDailyUI();
     renderAchievements();
     renderHistory();
-    renderChart();
+    renderAnalytics();
 
-    window.addEventListener("beforeunload", () => {
-        savePlaybackPosition();
-    });
+    window.addEventListener("beforeunload", saveMusicPos);
 
-    console.log("VisionChess initialized successfully.");
+    checkOnboarding();
+
+    console.log("Chess Vision Trainer v3 ready.");
 }
 
 document.addEventListener("DOMContentLoaded", init);
