@@ -1,7 +1,8 @@
 "use strict";
 
 /* ======================================================
-   VISIONCHESS — TRAINING ENGINE (ULTRA + RADIO + LOCAL)
+   VISIONCHESS — TRAINING ENGINE
+   (ULTRA + RADIO + LOCAL + HEAVY DARK + DRAGGABLE)
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -21,10 +22,13 @@ const KEYS = {
 };
 
 const MUSIC_KEYS = {
-    volume: "visionchess-music-volume-v2",
-    track: "visionchess-music-track-v2",
-    open: "visionchess-music-open-v2",
-    source: "visionchess-music-source-v2"
+    volume: "visionchess-music-volume-v3",
+    track: "visionchess-music-track-v3",
+    open: "visionchess-music-open-v3",
+    source: "visionchess-music-source-v3",
+    lastLocalId: "visionchess-music-lastlocal-v3",
+    lastPosition: "visionchess-music-position-v3",
+    widgetPos: "visionchess-music-widgetpos-v1"
 };
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -90,7 +94,6 @@ const DEFAULT_STATS = {
 
 const DAILY_TARGET = 50;
 
-/* Chill radio playlist — random lo-fi / chill live streams on YouTube */
 const MUSIC_TRACKS = [
     { id: "jfKfPfyJRdk", name: "Lofi Girl · Beats to Relax" },
     { id: "4xDzrJKXOOY", name: "Synthwave Radio · Retro Chill" },
@@ -101,7 +104,6 @@ const MUSIC_TRACKS = [
     { id: "0vv7VcHVWSE", name: "Jazz Lofi · Smooth Grooves" }
 ];
 
-/* IndexedDB settings for local music storage */
 const IDB_NAME = "visionchess-music-db";
 const IDB_STORE = "tracks";
 const IDB_VERSION = 1;
@@ -252,7 +254,7 @@ function toast(message) {
 
 
 /* ======================================================
-   INDEXEDDB — LOCAL MUSIC STORAGE
+   INDEXEDDB — LOCAL MUSIC STORAGE (PERMANENT)
 ====================================================== */
 
 function openMusicDb() {
@@ -272,6 +274,7 @@ function openMusicDb() {
 
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
+        req.onblocked = () => reject(new Error("IndexedDB blocked"));
     });
 }
 
@@ -321,27 +324,59 @@ async function dbDeleteTrack(id) {
     });
 }
 
+function estimateMusicStorage() {
+    return new Promise(async resolve => {
+        let totalSize = 0;
+        try {
+            if (music.localTracks.length) {
+                music.localTracks.forEach(t => totalSize += t.size || 0);
+            }
+        } catch {}
+
+        let quotaText = "";
+        if (navigator.storage && navigator.storage.estimate) {
+            try {
+                const est = await navigator.storage.estimate();
+                if (est && est.quota) {
+                    quotaText = ` · ${Math.round((est.usage / est.quota) * 100)}% of browser`;
+                }
+            } catch {}
+        }
+        resolve({ size: totalSize, quotaText });
+    });
+}
+
+async function updateStorageInfo() {
+    const el = $("musicStorageSize");
+    if (!el) return;
+
+    if (!music.localTracks.length) {
+        el.textContent = "Stored in this website";
+        return;
+    }
+
+    const { size, quotaText } = await estimateMusicStorage();
+    el.textContent = `${formatBytes(size)}${quotaText}`;
+}
+
 
 /* ======================================================
-   CHILL RADIO (YouTube Stream + Local Files)
+   CHILL RADIO (YouTube Stream + Persistent Local Files)
 ====================================================== */
 
 const music = {
-    // Stream (YouTube)
     yt: null,
     ytReady: false,
     ytApiLoaded: false,
     streamPlaying: false,
     streamIndex: 0,
 
-    // Local
     localTracks: [],
     localIndex: 0,
     localPlaying: false,
     localObjectUrl: null,
     audioEl: null,
 
-    // Shared
     volume: 0.4,
     panelOpen: false,
     source: "stream"
@@ -455,7 +490,6 @@ function setStreamTrack(index, autoplay) {
 }
 
 function nextStreamTrack() {
-    // Random shuffle (never the same twice in a row)
     let next = music.streamIndex;
     if (MUSIC_TRACKS.length > 1) {
         while (next === music.streamIndex) {
@@ -474,13 +508,21 @@ function prevStreamTrack() {
 
 async function loadLocalTracks() {
     try {
-        music.localTracks = await dbGetAllTracks();
-        music.localTracks.sort((a, b) => a.addedAt - b.addedAt);
+        const tracks = await dbGetAllTracks();
+        music.localTracks = tracks.sort((a, b) => a.addedAt - b.addedAt);
+        updateSavedBadge();
     } catch (err) {
         console.warn("Local track load failed:", err);
         music.localTracks = [];
     }
     renderLocalTracks();
+    updateStorageInfo();
+}
+
+function updateSavedBadge() {
+    const badge = $("musicSavedBadge");
+    if (!badge) return;
+    badge.classList.toggle("hidden", music.localTracks.length === 0);
 }
 
 function playLocalIndex(index) {
@@ -492,7 +534,6 @@ function playLocalIndex(index) {
 
     if (!music.audioEl) return;
 
-    // Revoke old object URL
     if (music.localObjectUrl) {
         URL.revokeObjectURL(music.localObjectUrl);
         music.localObjectUrl = null;
@@ -503,9 +544,9 @@ function playLocalIndex(index) {
         music.localObjectUrl = url;
         music.audioEl.src = url;
         music.audioEl.volume = music.volume;
-        music.audioEl.play().catch(err => {
-            console.warn("Playback failed:", err);
-        });
+        music.audioEl.play().catch(err => console.warn("Playback failed:", err));
+
+        save(MUSIC_KEYS.lastLocalId, track.id);
     } catch (err) {
         console.warn("Could not play local track:", err);
         toast("Could not play that file.");
@@ -547,7 +588,60 @@ function prevLocalTrack() {
     playLocalIndex(music.localIndex - 1);
 }
 
-/* ---------- Shared music controls ---------- */
+async function restoreLastLocalTrack() {
+    const lastId = load(MUSIC_KEYS.lastLocalId, null);
+    if (!lastId) return;
+
+    const index = music.localTracks.findIndex(t => t.id === lastId);
+    if (index < 0) return;
+
+    music.localIndex = index;
+    const track = music.localTracks[index];
+
+    try {
+        if (music.localObjectUrl) {
+            URL.revokeObjectURL(music.localObjectUrl);
+            music.localObjectUrl = null;
+        }
+        const url = URL.createObjectURL(track.blob);
+        music.localObjectUrl = url;
+        music.audioEl.src = url;
+        music.audioEl.volume = music.volume;
+
+        const pos = load(MUSIC_KEYS.lastPosition, null);
+        if (pos && pos.id === track.id && pos.time > 1) {
+            const age = Date.now() - (pos.updatedAt || 0);
+            if (age < 24 * 60 * 60 * 1000) {
+                const seekWhenReady = () => {
+                    try { music.audioEl.currentTime = pos.time; } catch {}
+                    music.audioEl.removeEventListener("loadedmetadata", seekWhenReady);
+                };
+                music.audioEl.addEventListener("loadedmetadata", seekWhenReady);
+            }
+        }
+    } catch (err) {
+        console.warn("Could not restore last track:", err);
+    }
+
+    renderLocalTracks();
+    updateMusicUI();
+}
+
+function savePlaybackPosition() {
+    if (music.source !== "local") return;
+    if (!music.audioEl || !music.audioEl.src) return;
+    const track = music.localTracks[music.localIndex];
+    if (!track) return;
+
+    save(MUSIC_KEYS.lastLocalId, track.id);
+    save(MUSIC_KEYS.lastPosition, {
+        id: track.id,
+        time: music.audioEl.currentTime || 0,
+        updatedAt: Date.now()
+    });
+}
+
+/* ---------- Shared controls ---------- */
 
 function musicIsPlaying() {
     return music.source === "stream" ? music.streamPlaying : music.localPlaying;
@@ -591,11 +685,11 @@ function switchSource(source) {
     if (!["stream", "local"].includes(source)) return;
     if (music.source === source) return;
 
-    // Pause the other source
     if (source === "local") {
         pauseStream();
     } else {
         pauseLocal();
+        savePlaybackPosition();
     }
 
     music.source = source;
@@ -610,12 +704,12 @@ function switchSource(source) {
     $("musicLocalSection").classList.toggle("hidden", source !== "local");
 
     updateMusicUI();
+    clampMusicWidget();
 }
 
 function updateMusicUI() {
     const source = music.source;
 
-    // Now playing label + name
     const nowLabel = $("musicNowLabel");
     const nameEl = $("musicTrackName");
 
@@ -629,14 +723,12 @@ function updateMusicUI() {
             const track = music.localTracks[music.localIndex];
             nameEl.textContent = track ? track.name : "No local tracks yet";
         }
-        if ($("musicFootText")) $("musicFootText").textContent = "♞ Your music, your board";
+        if ($("musicFootText")) $("musicFootText").textContent = "♞ Your music · saved in this site";
     }
 
-    // Play button
     const playBtn = $("musicPlay");
     if (playBtn) playBtn.textContent = musicIsPlaying() ? "❚❚" : "▶";
 
-    // FAB + topbar indicator
     const fab = $("musicFab");
     if (fab) fab.classList.toggle("playing", musicIsPlaying());
 
@@ -652,6 +744,11 @@ function openMusicPanel() {
     fab.classList.add("active");
     music.panelOpen = true;
     save(MUSIC_KEYS.open, true);
+    // Re-clamp because the widget just got bigger
+    requestAnimationFrame(() => {
+        clampMusicWidget();
+        applyMusicPosition();
+    });
 }
 
 function closeMusicPanel() {
@@ -693,7 +790,8 @@ function renderLocalTracks() {
             <div class="music-empty">
                 <span>♪</span>
                 No local tracks yet.<br>
-                Click <strong>+ Add files</strong> to import MP3s, WAVs, and more.
+                Click <strong>+ Add files</strong> to import MP3s, WAVs, and more.<br>
+                <em>They will be saved inside this website.</em>
             </div>
         `;
         return;
@@ -748,7 +846,6 @@ function renderLocalTracks() {
 async function addLocalFiles(files) {
     if (!files || !files.length) return;
 
-    // Detect IndexedDB availability
     try {
         await openMusicDb();
     } catch (err) {
@@ -765,7 +862,6 @@ async function addLocalFiles(files) {
             continue;
         }
 
-        // Soft size cap (30 MB per file)
         if (file.size > 30 * 1024 * 1024) {
             const ok = confirm(`"${file.name}" is ${formatBytes(file.size)}. Add anyway?`);
             if (!ok) { skipped++; continue; }
@@ -777,16 +873,21 @@ async function addLocalFiles(files) {
             added++;
         } catch (err) {
             console.warn("Add failed:", err);
+            if (err && err.name === "QuotaExceededError") {
+                toast("Not enough browser storage. Remove some tracks first.");
+                break;
+            }
             skipped++;
         }
     }
 
     music.localTracks.sort((a, b) => a.addedAt - b.addedAt);
     renderLocalTracks();
+    updateSavedBadge();
+    updateStorageInfo();
 
     if (added) {
-        toast(`Added ${added} track${added > 1 ? "s" : ""}${skipped ? ` · ${skipped} skipped` : ""}.`);
-        // Auto-switch to Local tab so the user sees what they added
+        toast(`Saved ${added} track${added > 1 ? "s" : ""} inside this website${skipped ? ` · ${skipped} skipped` : ""}.`);
         if (music.source !== "local") switchSource("local");
     } else if (skipped) {
         toast("No audio files added.");
@@ -797,7 +898,7 @@ async function removeLocalTrack(id) {
     const track = music.localTracks.find(t => t.id === id);
     if (!track) return;
 
-    if (!confirm(`Remove "${track.name}" from your local tracks?`)) return;
+    if (!confirm(`Remove "${track.name}" from your saved tracks?`)) return;
 
     try {
         await dbDeleteTrack(id);
@@ -805,7 +906,8 @@ async function removeLocalTrack(id) {
         console.warn(err);
     }
 
-    const wasActive = music.source === "local" && music.localTracks[music.localIndex]?.id === id;
+    const wasActive = music.source === "local" &&
+        music.localTracks[music.localIndex]?.id === id;
 
     music.localTracks = music.localTracks.filter(t => t.id !== id);
 
@@ -816,6 +918,11 @@ async function removeLocalTrack(id) {
             music.localObjectUrl = null;
         }
         if (music.audioEl) music.audioEl.src = "";
+        const lastId = load(MUSIC_KEYS.lastLocalId, null);
+        if (lastId === id) {
+            save(MUSIC_KEYS.lastLocalId, null);
+            save(MUSIC_KEYS.lastPosition, null);
+        }
     }
 
     if (music.localIndex >= music.localTracks.length) {
@@ -823,14 +930,170 @@ async function removeLocalTrack(id) {
     }
 
     renderLocalTracks();
+    updateSavedBadge();
+    updateStorageInfo();
     updateMusicUI();
     toast("Track removed.");
 }
 
-/* ---------- Init ---------- */
 
-function setupMusic() {
-    // Restore settings
+/* ======================================================
+   DRAGGABLE MUSIC WIDGET
+====================================================== */
+
+const dragState = {
+    offsetX: 0,
+    offsetY: 0,
+    dragging: false,
+    moved: false,
+    justDragged: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    startOffsetX: 0,
+    startOffsetY: 0
+};
+
+function applyMusicPosition() {
+    const widget = $("musicWidget");
+    if (!widget) return;
+    widget.style.transform = `translate(${dragState.offsetX}px, ${dragState.offsetY}px)`;
+}
+
+function clampMusicWidget() {
+    const widget = $("musicWidget");
+    if (!widget) return;
+
+    const rect = widget.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+
+    let dx = 0, dy = 0;
+    if (rect.left < margin) dx = margin - rect.left;
+    if (rect.right > vw - margin) dx = (vw - margin) - rect.right;
+    if (rect.top < margin) dy = margin - rect.top;
+    if (rect.bottom > vh - margin) dy = (vh - margin) - rect.bottom;
+
+    if (dx !== 0) dragState.offsetX += dx;
+    if (dy !== 0) dragState.offsetY += dy;
+
+    if (dx !== 0 || dy !== 0) {
+        applyMusicPosition();
+    }
+}
+
+function saveMusicPosition() {
+    save(MUSIC_KEYS.widgetPos, {
+        x: dragState.offsetX,
+        y: dragState.offsetY
+    });
+}
+
+function resetMusicPosition() {
+    dragState.offsetX = 0;
+    dragState.offsetY = 0;
+    applyMusicPosition();
+    saveMusicPosition();
+    toast("Music position reset.");
+}
+
+function setupMusicDrag() {
+    const widget = $("musicWidget");
+    const fab = $("musicFab");
+    if (!widget || !fab) return;
+
+    // Restore saved position
+    const saved = load(MUSIC_KEYS.widgetPos, { x: 0, y: 0 });
+    dragState.offsetX = Number(saved.x) || 0;
+    dragState.offsetY = Number(saved.y) || 0;
+    applyMusicPosition();
+
+    const DRAG_THRESHOLD = 5;
+
+    function onPointerDown(e) {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        dragState.dragging = true;
+        dragState.moved = false;
+        dragState.pointerId = e.pointerId;
+        dragState.startX = e.clientX;
+        dragState.startY = e.clientY;
+        dragState.startOffsetX = dragState.offsetX;
+        dragState.startOffsetY = dragState.offsetY;
+
+        widget.classList.add("dragging");
+
+        try {
+            fab.setPointerCapture(e.pointerId);
+        } catch {}
+    }
+
+    function onPointerMove(e) {
+        if (!dragState.dragging) return;
+        if (e.pointerId !== dragState.pointerId) return;
+
+        const dx = e.clientX - dragState.startX;
+        const dy = e.clientY - dragState.startY;
+
+        if (!dragState.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        dragState.moved = true;
+
+        dragState.offsetX = dragState.startOffsetX + dx;
+        dragState.offsetY = dragState.startOffsetY + dy;
+        applyMusicPosition();
+    }
+
+    function onPointerUp(e) {
+        if (!dragState.dragging) return;
+        if (e.pointerId !== dragState.pointerId) return;
+
+        dragState.dragging = false;
+        dragState.pointerId = null;
+        widget.classList.remove("dragging");
+
+        if (dragState.moved) {
+            clampMusicWidget();
+            saveMusicPosition();
+            dragState.justDragged = true;
+            setTimeout(() => { dragState.justDragged = false; }, 60);
+        }
+    }
+
+    fab.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    // Block click right after a drag
+    fab.addEventListener("click", e => {
+        if (dragState.justDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        toggleMusicPanel();
+    }, true);
+
+    // Reset button
+    const resetBtn = $("musicResetPos");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", resetMusicPosition);
+    }
+
+    // Re-clamp on window resize
+    window.addEventListener("resize", () => {
+        clampMusicWidget();
+        saveMusicPosition();
+    });
+}
+
+
+/* ======================================================
+   SETUP MUSIC (main)
+====================================================== */
+
+async function setupMusic() {
     music.volume = Number(load(MUSIC_KEYS.volume, 0.4));
     if (isNaN(music.volume)) music.volume = 0.4;
 
@@ -842,7 +1105,6 @@ function setupMusic() {
     music.source = load(MUSIC_KEYS.source, "stream");
     if (!["stream", "local"].includes(music.source)) music.source = "stream";
 
-    // Audio element for local files
     music.audioEl = $("localAudio");
     if (music.audioEl) {
         music.audioEl.volume = music.volume;
@@ -854,11 +1116,11 @@ function setupMusic() {
         });
         music.audioEl.addEventListener("pause", () => {
             music.localPlaying = false;
+            savePlaybackPosition();
             updateMusicUI();
             renderLocalTracks();
         });
         music.audioEl.addEventListener("ended", () => {
-            // Auto-advance to next local track
             if (music.localTracks.length > 1) {
                 playLocalIndex(music.localIndex + 1);
             } else {
@@ -867,6 +1129,10 @@ function setupMusic() {
                 renderLocalTracks();
             }
         });
+        music.audioEl.addEventListener("timeupdate", () => {
+            const t = Math.floor(music.audioEl.currentTime);
+            if (t > 0 && t % 5 === 0) savePlaybackPosition();
+        });
         music.audioEl.addEventListener("error", () => {
             console.warn("Local audio error");
             music.localPlaying = false;
@@ -874,7 +1140,6 @@ function setupMusic() {
         });
     }
 
-    // Volume slider
     const volEl = $("musicVolume");
     if (volEl) {
         volEl.value = String(Math.round(music.volume * 100));
@@ -885,13 +1150,7 @@ function setupMusic() {
     const volVal = $("musicVolVal");
     if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
 
-    // FAB + panel
-    const fab = $("musicFab");
-    if (fab) fab.addEventListener("click", toggleMusicPanel);
-
-    const closeBtn = $("musicCloseBtn");
-    if (closeBtn) closeBtn.addEventListener("click", closeMusicPanel);
-
+    // Top bar button
     const topBtn = $("musicTopBtn");
     if (topBtn) {
         topBtn.addEventListener("click", () => {
@@ -899,6 +1158,10 @@ function setupMusic() {
             else closeMusicPanel();
         });
     }
+
+    // Close button
+    const closeBtn = $("musicCloseBtn");
+    if (closeBtn) closeBtn.addEventListener("click", closeMusicPanel);
 
     // Transport
     const playBtn = $("musicPlay");
@@ -935,17 +1198,25 @@ function setupMusic() {
     });
     $("musicLocalSection").classList.toggle("hidden", music.source !== "local");
 
+    // Setup drag FIRST (before panel opens, so position applies correctly)
+    setupMusicDrag();
+
     // Restore panel open state
     const wasOpen = load(MUSIC_KEYS.open, false);
-    if (wasOpen) openMusicPanel();
+    if (wasOpen) {
+        openMusicPanel();
+    }
 
-    // Load local tracks from IndexedDB (async)
-    loadLocalTracks().then(() => updateMusicUI());
+    // Load saved local tracks
+    await loadLocalTracks();
+
+    if (music.localTracks.length) {
+        await restoreLastLocalTrack();
+    }
 
     updateMusicUI();
+    updateSavedBadge();
 
-    // Init YouTube API (only after first user interaction if we want to be safe,
-    // but loading the script itself is fine)
     loadYouTubeAPI();
 }
 
@@ -1038,7 +1309,7 @@ function highlightSquare(coordinate, className) {
 ====================================================== */
 
 function setAppearance(theme) {
-    const allowed = ["dark", "light", "neon"];
+    const allowed = ["dark", "light", "neon", "heavy"];
     if (!allowed.includes(theme)) theme = "dark";
     document.body.dataset.theme = theme;
     $("appearanceTheme").value = theme;
@@ -1510,7 +1781,6 @@ function resetSession() {
     $("pauseBtn").disabled = true;
 
     $("pauseOverlay").classList.add("hidden");
-
     $("resultsPanel").classList.add("hidden");
     $("newRecord").classList.add("hidden");
 
@@ -1560,7 +1830,6 @@ function startTraining() {
     toast(`Session started · ${MODE_LABELS[game.mode]}`);
     playSound("start");
 
-    // If the radio panel is open and nothing is playing, start the current source
     if (music.panelOpen && !musicIsPlaying()) {
         if (music.source === "stream" && music.ytReady) playStream();
         else if (music.source === "local" && music.localTracks.length) {
@@ -1913,12 +2182,10 @@ function renderHistory() {
     history.forEach((session, index) => {
         const date = new Date(session.date);
         const dateText = date.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric"
+            month: "short", day: "numeric"
         });
         const timeText = date.toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit"
+            hour: "2-digit", minute: "2-digit"
         });
 
         const item = document.createElement("div");
@@ -2174,11 +2441,7 @@ function exportData() {
     const payload = {
         version: 3,
         exportedAt: new Date().toISOString(),
-        stats,
-        history,
-        xp,
-        unlocked,
-        daily,
+        stats, history, xp, unlocked, daily,
         settings: {
             theme: document.body.dataset.theme,
             board: document.body.dataset.board,
@@ -2188,7 +2451,11 @@ function exportData() {
             ticks: game.ticks,
             musicVolume: music.volume,
             musicTrack: music.streamIndex,
-            musicSource: music.source
+            musicSource: music.source,
+            musicWidgetPos: {
+                x: dragState.offsetX,
+                y: dragState.offsetY
+            }
         }
     };
 
@@ -2205,7 +2472,7 @@ function exportData() {
     a.remove();
     URL.revokeObjectURL(url);
 
-    toast("Backup exported. (Local music files are not included.)");
+    toast("Backup exported. (Local music files stay saved inside this website.)");
 }
 
 function importData(file) {
@@ -2215,26 +2482,12 @@ function importData(file) {
             const data = JSON.parse(e.target.result);
             if (!data || typeof data !== "object") throw new Error("Bad file");
 
-            if (data.stats) {
-                stats = { ...DEFAULT_STATS, ...data.stats };
-                save(KEYS.stats, stats);
-            }
-            if (Array.isArray(data.history)) {
-                history = data.history.slice(0, 10);
-                save(KEYS.history, history);
-            }
-            if (typeof data.xp === "number") {
-                xp = data.xp;
-                save(KEYS.xp, xp);
-            }
-            if (Array.isArray(data.unlocked)) {
-                unlocked = data.unlocked;
-                save(KEYS.achievements, unlocked);
-            }
-            if (data.daily && data.daily.date) {
-                daily = data.daily;
-                save(KEYS.daily, daily);
-            }
+            if (data.stats) { stats = { ...DEFAULT_STATS, ...data.stats }; save(KEYS.stats, stats); }
+            if (Array.isArray(data.history)) { history = data.history.slice(0, 10); save(KEYS.history, history); }
+            if (typeof data.xp === "number") { xp = data.xp; save(KEYS.xp, xp); }
+            if (Array.isArray(data.unlocked)) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
+            if (data.daily && data.daily.date) { daily = data.daily; save(KEYS.daily, daily); }
+
             if (data.settings) {
                 if (data.settings.theme) setAppearance(data.settings.theme);
                 if (data.settings.board) setBoardTheme(data.settings.board);
@@ -2248,9 +2501,7 @@ function importData(file) {
                     $("volumeRange").value = String(Math.round(game.volume * 100));
                     save(KEYS.volume, game.volume);
                 }
-                if (typeof data.settings.labels === "boolean") {
-                    setLabels(data.settings.labels);
-                }
+                if (typeof data.settings.labels === "boolean") setLabels(data.settings.labels);
                 if (typeof data.settings.ticks === "boolean") {
                     game.ticks = data.settings.ticks;
                     $("ticksToggle").checked = game.ticks;
@@ -2261,11 +2512,13 @@ function importData(file) {
                     const mv = $("musicVolume");
                     if (mv) mv.value = String(Math.round(music.volume * 100));
                 }
-                if (typeof data.settings.musicTrack === "number") {
-                    setStreamTrack(data.settings.musicTrack, false);
-                }
-                if (typeof data.settings.musicSource === "string") {
-                    switchSource(data.settings.musicSource);
+                if (typeof data.settings.musicTrack === "number") setStreamTrack(data.settings.musicTrack, false);
+                if (typeof data.settings.musicSource === "string") switchSource(data.settings.musicSource);
+                if (data.settings.musicWidgetPos) {
+                    dragState.offsetX = Number(data.settings.musicWidgetPos.x) || 0;
+                    dragState.offsetY = Number(data.settings.musicWidgetPos.y) || 0;
+                    applyMusicPosition();
+                    saveMusicPosition();
                 }
             }
 
@@ -2291,7 +2544,7 @@ function importData(file) {
    INITIALIZE APP
 ====================================================== */
 
-function init() {
+async function init() {
     createCoordinates();
     createBoard();
 
@@ -2309,7 +2562,6 @@ function init() {
     game.ticks = load(KEYS.ticks, true) !== false;
     $("ticksToggle").checked = game.ticks;
 
-    // Training buttons
     $("startBtn").addEventListener("click", startTraining);
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
@@ -2330,7 +2582,9 @@ function init() {
 
     $("appearanceTheme").addEventListener("change", event => {
         setAppearance(event.target.value);
-        toast("Appearance updated.");
+        toast(event.target.value === "heavy"
+            ? "Heavy Dark theme activated."
+            : "Appearance updated.");
     });
 
     $("boardTheme").addEventListener("change", event => {
@@ -2383,7 +2637,8 @@ function init() {
 
     setupNavigation();
     setupKeyboard();
-    setupMusic();
+
+    await setupMusic();
 
     setDailyTip();
     renderMissionSteps();
@@ -2395,6 +2650,10 @@ function init() {
     renderAchievements();
     renderHistory();
     renderChart();
+
+    window.addEventListener("beforeunload", () => {
+        savePlaybackPosition();
+    });
 
     console.log("VisionChess initialized successfully.");
 }
