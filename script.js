@@ -1,221 +1,248 @@
-/* =========================================================
-   VISION CHESS — COMPLETE TRAINING ENGINE
-========================================================= */
-
 "use strict";
 
+/* ======================================================
+   VISIONCHESS — TRAINING ENGINE (ULTRA)
+====================================================== */
 
-/* =========================================================
-   DOM HELPERS
-========================================================= */
+const $ = id => document.getElementById(id);
 
-const $ = (id) => document.getElementById(id);
-
-
-/* =========================================================
-   STORAGE
-========================================================= */
-
-const STORAGE_KEYS = {
-    stats: "cvt-stats",
-    history: "cvt-history",
-    theme: "cvt-theme",
-    board: "cvt-board-theme",
-    sound: "cvt-sound"
+const KEYS = {
+    stats: "visionchess-stats-v3",
+    history: "visionchess-history-v3",
+    theme: "visionchess-theme-v3",
+    board: "visionchess-board-v3",
+    sound: "visionchess-sound-v3",
+    volume: "visionchess-volume-v3",
+    labels: "visionchess-labels-v3",
+    ticks: "visionchess-ticks-v3",
+    achievements: "visionchess-achievements-v3",
+    daily: "visionchess-daily-v3",
+    xp: "visionchess-xp-v3"
 };
-
-function loadStorage(key, fallback) {
-    try {
-        const value = localStorage.getItem(key);
-        return value === null ? fallback : JSON.parse(value);
-    } catch (error) {
-        console.warn("Storage read failed:", error);
-        return fallback;
-    }
-}
-
-function saveStorage(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.warn("Storage write failed:", error);
-    }
-}
-
-
-/* =========================================================
-   GLOBAL STATE
-========================================================= */
-
-const state = {
-    running: false,
-    completed: false,
-
-    timer: null,
-    toastTimer: null,
-    feedbackTimer: null,
-
-    duration: 60,
-    timeLeft: 60,
-
-    correct: 0,
-    mistakes: 0,
-
-    streak: 0,
-    bestSessionStreak: 0,
-
-    target: null,
-    lastCorrectSquare: null,
-    lastWrongSquare: null,
-
-    soundEnabled: true
-};
-
-
-let stats = loadStorage(STORAGE_KEYS.stats, {
-    totalCorrect: 0,
-    bestStreak: 0,
-    personalBest: 0,
-    totalSessions: 0
-});
-
-let history = loadStorage(STORAGE_KEYS.history, []);
-
-
-/* Validate stored values */
-
-if (!stats || typeof stats !== "object") {
-    stats = {
-        totalCorrect: 0,
-        bestStreak: 0,
-        personalBest: 0,
-        totalSessions: 0
-    };
-}
-
-if (!Array.isArray(history)) {
-    history = [];
-}
-
-
-/* =========================================================
-   BOARD CONFIGURATION
-========================================================= */
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
-
-const BOARD_SIZE = 8;
 
 const TIPS = [
     "Accuracy first, speed second. Smooth recognition becomes fast recognition.",
     "Learn the files from a to h. Knowing the board structure builds confidence.",
-    "The center of the board is your reference point. Practice visualizing each square.",
+    "The center of the board is your reference point. Visualize each square.",
     "Do not rush every answer. Build a reliable connection between files and ranks.",
-    "Short daily practice sessions can help develop faster coordinate recognition.",
-    "Try to recognize a square instantly instead of counting every file and rank.",
+    "Short daily practice sessions help develop faster coordinate recognition.",
+    "Recognize a square instantly instead of counting every file and rank.",
     "Look at the board as a complete grid. Train your eyes to move naturally.",
-    "Consistency is the secret. A few focused minutes can build a lasting habit."
+    "Consistency is the secret. A few focused minutes can build a lasting habit.",
+    "In knight mode, trace the L-shape: two squares one way, one square sideways.",
+    "Pattern recognition beats counting. Name squares by their neighbors."
 ];
 
+const MODE_LABELS = {
+    find: "FIND THE SQUARE",
+    name: "NAME THE SQUARE",
+    knight: "KNIGHT VISION"
+};
 
-/* =========================================================
-   SOUND ENGINE
-========================================================= */
+const MISSION_STEPS = {
+    find: [
+        { title: "Read the coordinate", text: "Look at the square displayed above the board." },
+        { title: "Find it on the board", text: "Identify the correct file and rank, then click it." },
+        { title: "Build your accuracy", text: "Correct answers advance to the next target. Keep your streak alive." }
+    ],
+    name: [
+        { title: "Read the highlighted square", text: "A square on the board will pulse with color." },
+        { title: "Choose the coordinate", text: "Pick the correct file and rank from the four options below." },
+        { title: "Trust your instinct", text: "The faster you recognize, the stronger your vision becomes." }
+    ],
+    knight: [
+        { title: "See the knight", text: "A knight appears on the source square shown above." },
+        { title: "Click every legal jump", text: "Tap all squares a knight could move to. Miss none." },
+        { title: "Complete the set", text: "When every legal jump is found, the next position appears." }
+    ]
+};
+
+const ACHIEVEMENTS = [
+    { id: "first",      icon: "✦", title: "First Light",    desc: "First correct answer",          check: s => s.totalCorrect >= 1 },
+    { id: "streak10",   icon: "♨", title: "On Fire",        desc: "10 correct in a row",           check: s => s.bestStreak >= 10 },
+    { id: "streak25",   icon: "⚡", title: "Unstoppable",   desc: "25 correct in a row",           check: s => s.bestStreak >= 25 },
+    { id: "correct100", icon: "♛", title: "Century",        desc: "100 total correct",             check: s => s.totalCorrect >= 100 },
+    { id: "correct500", icon: "♚", title: "Vision Master",  desc: "500 total correct",             check: s => s.totalCorrect >= 500 },
+    { id: "session20",  icon: "◈", title: "Sharp Eye",      desc: "20 correct in one session",     check: s => s.personalBest >= 20 },
+    { id: "session40",  icon: "▥", title: "Grand Vision",   desc: "40 correct in one session",     check: s => s.personalBest >= 40 },
+    { id: "sessions10", icon: "◷", title: "Dedicated",      desc: "10 training sessions",          check: s => s.totalSessions >= 10 },
+    { id: "sessions50", icon: "◎", title: "Committed",      desc: "50 training sessions",          check: s => s.totalSessions >= 50 },
+    { id: "perfect",    icon: "♞", title: "Flawless",       desc: "100% accuracy, 15+ correct",    check: s => (s.flawless || 0) >= 1 }
+];
+
+const DEFAULT_STATS = {
+    totalCorrect: 0,
+    bestStreak: 0,
+    personalBest: 0,
+    totalSessions: 0,
+    flawless: 0
+};
+
+const DEFAULT_DAILY = { date: todayKey(), count: 0, target: 50 };
+const DAILY_TARGET = 50;
+
+
+/* ======================================================
+   STORAGE HELPERS
+====================================================== */
+
+function load(key, fallback) {
+    try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+}
+
+function save(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn("Could not save data:", error);
+    }
+}
+
+function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" +
+        String(d.getMonth() + 1).padStart(2, "0") + "-" +
+        String(d.getDate()).padStart(2, "0");
+}
+
+
+/* ======================================================
+   STATE
+====================================================== */
+
+let stats = { ...DEFAULT_STATS, ...(load(KEYS.stats, {}) || {}) };
+let history = load(KEYS.history, []);
+if (!Array.isArray(history)) history = [];
+
+let unlocked = load(KEYS.achievements, []);
+if (!Array.isArray(unlocked)) unlocked = [];
+
+let xp = Number(load(KEYS.xp, 0)) || 0;
+
+let daily = load(KEYS.daily, null);
+if (!daily || daily.date !== todayKey()) {
+    daily = { ...DEFAULT_DAILY };
+    save(KEYS.daily, daily);
+}
+
+const game = {
+    mode: "find",
+    running: false,
+    paused: false,
+    completed: false,
+    duration: 60,
+    timeLeft: 60,
+    correct: 0,
+    mistakes: 0,
+    streak: 0,
+    bestStreak: 0,
+    target: null,          // current coordinate
+    knightSource: null,    // source square for knight mode
+    knightRemaining: [],   // remaining valid knight destinations
+    knightFound: [],       // already-found knight destinations
+    targetIndex: 0,
+    timer: null,
+    feedbackTimer: null,
+    toastTimer: null,
+    sound: true,
+    volume: 0.5,
+    labels: false,
+    ticks: true,
+    lastTickSecond: -1,
+    typeBuffer: ""
+};
 
 let audioContext = null;
 
+
+/* ======================================================
+   SOUND
+====================================================== */
+
 function playSound(type = "correct") {
-    if (!state.soundEnabled) return;
-
+    if (!game.sound) return;
     try {
-        const AudioContextClass =
-            window.AudioContext || window.webkitAudioContext;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
 
-        if (!AudioContextClass) return;
-
-        if (!audioContext) {
-            audioContext = new AudioContextClass();
-        }
-
-        if (audioContext.state === "suspended") {
-            audioContext.resume();
-        }
-
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-
-        oscillator.connect(gain);
-        gain.connect(audioContext.destination);
+        if (!audioContext) audioContext = new AC();
+        if (audioContext.state === "suspended") audioContext.resume();
 
         const now = audioContext.currentTime;
+        const gain = audioContext.createGain();
+        gain.connect(audioContext.destination);
 
-        if (type === "correct") {
-            oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(660, now);
-            oscillator.frequency.setValueAtTime(880, now + 0.07);
+        const volume = Math.max(0, Math.min(1, game.volume));
+        let frequencies = [660, 880];
+        let duration = 0.18;
 
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.13, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-
-            oscillator.start(now);
-            oscillator.stop(now + 0.2);
-
-        } else if (type === "wrong") {
-            oscillator.type = "triangle";
-            oscillator.frequency.setValueAtTime(220, now);
-
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.1, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-
-            oscillator.start(now);
-            oscillator.stop(now + 0.18);
-
+        if (type === "wrong") {
+            frequencies = [220];
+            duration = 0.16;
         } else if (type === "finish") {
-            oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(523, now);
-            oscillator.frequency.setValueAtTime(659, now + 0.1);
-            oscillator.frequency.setValueAtTime(784, now + 0.2);
-
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.12, now + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
-
-            oscillator.start(now);
-            oscillator.stop(now + 0.4);
+            frequencies = [523, 659, 784, 1046];
+            duration = 0.55;
+        } else if (type === "tick") {
+            frequencies = [880];
+            duration = 0.06;
+        } else if (type === "achievement") {
+            frequencies = [784, 988, 1318];
+            duration = 0.5;
+        } else if (type === "start") {
+            frequencies = [440, 660];
+            duration = 0.2;
         }
 
+        frequencies.forEach((freq, index) => {
+            const osc = audioContext.createOscillator();
+            const g = audioContext.createGain();
+            osc.connect(g);
+            g.connect(gain);
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, now + index * 0.07);
+
+            const startAt = now + index * 0.07;
+            const endAt = startAt + duration / frequencies.length + 0.05;
+
+            g.gain.setValueAtTime(0.0001, startAt);
+            g.gain.exponentialRampToValueAtTime(Math.max(0.02, 0.14 * volume), startAt + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, endAt);
+
+            osc.start(startAt);
+            osc.stop(endAt + 0.03);
+        });
     } catch (error) {
         console.warn("Audio unavailable:", error);
     }
 }
 
 
-/* =========================================================
-   TOAST NOTIFICATIONS
-========================================================= */
+/* ======================================================
+   TOAST
+====================================================== */
 
-function showToast(message) {
-    const toast = $("toast");
-
+function toast(message) {
     $("toastMessage").textContent = message;
+    $("toast").classList.add("show");
 
-    toast.classList.add("show");
-
-    clearTimeout(state.toastTimer);
-
-    state.toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
+    clearTimeout(game.toastTimer);
+    game.toastTimer = setTimeout(() => {
+        $("toast").classList.remove("show");
     }, 2400);
 }
 
 
-/* =========================================================
-   BOARD CREATION
-========================================================= */
+/* ======================================================
+   COORDINATES AND BOARD
+====================================================== */
 
 function createCoordinates() {
     $("topCoordinates").innerHTML = "";
@@ -224,596 +251,720 @@ function createCoordinates() {
     $("rightCoordinates").innerHTML = "";
 
     FILES.forEach(file => {
-        const top = document.createElement("span");
-        const bottom = document.createElement("span");
-
-        top.textContent = file;
-        bottom.textContent = file;
-
-        $("topCoordinates").appendChild(top);
-        $("bottomCoordinates").appendChild(bottom);
+        ["topCoordinates", "bottomCoordinates"].forEach(id => {
+            const el = document.createElement("span");
+            el.textContent = file;
+            $(id).appendChild(el);
+        });
     });
 
     RANKS.forEach(rank => {
-        const left = document.createElement("span");
-        const right = document.createElement("span");
-
-        left.textContent = rank;
-        right.textContent = rank;
-
-        $("leftCoordinates").appendChild(left);
-        $("rightCoordinates").appendChild(right);
+        ["leftCoordinates", "rightCoordinates"].forEach(id => {
+            const el = document.createElement("span");
+            el.textContent = rank;
+            $(id).appendChild(el);
+        });
     });
 }
 
-
 function createBoard() {
     const board = $("chessboard");
-
     board.innerHTML = "";
 
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        for (let col = 0; col < BOARD_SIZE; col++) {
-
-            const square = document.createElement("button");
-
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
             const file = FILES[col];
             const rank = RANKS[row];
-
             const coordinate = `${file}${rank}`;
 
-            const isLight = (row + col) % 2 === 0;
-
+            const square = document.createElement("button");
             square.type = "button";
-            square.className = `square ${isLight ? "light" : "dark"}`;
-
+            square.className =
+                "square " + ((row + col) % 2 === 0 ? "light" : "dark");
             square.dataset.square = coordinate;
-
             square.setAttribute("role", "gridcell");
-            square.setAttribute(
-                "aria-label",
-                `Square ${coordinate}`
-            );
-
+            square.setAttribute("aria-label", `Square ${coordinate}`);
             square.setAttribute("aria-pressed", "false");
-
             square.disabled = true;
 
-            square.addEventListener("click", () => {
-                handleSquareClick(coordinate, square);
-            });
+            const label = document.createElement("span");
+            label.className = "square-label";
+            label.textContent = coordinate;
+            square.appendChild(label);
 
+            square.addEventListener("click", () => handleSquare(coordinate, square));
             board.appendChild(square);
         }
     }
 }
 
-
-/* =========================================================
-   BOARD HELPERS
-========================================================= */
-
-function getSquareElement(coordinate) {
-    return document.querySelector(
-        `.square[data-square="${coordinate}"]`
-    );
-}
-
-
-function clearSquareHighlights() {
+function clearHighlights() {
     document.querySelectorAll(".square").forEach(square => {
         square.classList.remove(
-            "target-highlight",
             "last-correct",
-            "last-wrong"
+            "last-wrong",
+            "target-highlight",
+            "knight-source",
+            "knight-found"
         );
-
         square.setAttribute("aria-pressed", "false");
     });
 }
 
-
-function setBoardEnabled(enabled) {
+function enableBoard(enabled) {
     document.querySelectorAll(".square").forEach(square => {
         square.disabled = !enabled;
     });
 }
 
+function highlightSquare(coordinate, className) {
+    const sq = document.querySelector(`.square[data-square="${coordinate}"]`);
+    if (sq) sq.classList.add(className);
+}
+
+
+/* ======================================================
+   THEMES
+====================================================== */
+
+function setAppearance(theme) {
+    const allowed = ["dark", "light", "neon"];
+    if (!allowed.includes(theme)) theme = "dark";
+    document.body.dataset.theme = theme;
+    $("appearanceTheme").value = theme;
+    save(KEYS.theme, theme);
+}
 
 function setBoardTheme(theme) {
+    const allowed = ["rose", "classic", "wood", "blue", "purple", "pink"];
+    if (!allowed.includes(theme)) theme = "rose";
     document.body.dataset.board = theme;
-
     $("boardTheme").value = theme;
+    save(KEYS.board, theme);
+}
 
-    saveStorage(STORAGE_KEYS.board, theme);
+function setLabels(enabled) {
+    game.labels = !!enabled;
+    document.body.classList.toggle("show-labels", game.labels);
+    $("labelsToggle").checked = game.labels;
+    save(KEYS.labels, game.labels);
 }
 
 
-function applyBoardTheme() {
-    const savedTheme = loadStorage(
-        STORAGE_KEYS.board,
-        "classic"
-    );
+/* ======================================================
+   KNIGHT LOGIC
+====================================================== */
 
-    const allowed = [
-        "classic",
-        "wood",
-        "blue",
-        "green",
-        "purple",
-        "pink"
+function knightMoves(coord) {
+    const fileIdx = FILES.indexOf(coord[0]);
+    const rankIdx = RANKS.indexOf(Number(coord[1]));
+    const offsets = [
+        [1, 2], [2, 1], [2, -1], [1, -2],
+        [-1, -2], [-2, -1], [-2, 1], [-1, 2]
     ];
+    const valid = [];
+    for (const [df, dr] of offsets) {
+        const f = fileIdx + df;
+        const r = rankIdx + dr;
+        if (f >= 0 && f < 8 && r >= 0 && r < 8) {
+            valid.push(`${FILES[f]}${RANKS[r]}`);
+        }
+    }
+    return valid;
+}
 
-    setBoardTheme(
-        allowed.includes(savedTheme) ? savedTheme : "classic"
-    );
+function randomSquare() {
+    const file = FILES[Math.floor(Math.random() * 8)];
+    const rank = RANKS[Math.floor(Math.random() * 8)];
+    return `${file}${rank}`;
 }
 
 
-/* =========================================================
+/* ======================================================
    TARGET GENERATION
-========================================================= */
+====================================================== */
 
 function generateTarget() {
+    if (game.mode === "find") generateFindTarget();
+    else if (game.mode === "name") generateNameTarget();
+    else if (game.mode === "knight") generateKnightTarget();
+}
+
+function generateFindTarget() {
     let coordinate;
-
+    let attempts = 0;
     do {
-        const file = FILES[Math.floor(Math.random() * 8)];
-        const rank = RANKS[Math.floor(Math.random() * 8)];
+        coordinate = randomSquare();
+        attempts++;
+    } while (coordinate === game.target && attempts < 20);
 
-        coordinate = `${file}${rank}`;
+    game.target = coordinate;
+    game.targetIndex++;
 
-    } while (coordinate === state.target);
-
-    state.target = coordinate;
-
+    $("targetLabelText").textContent = "FIND THIS SQUARE";
+    $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coordinate;
-
-    $("targetHint").textContent =
-        "Locate the file and rank on the board";
-
+    $("targetHint").textContent = "Click the matching square on the board.";
     $("targetFeedback").textContent = "";
+    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
 
-    clearSquareHighlights();
+    $("choiceGrid").classList.add("hidden");
+    $("choiceGrid").innerHTML = "";
+    $("typeBuffer").textContent = "";
+
+    $("targetPanel").classList.remove("correct", "wrong");
+    clearHighlights();
 }
 
+function generateNameTarget() {
+    const coordinate = randomSquare();
+    game.target = coordinate;
+    game.targetIndex++;
 
-function resetTargetDisplay() {
-    state.target = null;
+    $("targetLabelText").textContent = "NAME THIS SQUARE";
+    $("targetCoordinate").classList.remove("muted");
+    $("targetCoordinate").textContent = "?";
+    $("targetHint").textContent = "Which coordinate is highlighted?";
+    $("targetFeedback").textContent = "";
+    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
 
+    $("targetPanel").classList.remove("correct", "wrong");
+    clearHighlights();
+    highlightSquare(coordinate, "target-highlight");
+
+    // Build choices
+    const choices = new Set([coordinate]);
+    while (choices.size < 4) {
+        choices.add(randomSquare());
+    }
+    const arr = Array.from(choices).sort(() => Math.random() - 0.5);
+
+    const grid = $("choiceGrid");
+    grid.innerHTML = "";
+    grid.classList.remove("hidden");
+
+    arr.forEach(coord => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = coord;
+        btn.dataset.choice = coord;
+        btn.addEventListener("click", () => handleChoice(coord, btn));
+        grid.appendChild(btn);
+    });
+
+    $("typeBuffer").textContent = "";
+}
+
+function generateKnightTarget() {
+    let source;
+    let attempts = 0;
+    do {
+        source = randomSquare();
+        attempts++;
+    } while (
+        (source === game.knightSource || knightMoves(source).length < 2) &&
+        attempts < 40
+    );
+
+    game.knightSource = source;
+    game.target = source;
+    game.targetIndex++;
+    game.knightRemaining = knightMoves(source);
+    game.knightFound = [];
+
+    $("targetLabelText").textContent = "KNIGHT JUMPS FROM";
+    $("targetCoordinate").classList.remove("muted");
+    $("targetCoordinate").textContent = source;
+    $("targetHint").textContent = "Click every square this knight can move to.";
+    $("targetFeedback").textContent = "";
+    $("targetNumber").textContent = `TARGET / ${String(game.targetIndex).padStart(2, "0")}`;
+
+    $("choiceGrid").classList.add("hidden");
+    $("choiceGrid").innerHTML = "";
+    $("typeBuffer").textContent = "";
+
+    $("targetPanel").classList.remove("correct", "wrong");
+    clearHighlights();
+    highlightSquare(source, "knight-source");
+}
+
+function resetTarget() {
+    game.target = null;
+    game.knightSource = null;
+    game.knightRemaining = [];
+    game.knightFound = [];
+    game.targetIndex = 0;
+
+    $("targetCoordinate").classList.add("muted");
     $("targetCoordinate").textContent = "—";
-
-    $("targetHint").textContent =
-        "Start your session to begin";
-
+    $("targetHint").textContent = "Start your session to begin.";
     $("targetFeedback").textContent = "";
+    $("targetNumber").textContent = "TARGET / 00";
+    $("targetLabelText").textContent = "FIND THIS SQUARE";
 
-    $("targetVisual").classList.remove("correct");
+    $("targetPanel").classList.remove("correct", "wrong");
+    $("choiceGrid").classList.add("hidden");
+    $("choiceGrid").innerHTML = "";
+    $("typeBuffer").textContent = "";
 
-    clearSquareHighlights();
+    clearHighlights();
 }
 
 
-/* =========================================================
-   SESSION TIMER
-========================================================= */
+/* ======================================================
+   TIMER AND PROGRESS
+====================================================== */
 
 function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
 
-    return (
-        String(minutes).padStart(2, "0") +
-        ":" +
-        String(remainingSeconds).padStart(2, "0")
+function updateTimer() {
+    $("timerDisplay").textContent = formatTime(game.timeLeft);
+    $("timerDisplay").style.color =
+        game.timeLeft <= 10 && game.running && !game.paused
+            ? "var(--red)"
+            : "var(--accent)";
+}
+
+function updateProgress() {
+    const elapsed = game.duration - game.timeLeft;
+    const percentage = Math.min(
+        100,
+        Math.max(0, (elapsed / game.duration) * 100)
     );
+    $("progressFill").style.width = `${percentage}%`;
+    $("progressText").textContent = `${Math.round(percentage)}%`;
 }
 
+function runTimer() {
+    clearInterval(game.timer);
+    game.timer = setInterval(() => {
+        if (!game.running || game.paused) return;
 
-function updateTimerDisplay() {
-    $("timerDisplay").textContent = formatTime(state.timeLeft);
-
-    if (state.timeLeft <= 10 && state.running) {
-        $("timerDisplay").style.color = "var(--red)";
-    } else {
-        $("timerDisplay").style.color = "var(--accent)";
-    }
-}
-
-
-function startTimer() {
-    clearInterval(state.timer);
-
-    state.timer = setInterval(() => {
-        if (!state.running) return;
-
-        state.timeLeft--;
-
-        if (state.timeLeft < 0) {
-            state.timeLeft = 0;
-        }
-
-        updateTimerDisplay();
+        game.timeLeft = Math.max(0, game.timeLeft - 1);
+        updateTimer();
         updateProgress();
 
-        if (state.timeLeft <= 0) {
-            finishTraining();
+        if (
+            game.ticks &&
+            game.timeLeft <= 10 &&
+            game.timeLeft > 0 &&
+            game.timeLeft !== game.lastTickSecond
+        ) {
+            game.lastTickSecond = game.timeLeft;
+            playSound("tick");
         }
 
+        if (game.timeLeft === 0) finishTraining();
     }, 1000);
 }
 
 
-/* =========================================================
-   SESSION STATISTICS
-========================================================= */
+/* ======================================================
+   ACCURACY / LIVE STATS
+====================================================== */
 
-function getAccuracy() {
-    const attempts = state.correct + state.mistakes;
-
-    if (attempts === 0) {
-        return 100;
-    }
-
-    return Math.round(
-        (state.correct / attempts) * 100
-    );
+function accuracy() {
+    const attempts = game.correct + game.mistakes;
+    if (attempts === 0) return 100;
+    return Math.round((game.correct / attempts) * 100);
 }
 
-
-function updateSessionStats() {
+function updateLiveStats() {
     $("sessionCorrect").textContent =
-        String(state.correct).padStart(2, "0");
+        String(game.correct).padStart(2, "0");
 
-    $("sessionAccuracy").innerHTML =
-        `${getAccuracy()}<span>%</span>`;
+    $("sessionAccuracy").innerHTML = `${accuracy()}<small>%</small>`;
+    $("sessionAccuracy").style.color =
+        accuracy() >= 80 ? "var(--green)" : "var(--orange)";
 
     $("sessionStreak").textContent =
-        String(state.streak).padStart(2, "0");
+        String(game.streak).padStart(2, "0");
+}
 
-    $("sessionAccuracy").style.color =
-        getAccuracy() >= 80
-            ? "var(--green)"
-            : "var(--orange)";
-
-    $("sessionStreak").style.color =
-        state.streak >= 5
-            ? "var(--orange)"
-            : "var(--text)";
+function updateDashboard() {
+    $("totalCorrect").textContent = stats.totalCorrect || 0;
+    $("bestStreak").textContent = stats.bestStreak || 0;
+    $("personalBest").textContent = stats.personalBest || 0;
+    $("sidebarBest").textContent = stats.personalBest || 0;
+    $("totalSessions").textContent = stats.totalSessions || 0;
 }
 
 
-function updateProgress() {
-    const elapsed = state.duration - state.timeLeft;
+/* ======================================================
+   XP / LEVEL
+====================================================== */
 
-    const progress = state.duration > 0
-        ? Math.min(
-            100,
-            Math.max(0, (elapsed / state.duration) * 100)
-        )
-        : 0;
+function levelInfo(totalXp) {
+    const level = Math.floor(totalXp / 250) + 1;
+    const intoLevel = totalXp - (level - 1) * 250;
+    const toNext = 250 - intoLevel;
+    return {
+        level,
+        intoLevel,
+        toNext,
+        progress: intoLevel / 250
+    };
+}
 
-    $("progressFill").style.width = `${progress}%`;
+function levelTitle(level) {
+    if (level >= 20) return "Grandmaster";
+    if (level >= 15) return "Master";
+    if (level >= 10) return "Strategist";
+    if (level >= 7) return "Tactician";
+    if (level >= 4) return "Apprentice";
+    return "Novice";
+}
 
-    $("progressText").textContent =
-        `${Math.round(progress)}%`;
+function updateLevelUI() {
+    const info = levelInfo(xp);
+    $("levelLabel").textContent = `LEVEL ${info.level}`;
+    $("levelNext").textContent = `${info.toNext} XP TO NEXT`;
+    $("levelBarFill").style.width = `${info.progress * 100}%`;
+    $("profileTitle").textContent = levelTitle(info.level);
+    $("profileXp").textContent = `${xp} XP · Level ${info.level}`;
+}
+
+function addXp(amount) {
+    if (amount <= 0) return;
+    xp += amount;
+    save(KEYS.xp, xp);
+    updateLevelUI();
 }
 
 
-function updateDashboardStats() {
-    $("totalCorrect").textContent =
-        stats.totalCorrect || 0;
+/* ======================================================
+   DAILY GOAL
+====================================================== */
 
-    $("bestStreak").textContent =
-        stats.bestStreak || 0;
+function updateDailyUI() {
+    const pct = Math.min(1, daily.count / DAILY_TARGET);
+    const circumference = 2 * Math.PI * 33; // r = 33 in ring
+    $("goalRingFill").style.strokeDashoffset = String(circumference * (1 - pct));
+    $("goalPercent").textContent = `${Math.round(pct * 100)}%`;
+    $("goalCurrent").textContent = daily.count;
+    $("goalTarget").textContent = DAILY_TARGET;
+}
 
-    $("personalBest").textContent =
-        stats.personalBest || 0;
-
-    $("sidebarBest").textContent =
-        stats.personalBest || 0;
-
-    $("totalSessions").textContent =
-        stats.totalSessions || 0;
+function bumpDaily(amount = 1) {
+    if (daily.date !== todayKey()) {
+        daily = { date: todayKey(), count: 0, target: DAILY_TARGET };
+    }
+    daily.count += amount;
+    save(KEYS.daily, daily);
+    updateDailyUI();
 }
 
 
-/* =========================================================
-   SESSION RESET
-========================================================= */
+/* ======================================================
+   ACHIEVEMENTS
+====================================================== */
+
+function renderAchievements() {
+    const grid = $("achievementsGrid");
+    grid.innerHTML = "";
+
+    ACHIEVEMENTS.forEach(a => {
+        const unlockedFlag = unlocked.includes(a.id);
+        const el = document.createElement("div");
+        el.className = "achievement" + (unlockedFlag ? " unlocked" : "");
+
+        const icon = document.createElement("div");
+        icon.className = "achievement-icon";
+        icon.textContent = a.icon;
+
+        const text = document.createElement("div");
+        text.className = "achievement-text";
+
+        const title = document.createElement("strong");
+        title.textContent = a.title;
+
+        const desc = document.createElement("span");
+        desc.textContent = a.desc;
+
+        text.append(title, desc);
+        el.append(icon, text);
+        grid.appendChild(el);
+    });
+
+    $("achievementCount").textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
+}
+
+function checkAchievements() {
+    const newlyUnlocked = [];
+    ACHIEVEMENTS.forEach(a => {
+        if (!unlocked.includes(a.id) && a.check(stats)) {
+            unlocked.push(a.id);
+            newlyUnlocked.push(a);
+        }
+    });
+
+    if (newlyUnlocked.length) {
+        save(KEYS.achievements, unlocked);
+        renderAchievements();
+        newlyUnlocked.forEach((a, i) => {
+            setTimeout(() => {
+                toast(`✦ Achievement unlocked: ${a.title}`);
+                playSound("achievement");
+                fireConfetti(40);
+            }, i * 400);
+        });
+    }
+}
+
+
+/* ======================================================
+   CONFETTI
+====================================================== */
+
+function fireConfetti(count = 80) {
+    const canvas = $("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const colors = ["#bd9aff", "#9970ef", "#52e5b0", "#ffb86c", "#78a9ff", "#ff718e"];
+    const particles = [];
+
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: canvas.width / 2 / dpr + (Math.random() - 0.5) * 200,
+            y: canvas.height / 2 / dpr - 40,
+            vx: (Math.random() - 0.5) * 8,
+            vy: Math.random() * -8 - 3,
+            size: Math.random() * 7 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * Math.PI,
+            vrot: (Math.random() - 0.5) * 0.3,
+            life: 0,
+            maxLife: 90 + Math.random() * 40
+        });
+    }
+
+    let raf;
+    const gravity = 0.28;
+
+    function frame() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        let alive = 0;
+        particles.forEach(p => {
+            if (p.life > p.maxLife) return;
+            alive++;
+            p.life++;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += gravity;
+            p.vx *= 0.995;
+            p.rot += p.vrot;
+
+            const alpha = Math.max(0, 1 - p.life / p.maxLife);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
+            ctx.restore();
+        });
+
+        if (alive > 0) {
+            raf = requestAnimationFrame(frame);
+        } else {
+            cancelAnimationFrame(raf);
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+    }
+
+    cancelAnimationFrame(raf);
+    frame();
+}
+
+
+/* ======================================================
+   RESET SESSION
+====================================================== */
 
 function resetSession() {
-    clearInterval(state.timer);
-    clearTimeout(state.feedbackTimer);
+    clearInterval(game.timer);
+    clearTimeout(game.feedbackTimer);
+    game.timer = null;
+    game.running = false;
+    game.paused = false;
+    game.completed = false;
 
-    state.running = false;
-    state.completed = false;
+    game.duration = Number($("durationSelect").value) || 60;
+    game.timeLeft = game.duration;
 
-    state.duration = Number($("durationSelect").value);
-    state.timeLeft = state.duration;
+    game.correct = 0;
+    game.mistakes = 0;
+    game.streak = 0;
+    game.bestStreak = 0;
+    game.lastTickSecond = -1;
+    game.typeBuffer = "";
 
-    state.correct = 0;
-    state.mistakes = 0;
-
-    state.streak = 0;
-    state.bestSessionStreak = 0;
-
-    state.target = null;
-
-    state.lastCorrectSquare = null;
-    state.lastWrongSquare = null;
-
-    updateTimerDisplay();
-    updateSessionStats();
-    updateProgress();
-
-    $("progressFill").style.width = "0%";
-
-    $("sessionState").classList.remove("running");
     $("sessionStateText").textContent = "READY";
-
+    $("topStatus").textContent = "TRAINING READY";
     $("startBtnText").textContent = "Start training";
+    $("pauseBtnText").textContent = "Pause";
+    $("pauseBtn").disabled = true;
+
+    $("pauseOverlay").classList.add("hidden");
 
     $("resultsPanel").classList.add("hidden");
     $("newRecord").classList.add("hidden");
 
-    resetTargetDisplay();
+    $("sessionCorrect").textContent = "00";
+    $("sessionAccuracy").innerHTML = "100<small>%</small>";
+    $("sessionAccuracy").style.color = "var(--green)";
+    $("sessionStreak").textContent = "00";
 
-    setBoardEnabled(false);
+    updateTimer();
+    updateProgress();
+    resetTarget();
+
+    enableBoard(false);
 }
 
 
-/* =========================================================
-   START TRAINING
-========================================================= */
+/* ======================================================
+   START / PAUSE / FINISH
+====================================================== */
 
 function startTraining() {
-    if (state.running) {
+    if (game.running) {
         finishTraining();
         return;
     }
 
     resetSession();
 
-    state.duration = Number($("durationSelect").value);
-    state.timeLeft = state.duration;
+    game.duration = Number($("durationSelect").value) || 60;
+    game.timeLeft = game.duration;
+    game.running = true;
+    game.paused = false;
 
-    state.running = true;
-    state.completed = false;
-
-    $("sessionState").classList.add("running");
     $("sessionStateText").textContent = "LIVE";
-
+    $("topStatus").textContent = "TRAINING LIVE";
     $("startBtnText").textContent = "End session";
+    $("pauseBtn").disabled = false;
 
-    $("targetHint").textContent =
-        "Find the coordinate and click its square";
-
-    $("resultsPanel").classList.add("hidden");
-
-    setBoardEnabled(true);
+    enableBoard(game.mode !== "name");
 
     generateTarget();
+    updateLiveStats();
+    updateTimer();
 
-    updateTimerDisplay();
-    updateSessionStats();
+    runTimer();
 
-    startTimer();
-
-    showToast("Training session started!");
-
-    playSound("correct");
+    toast(`Session started · ${MODE_LABELS[game.mode]}`);
+    playSound("start");
 }
 
+function togglePause() {
+    if (!game.running) return;
+    game.paused = !game.paused;
 
-/* =========================================================
-   HANDLE SQUARE CLICK
-========================================================= */
-
-function handleSquareClick(coordinate, square) {
-    if (!state.running) {
-        showToast("Start a session first!");
-        return;
-    }
-
-    if (!state.target) return;
-
-    if (coordinate === state.target) {
-        handleCorrectAnswer(square);
+    if (game.paused) {
+        $("pauseOverlay").classList.remove("hidden");
+        $("pauseBtnText").textContent = "Resume";
+        $("sessionStateText").textContent = "PAUSED";
+        $("topStatus").textContent = "PAUSED";
+        enableBoard(false);
     } else {
-        handleWrongAnswer(square);
+        $("pauseOverlay").classList.add("hidden");
+        $("pauseBtnText").textContent = "Pause";
+        $("sessionStateText").textContent = "LIVE";
+        $("topStatus").textContent = "TRAINING LIVE";
+        enableBoard(game.mode !== "name");
     }
 }
-
-
-/* =========================================================
-   CORRECT ANSWER
-========================================================= */
-
-function handleCorrectAnswer(square) {
-    state.correct++;
-
-    state.streak++;
-
-    state.bestSessionStreak = Math.max(
-        state.bestSessionStreak,
-        state.streak
-    );
-
-    stats.totalCorrect++;
-
-    stats.bestStreak = Math.max(
-        stats.bestStreak,
-        state.streak
-    );
-
-    state.lastCorrectSquare = state.target;
-
-    clearSquareHighlights();
-
-    square.classList.add("last-correct");
-
-    square.setAttribute("aria-pressed", "true");
-
-    $("targetPanel").classList.remove("wrong");
-    $("targetPanel").classList.add("correct");
-
-    $("targetFeedback").textContent = "✓ CORRECT";
-
-    $("targetFeedback").style.color = "var(--green)";
-
-    $("targetHint").textContent =
-        "Great recognition! Next coordinate coming...";
-
-    $("targetCoordinate").style.color = "var(--green)";
-
-    updateSessionStats();
-    updateDashboardStats();
-
-    saveStorage(STORAGE_KEYS.stats, stats);
-
-    playSound("correct");
-
-    if (state.streak > 0 && state.streak % 5 === 0) {
-        showToast(`${state.streak} in a row! Excellent!`);
-    }
-
-    clearTimeout(state.feedbackTimer);
-
-    state.feedbackTimer = setTimeout(() => {
-        if (!state.running) return;
-
-        $("targetPanel").classList.remove("correct");
-
-        $("targetCoordinate").style.color = "";
-
-        generateTarget();
-
-    }, 220);
-}
-
-
-/* =========================================================
-   WRONG ANSWER
-========================================================= */
-
-function handleWrongAnswer(square) {
-    state.mistakes++;
-
-    state.streak = 0;
-
-    state.lastWrongSquare = square.dataset.square;
-
-    clearSquareHighlights();
-
-    square.classList.add("last-wrong");
-
-    square.setAttribute("aria-pressed", "true");
-
-    $("targetPanel").classList.remove("correct");
-    $("targetPanel").classList.add("wrong");
-
-    $("targetFeedback").textContent = "✕ TRY AGAIN";
-
-    $("targetFeedback").style.color = "var(--red)";
-
-    $("targetHint").textContent =
-        `That was ${square.dataset.square}. Find ${state.target}.`;
-
-    $("targetCoordinate").style.color = "var(--red)";
-
-    updateSessionStats();
-
-    playSound("wrong");
-
-    clearTimeout(state.feedbackTimer);
-
-    state.feedbackTimer = setTimeout(() => {
-        $("targetPanel").classList.remove("wrong");
-
-        $("targetCoordinate").style.color = "";
-
-        $("targetFeedback").textContent = "";
-
-        $("targetHint").textContent =
-            "Try again — find the correct square";
-
-        clearSquareHighlights();
-
-    }, 450);
-}
-
-
-/* =========================================================
-   FINISH TRAINING
-========================================================= */
 
 function finishTraining() {
-    if (!state.running) return;
+    if (!game.running) return;
 
-    state.running = false;
-    state.completed = true;
+    game.running = false;
+    game.paused = false;
+    game.completed = true;
 
-    clearInterval(state.timer);
-    clearTimeout(state.feedbackTimer);
+    clearInterval(game.timer);
+    clearTimeout(game.feedbackTimer);
+    game.timer = null;
 
-    state.timer = null;
-
-    $("sessionState").classList.remove("running");
     $("sessionStateText").textContent = "COMPLETE";
-
+    $("topStatus").textContent = "SESSION COMPLETE";
     $("startBtnText").textContent = "Train again";
+    $("pauseBtn").disabled = true;
+    $("pauseBtnText").textContent = "Pause";
+    $("pauseOverlay").classList.add("hidden");
 
-    setBoardEnabled(false);
-
+    enableBoard(false);
     $("targetPanel").classList.remove("correct", "wrong");
-
-    $("targetCoordinate").style.color = "";
-
-    $("targetHint").textContent =
-        "Session completed! Review your results below.";
-
+    $("targetHint").textContent = "Session completed! Review your results below.";
     $("targetFeedback").textContent = "";
-
-    clearSquareHighlights();
+    $("choiceGrid").classList.add("hidden");
+    clearHighlights();
 
     stats.totalSessions++;
 
     const previousBest = stats.personalBest || 0;
+    const newRecord = game.correct > previousBest;
 
-    const isNewRecord = state.correct > previousBest;
+    stats.personalBest = Math.max(previousBest, game.correct);
+    stats.bestStreak = Math.max(stats.bestStreak || 0, game.bestStreak);
 
-    stats.personalBest = Math.max(
-        previousBest,
-        state.correct
-    );
+    const acc = accuracy();
+    if (acc === 100 && game.correct >= 15) {
+        stats.flawless = (stats.flawless || 0) + 1;
+    }
 
-    saveStorage(STORAGE_KEYS.stats, stats);
+    // XP rewards
+    let gainedXp = game.correct * 4;
+    if (game.bestStreak >= 10) gainedXp += 30;
+    if (game.bestStreak >= 20) gainedXp += 40;
+    if (acc === 100 && game.correct >= 15) gainedXp += 60;
+    if (newRecord && game.correct > 0) gainedXp += 25;
 
-    const accuracy = getAccuracy();
+    addXp(gainedXp);
 
-    const sessionResult = {
-        correct: state.correct,
-        mistakes: state.mistakes,
-        accuracy,
-        bestStreak: state.bestSessionStreak,
-        duration: state.duration,
+    const result = {
+        correct: game.correct,
+        mistakes: game.mistakes,
+        accuracy: acc,
+        bestStreak: game.bestStreak,
+        duration: game.duration,
+        mode: game.mode,
+        xp: gainedXp,
         date: new Date().toISOString()
     };
 
-    history.unshift(sessionResult);
+    history.unshift(result);
+    history = history.slice(0, 10);
 
-    history = history.slice(0, 8);
+    save(KEYS.stats, stats);
+    save(KEYS.history, history);
 
-    saveStorage(STORAGE_KEYS.history, history);
-
-    updateDashboardStats();
-
+    updateDashboard();
     renderHistory();
+    renderChart();
+    updateLevelUI();
+    checkAchievements();
 
-    showResults(isNewRecord);
+    showResults(newRecord, gainedXp);
 
     playSound("finish");
+
+    if (newRecord && game.correct > 0) {
+        fireConfetti(120);
+    } else if (game.correct >= 20) {
+        fireConfetti(70);
+    }
 
     $("resultsPanel").scrollIntoView({
         behavior: "smooth",
@@ -822,412 +973,756 @@ function finishTraining() {
 }
 
 
-/* =========================================================
-   RESULTS SCREEN
-========================================================= */
+/* ======================================================
+   ANSWER HANDLING
+====================================================== */
 
-function showResults(isNewRecord) {
-    $("resultCorrect").textContent = state.correct;
+function handleSquare(coordinate, square) {
+    if (!game.running || game.paused || !game.target) return;
 
-    $("resultAccuracy").textContent =
-        `${getAccuracy()}%`;
+    if (game.mode === "find") {
+        if (coordinate === game.target) correctFind(square);
+        else wrongSquare(square);
+    } else if (game.mode === "knight") {
+        if (coordinate === game.knightSource) {
+            // Clicking source is ignored
+            return;
+        }
+        if (game.knightFound.includes(coordinate)) {
+            // Already found — ignore silently
+            return;
+        }
+        if (game.knightRemaining.includes(coordinate)) {
+            correctKnightStep(coordinate, square);
+        } else {
+            wrongSquare(square);
+        }
+    }
+}
 
-    $("resultStreak").textContent =
-        state.bestSessionStreak;
+function handleChoice(coord, btn) {
+    if (!game.running || game.paused || game.mode !== "name") return;
 
-    if (state.correct >= 30) {
+    if (coord === game.target) {
+        btn.classList.add("correct");
+        correctName(btn);
+    } else {
+        btn.classList.add("wrong");
+        game.mistakes++;
+        game.streak = 0;
+        updateLiveStats();
+        playSound("wrong");
+
+        $("targetPanel").classList.add("wrong");
+        $("targetFeedback").textContent = "✕ WRONG";
+        $("targetFeedback").style.color = "var(--red)";
+
+        setTimeout(() => btn.classList.remove("wrong"), 500);
+    }
+}
+
+
+/* --- FIND MODE --- */
+
+function correctFind(square) {
+    game.correct++;
+    game.streak++;
+    game.bestStreak = Math.max(game.bestStreak, game.streak);
+    stats.totalCorrect++;
+    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
+
+    clearHighlights();
+    square.classList.add("last-correct");
+    square.setAttribute("aria-pressed", "true");
+
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ CORRECT";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Excellent! Next coordinate coming...";
+
+    updateLiveStats();
+    updateDashboard();
+    bumpDaily(1);
+    save(KEYS.stats, stats);
+    playSound("correct");
+
+    if (game.streak > 0 && game.streak % 5 === 0) {
+        toast(`${game.streak} in a row!`);
+    }
+
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        generateTarget();
+    }, 220);
+}
+
+
+/* --- NAME MODE --- */
+
+function correctName(btn) {
+    game.correct++;
+    game.streak++;
+    game.bestStreak = Math.max(game.bestStreak, game.streak);
+    stats.totalCorrect++;
+    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
+
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ CORRECT";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Excellent! Next square coming...";
+
+    updateLiveStats();
+    updateDashboard();
+    bumpDaily(1);
+    save(KEYS.stats, stats);
+    playSound("correct");
+
+    setTimeout(() => btn.classList.remove("correct"), 400);
+
+    if (game.streak > 0 && game.streak % 5 === 0) {
+        toast(`${game.streak} in a row!`);
+    }
+
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        generateTarget();
+    }, 420);
+}
+
+
+/* --- KNIGHT MODE --- */
+
+function correctKnightStep(coordinate, square) {
+    game.knightFound.push(coordinate);
+    game.knightRemaining = game.knightRemaining.filter(c => c !== coordinate);
+
+    square.classList.add("knight-found");
+
+    // Count this as a "hit" — increment streak/total
+    game.correct++;
+    game.streak++;
+    game.bestStreak = Math.max(game.bestStreak, game.streak);
+    stats.totalCorrect++;
+    stats.bestStreak = Math.max(stats.bestStreak, game.streak);
+
+    updateLiveStats();
+    updateDashboard();
+    bumpDaily(1);
+    save(KEYS.stats, stats);
+
+    if (game.knightRemaining.length === 0) {
+        // All jumps found
+        $("targetPanel").classList.add("correct");
+        $("targetFeedback").textContent = "✓ ALL JUMPS FOUND";
+        $("targetFeedback").style.color = "var(--green)";
+        $("targetHint").textContent = "Nice! Next knight incoming...";
+        playSound("correct");
+
+        clearTimeout(game.feedbackTimer);
+        game.feedbackTimer = setTimeout(() => {
+            if (!game.running) return;
+            generateTarget();
+        }, 420);
+    } else {
+        playSound("correct");
+        $("targetHint").textContent =
+            `${game.knightFound.length} / ${game.knightFound.length + game.knightRemaining.length} jumps found.`;
+    }
+}
+
+
+/* --- WRONG --- */
+
+function wrongSquare(square) {
+    game.mistakes++;
+    game.streak = 0;
+
+    clearHighlights();
+
+    if (game.mode === "knight" && game.knightSource) {
+        highlightSquare(game.knightSource, "knight-source");
+        game.knightFound.forEach(c => highlightSquare(c, "knight-found"));
+    }
+
+    square.classList.add("last-wrong");
+    square.setAttribute("aria-pressed", "true");
+
+    $("targetPanel").classList.add("wrong");
+    $("targetFeedback").textContent = "✕ TRY AGAIN";
+    $("targetFeedback").style.color = "var(--red)";
+
+    if (game.mode === "find") {
+        $("targetHint").textContent =
+            `That was ${square.dataset.square}. Find ${game.target}.`;
+    } else if (game.mode === "knight") {
+        $("targetHint").textContent =
+            `${square.dataset.square} is not a legal jump. Keep looking.`;
+    }
+
+    updateLiveStats();
+    playSound("wrong");
+
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("wrong");
+        $("targetFeedback").textContent = "";
+
+        if (game.mode === "find") {
+            $("targetHint").textContent = "Try again — find the correct square.";
+            clearHighlights();
+        } else if (game.mode === "knight") {
+            $("targetHint").textContent =
+                `${game.knightFound.length} / ${game.knightFound.length + game.knightRemaining.length} jumps found.`;
+            square.classList.remove("last-wrong");
+        } else if (game.mode === "name") {
+            clearHighlights();
+            if (game.target) highlightSquare(game.target, "target-highlight");
+        }
+    }, 480);
+}
+
+
+/* ======================================================
+   RESULTS
+====================================================== */
+
+function showResults(newRecord, gainedXp) {
+    $("resultCorrect").textContent = game.correct;
+    $("resultAccuracy").textContent = `${accuracy()}%`;
+    $("resultStreak").textContent = game.bestStreak;
+    $("resultXp").textContent = `+${gainedXp} XP earned`;
+    $("resultMode").textContent = `MODE · ${MODE_LABELS[game.mode]}`;
+
+    if (game.correct >= 30) {
         $("resultTitle").textContent = "Outstanding vision!";
-
         $("resultDescription").textContent =
-            "Incredible work! Keep challenging yourself and maintain that accuracy.";
-
-    } else if (state.correct >= 15) {
+            "Excellent work! Keep challenging yourself and maintain that accuracy.";
+    } else if (game.correct >= 15) {
         $("resultTitle").textContent = "Excellent progress!";
-
         $("resultDescription").textContent =
             "You're building strong coordinate recognition. Keep practicing consistently.";
-
-    } else if (state.correct > 0) {
+    } else if (game.correct > 0) {
         $("resultTitle").textContent = "Well played!";
-
         $("resultDescription").textContent =
-            "Every correct answer counts. Continue training to improve your board vision.";
-
+            "Every correct answer counts. Keep developing your board vision.";
     } else {
         $("resultTitle").textContent = "Every session counts!";
-
         $("resultDescription").textContent =
-            "Keep practicing the files and ranks. Your next session is another opportunity to improve.";
+            "Practice the files and ranks. Your next session is another opportunity.";
     }
 
-    if (isNewRecord) {
-        $("newRecord").classList.remove("hidden");
-    } else {
-        $("newRecord").classList.add("hidden");
-    }
-
+    $("newRecord").classList.toggle("hidden", !newRecord);
     $("resultsPanel").classList.remove("hidden");
 }
 
 
-/* =========================================================
-   SESSION HISTORY
-========================================================= */
+/* ======================================================
+   HISTORY + CHART
+====================================================== */
 
 function renderHistory() {
     const container = $("historyList");
-
     container.innerHTML = "";
 
-    if (history.length === 0) {
-        const empty = document.createElement("div");
-
-        empty.className = "empty-history";
-
-        empty.innerHTML = `
-            <span>♞</span>
-            <p>Your completed sessions will appear here.</p>
+    if (!history.length) {
+        container.innerHTML = `
+            <div class="empty-history">
+                <span>♞</span>
+                <p>Your completed sessions will appear here.</p>
+            </div>
         `;
-
-        container.appendChild(empty);
-
         return;
     }
 
     history.forEach((session, index) => {
-        const item = document.createElement("div");
+        const date = new Date(session.date);
+        const dateText = date.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric"
+        });
+        const timeText = date.toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
 
+        const item = document.createElement("div");
         item.className = "history-item";
 
-        const date = new Date(session.date);
+        const icon = document.createElement("div");
+        icon.className = "history-item-icon";
+        icon.textContent = "♞";
 
-        const dateLabel = date.toLocaleDateString(
-            undefined,
-            {
-                month: "short",
-                day: "numeric"
-            }
-        );
+        const info = document.createElement("div");
+        info.className = "history-item-info";
 
-        const timeLabel = date.toLocaleTimeString(
-            undefined,
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        );
+        const title = document.createElement("strong");
+        title.textContent = `Session ${history.length - index} · ${MODE_LABELS[session.mode || "find"].split(" ")[0]}`;
 
-        item.innerHTML = `
-            <div class="history-item-icon">♞</div>
+        const dateLabel = document.createElement("span");
+        dateLabel.textContent = `${dateText} · ${timeText}`;
 
-            <div class="history-item-info">
-                <strong>Session ${history.length - index}</strong>
-                <span>${dateLabel} · ${timeLabel}</span>
-            </div>
+        info.append(title, dateLabel);
 
-            <div class="history-item-score">
-                <strong>${session.correct}</strong>
-                <span>${session.accuracy}% accuracy</span>
-            </div>
-        `;
+        const score = document.createElement("div");
+        score.className = "history-item-score";
 
+        const correct = document.createElement("strong");
+        correct.textContent = session.correct;
+
+        const accuracyLabel = document.createElement("span");
+        accuracyLabel.textContent = `${session.accuracy}% accuracy`;
+
+        score.append(correct, accuracyLabel);
+
+        item.append(icon, info, score);
         container.appendChild(item);
     });
 }
 
+function renderChart() {
+    const chart = $("historyChart");
+    chart.innerHTML = "";
 
-/* =========================================================
-   CLEAR HISTORY
-========================================================= */
-
-function clearHistory() {
-    if (history.length === 0) {
-        showToast("No training history to clear.");
+    if (!history.length) {
+        chart.style.height = "40px";
         return;
     }
 
-    const confirmed = confirm(
-        "Clear all recent session history? Your personal best and lifetime statistics will remain."
-    );
+    chart.style.height = "68px";
 
-    if (!confirmed) return;
+    const recent = history.slice(0, 10).reverse();
+    const max = Math.max(...recent.map(s => s.correct), 1);
+
+    recent.forEach((session, i) => {
+        const bar = document.createElement("div");
+        bar.className = "chart-bar";
+        const heightPct = Math.max(6, (session.correct / max) * 100);
+        bar.style.height = `${heightPct}%`;
+
+        const label = document.createElement("span");
+        label.textContent = session.correct;
+        bar.appendChild(label);
+
+        bar.title = `${session.correct} correct · ${session.accuracy}% accuracy`;
+
+        // stagger animation
+        bar.style.transitionDelay = `${i * 40}ms`;
+        chart.appendChild(bar);
+    });
+}
+
+function clearHistory() {
+    if (!history.length) {
+        toast("No session history to clear.");
+        return;
+    }
+    if (!confirm(
+        "Clear your recent session history? Your lifetime stats and personal best will remain."
+    )) return;
 
     history = [];
-
-    saveStorage(STORAGE_KEYS.history, history);
-
+    save(KEYS.history, history);
     renderHistory();
-
-    showToast("Session history cleared.");
+    renderChart();
+    toast("Session history cleared.");
 }
 
 
-/* =========================================================
-   APPEARANCE THEMES
-========================================================= */
+/* ======================================================
+   NAVIGATION
+====================================================== */
 
-function setAppearanceTheme(theme) {
-    const allowed = [
-        "dark",
-        "light",
-        "neon"
-    ];
+function setupNavigation() {
+    document.querySelectorAll(".nav-link").forEach(link => {
+        link.addEventListener("click", () => {
+            document.querySelectorAll(".nav-link").forEach(item =>
+                item.classList.remove("active")
+            );
+            link.classList.add("active");
+            document.body.classList.remove("sidebar-open");
+        });
+    });
 
-    if (!allowed.includes(theme)) {
-        theme = "dark";
-    }
+    $("mobileMenu").addEventListener("click", () => {
+        document.body.classList.toggle("sidebar-open");
+    });
 
-    document.body.dataset.theme = theme;
-
-    $("appearanceTheme").value = theme;
-
-    saveStorage(STORAGE_KEYS.theme, theme);
+    document.addEventListener("click", event => {
+        if (
+            document.body.classList.contains("sidebar-open") &&
+            !event.target.closest(".sidebar") &&
+            !event.target.closest("#mobileMenu")
+        ) {
+            document.body.classList.remove("sidebar-open");
+        }
+    });
 }
 
 
-function applyAppearanceTheme() {
-    const savedTheme = loadStorage(
-        STORAGE_KEYS.theme,
-        "dark"
-    );
-
-    setAppearanceTheme(savedTheme);
-}
-
-
-/* =========================================================
-   SOUND SETTING
-========================================================= */
-
-function applySoundSetting() {
-    const saved = loadStorage(
-        STORAGE_KEYS.sound,
-        true
-    );
-
-    state.soundEnabled = saved !== false;
-
-    $("soundToggle").checked = state.soundEnabled;
-}
-
-
-function toggleSound() {
-    state.soundEnabled = $("soundToggle").checked;
-
-    saveStorage(
-        STORAGE_KEYS.sound,
-        state.soundEnabled
-    );
-
-    if (state.soundEnabled) {
-        playSound("correct");
-        showToast("Sound effects enabled.");
-    } else {
-        showToast("Sound effects disabled.");
-    }
-}
-
-
-/* =========================================================
+/* ======================================================
    FULLSCREEN
-========================================================= */
+====================================================== */
 
 async function toggleFullscreen() {
     try {
         if (!document.fullscreenElement) {
             await document.documentElement.requestFullscreen();
-
-            $("fullscreenBtn").textContent = "⛶";
-
         } else {
             await document.exitFullscreen();
-
-            $("fullscreenBtn").textContent = "⛶";
         }
-
-    } catch (error) {
-        showToast("Fullscreen is not available in this browser.");
+    } catch {
+        toast("Fullscreen is not available in this browser.");
     }
 }
 
 
-/* =========================================================
-   NAVIGATION
-========================================================= */
+/* ======================================================
+   KEYBOARD SHORTCUTS
+====================================================== */
 
-function setupNavigation() {
-    document.querySelectorAll(".nav-item").forEach(item => {
-        item.addEventListener("click", () => {
-            document.querySelectorAll(".nav-item").forEach(nav => {
-                nav.classList.remove("active");
-            });
+function setupKeyboard() {
+    document.addEventListener("keydown", event => {
+        const target = event.target;
+        if (
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT"
+        ) return;
 
-            item.classList.add("active");
-        });
-    });
-}
+        const key = event.key.toLowerCase();
 
-
-/* =========================================================
-   DAILY TRAINING TIP
-========================================================= */
-
-function setDailyTip() {
-    const day = new Date().getDate();
-
-    const tipIndex = day % TIPS.length;
-
-    $("tipText").textContent = TIPS[tipIndex];
-}
-
-
-/* =========================================================
-   EVENT LISTENERS
-========================================================= */
-
-function setupEventListeners() {
-
-    $("startBtn").addEventListener("click", () => {
-        startTraining();
-    });
-
-
-    $("resultRestart").addEventListener("click", () => {
-        resetSession();
-        startTraining();
-
-        $("training").scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-    });
-
-
-    $("durationSelect").addEventListener("change", () => {
-        if (state.running) {
-            showToast("End the current session to change duration.");
-            $("durationSelect").value = state.duration;
+        if (key === "r") {
+            event.preventDefault();
+            if (game.running) finishTraining();
+            else startTraining();
             return;
         }
 
+        if (event.code === "Space") {
+            event.preventDefault();
+            if (game.running) togglePause();
+            else startTraining();
+            return;
+        }
+
+        if (key === "f") {
+            event.preventDefault();
+            toggleFullscreen();
+            return;
+        }
+
+        if (event.key === "Escape") {
+            document.body.classList.remove("sidebar-open");
+            if (game.paused) {
+                togglePause();
+            } else if (game.running) {
+                togglePause();
+            }
+        }
+    });
+}
+
+
+/* ======================================================
+   MODE SWITCHING
+====================================================== */
+
+function setMode(mode) {
+    if (!["find", "name", "knight"].includes(mode)) return;
+    if (game.running) {
+        toast("Finish the current session to change mode.");
+        return;
+    }
+
+    game.mode = mode;
+
+    document.querySelectorAll(".mode-btn").forEach(btn => {
+        const active = btn.dataset.mode === mode;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    // Update mission steps
+    renderMissionSteps();
+
+    // Reset target display
+    resetSession();
+
+    // Update hint text
+    if (mode === "find") {
+        $("targetHint").textContent = "Start your session to begin.";
+    } else if (mode === "name") {
+        $("targetHint").textContent = "Start your session to begin.";
+    } else {
+        $("targetHint").textContent = "Start your session to begin.";
+    }
+}
+
+function renderMissionSteps() {
+    const steps = MISSION_STEPS[game.mode];
+    const container = $("missionSteps");
+    container.innerHTML = "";
+
+    steps.forEach((step, i) => {
+        const el = document.createElement("div");
+        el.className = "mission-step";
+
+        const num = document.createElement("span");
+        num.className = "step-number";
+        num.textContent = String(i + 1).padStart(2, "0");
+
+        const body = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = step.title;
+        const text = document.createElement("p");
+        text.textContent = step.text;
+
+        body.append(title, text);
+        el.append(num, body);
+        container.appendChild(el);
+    });
+
+    $("missionTitle").textContent = game.mode === "find"
+        ? "How to train"
+        : game.mode === "name"
+            ? "Name the square"
+            : "Knight vision";
+}
+
+
+/* ======================================================
+   DAILY TIP
+====================================================== */
+
+function setDailyTip() {
+    const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+    $("tipText").textContent = TIPS[day % TIPS.length];
+}
+
+
+/* ======================================================
+   EXPORT / IMPORT
+====================================================== */
+
+function exportData() {
+    const payload = {
+        version: 3,
+        exportedAt: new Date().toISOString(),
+        stats,
+        history,
+        xp,
+        unlocked,
+        daily,
+        settings: {
+            theme: document.body.dataset.theme,
+            board: document.body.dataset.board,
+            sound: game.sound,
+            volume: game.volume,
+            labels: game.labels,
+            ticks: game.ticks
+        }
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `visionchess-backup-${todayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    toast("Backup exported.");
+}
+
+function importData(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data || typeof data !== "object") throw new Error("Bad file");
+
+            if (data.stats) {
+                stats = { ...DEFAULT_STATS, ...data.stats };
+                save(KEYS.stats, stats);
+            }
+            if (Array.isArray(data.history)) {
+                history = data.history.slice(0, 10);
+                save(KEYS.history, history);
+            }
+            if (typeof data.xp === "number") {
+                xp = data.xp;
+                save(KEYS.xp, xp);
+            }
+            if (Array.isArray(data.unlocked)) {
+                unlocked = data.unlocked;
+                save(KEYS.achievements, unlocked);
+            }
+            if (data.daily && data.daily.date) {
+                daily = data.daily;
+                save(KEYS.daily, daily);
+            }
+            if (data.settings) {
+                if (data.settings.theme) setAppearance(data.settings.theme);
+                if (data.settings.board) setBoardTheme(data.settings.board);
+                if (typeof data.settings.sound === "boolean") {
+                    game.sound = data.settings.sound;
+                    $("soundToggle").checked = game.sound;
+                    save(KEYS.sound, game.sound);
+                }
+                if (typeof data.settings.volume === "number") {
+                    game.volume = data.settings.volume;
+                    $("volumeRange").value = String(Math.round(game.volume * 100));
+                    save(KEYS.volume, game.volume);
+                }
+                if (typeof data.settings.labels === "boolean") {
+                    setLabels(data.settings.labels);
+                }
+                if (typeof data.settings.ticks === "boolean") {
+                    game.ticks = data.settings.ticks;
+                    $("ticksToggle").checked = game.ticks;
+                    save(KEYS.ticks, game.ticks);
+                }
+            }
+
+            updateDashboard();
+            updateLevelUI();
+            updateDailyUI();
+            renderAchievements();
+            renderHistory();
+            renderChart();
+            resetSession();
+
+            toast("Backup imported successfully.");
+        } catch (err) {
+            console.warn(err);
+            toast("Import failed — invalid file.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+/* ======================================================
+   INITIALIZE APP
+====================================================== */
+
+function init() {
+    createCoordinates();
+    createBoard();
+
+    // Themes
+    setAppearance(load(KEYS.theme, "dark"));
+    setBoardTheme(load(KEYS.board, "rose"));
+    setLabels(load(KEYS.labels, false));
+
+    // Sound / ticks / volume
+    game.sound = load(KEYS.sound, true) !== false;
+    $("soundToggle").checked = game.sound;
+
+    game.volume = Number(load(KEYS.volume, 0.5));
+    if (isNaN(game.volume)) game.volume = 0.5;
+    $("volumeRange").value = String(Math.round(game.volume * 100));
+
+    game.ticks = load(KEYS.ticks, true) !== false;
+    $("ticksToggle").checked = game.ticks;
+
+    // Buttons
+    $("startBtn").addEventListener("click", startTraining);
+    $("pauseBtn").addEventListener("click", togglePause);
+    $("resumeBtn").addEventListener("click", togglePause);
+
+    $("resultRestart").addEventListener("click", () => {
+        startTraining();
+        $("training").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    $("durationSelect").addEventListener("change", () => {
+        if (game.running) {
+            $("durationSelect").value = game.duration;
+            toast("Finish the current session to change duration.");
+            return;
+        }
         resetSession();
     });
 
+    $("appearanceTheme").addEventListener("change", event => {
+        setAppearance(event.target.value);
+        toast("Appearance updated.");
+    });
 
     $("boardTheme").addEventListener("change", event => {
         setBoardTheme(event.target.value);
-
-        showToast("Board theme updated.");
+        toast("Board theme updated.");
     });
 
-
-    $("appearanceTheme").addEventListener("change", event => {
-        setAppearanceTheme(event.target.value);
-
-        showToast("Appearance updated.");
+    $("volumeRange").addEventListener("input", event => {
+        game.volume = Number(event.target.value) / 100;
+        save(KEYS.volume, game.volume);
     });
 
+    $("volumeRange").addEventListener("change", () => {
+        toast(`Volume: ${Math.round(game.volume * 100)}%`);
+        if (game.sound) playSound("correct");
+    });
 
     $("soundToggle").addEventListener("change", () => {
-        toggleSound();
+        game.sound = $("soundToggle").checked;
+        save(KEYS.sound, game.sound);
+        if (game.sound) playSound("correct");
+        toast(game.sound ? "Sound enabled." : "Sound disabled.");
     });
 
-
-    $("fullscreenBtn").addEventListener("click", () => {
-        toggleFullscreen();
+    $("labelsToggle").addEventListener("change", () => {
+        setLabels($("labelsToggle").checked);
+        toast(game.labels ? "Square labels shown." : "Square labels hidden.");
     });
 
-
-    $("clearHistoryBtn").addEventListener("click", () => {
-        clearHistory();
+    $("ticksToggle").addEventListener("change", () => {
+        game.ticks = $("ticksToggle").checked;
+        save(KEYS.ticks, game.ticks);
+        toast(game.ticks ? "Countdown ticks on." : "Countdown ticks off.");
     });
 
-
-    document.addEventListener("fullscreenchange", () => {
-        $("fullscreenBtn").textContent =
-            document.fullscreenElement ? "⛶" : "⛶";
+    // Mode buttons
+    document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => setMode(btn.dataset.mode));
     });
 
+    $("fullscreenBtn").addEventListener("click", toggleFullscreen);
+    $("clearHistoryBtn").addEventListener("click", clearHistory);
 
-    /* Keyboard shortcuts */
-
-    document.addEventListener("keydown", event => {
-
-        const target = event.target;
-
-        const isTyping =
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.tagName === "SELECT";
-
-        if (isTyping) return;
-
-        if (event.key.toLowerCase() === "r") {
-            event.preventDefault();
-
-            if (state.running) {
-                finishTraining();
-            } else {
-                resetSession();
-                startTraining();
-            }
-        }
-
-        if (event.key.toLowerCase() === "t") {
-            event.preventDefault();
-
-            toggleFullscreen();
-        }
-
-        if (event.key === "Escape" && state.running) {
-            finishTraining();
-        }
+    // Export / Import
+    $("exportBtn").addEventListener("click", exportData);
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", event => {
+        const file = event.target.files && event.target.files[0];
+        if (file) importData(file);
+        event.target.value = "";
     });
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-function init() {
-
-    createCoordinates();
-
-    createBoard();
-
-    applyAppearanceTheme();
-
-    applyBoardTheme();
-
-    applySoundSetting();
-
-    updateDashboardStats();
-
-    renderHistory();
-
-    setDailyTip();
-
-    setupEventListeners();
 
     setupNavigation();
+    setupKeyboard();
+
+    setDailyTip();
+    renderMissionSteps();
 
     resetSession();
+    updateDashboard();
+    updateLevelUI();
+    updateDailyUI();
+    renderAchievements();
+    renderHistory();
+    renderChart();
 
-    updateDashboardStats();
-
-    console.log(
-        "%c♞ VISION CHESS",
-        "color:#b99aff;font-size:20px;font-weight:bold;"
-    );
-
-    console.log(
-        "%cChess Vision Trainer initialized successfully.",
-        "color:#5be1b1;font-size:12px;"
-    );
+    console.log("VisionChess initialized successfully.");
 }
-
-
-/* Start the app */
 
 document.addEventListener("DOMContentLoaded", init);
