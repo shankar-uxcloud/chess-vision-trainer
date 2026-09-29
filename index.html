@@ -79,6 +79,7 @@
                 <option value="dark">Midnight</option>
                 <option value="light">Daylight</option>
                 <option value="neon">Cyber Neon</option>
+                <option value="heavy">Heavy Dark</option>
             </select>
         </div>
 
@@ -180,7 +181,7 @@
                 <div class="hero-tags">
                     <span>♞ &nbsp; Train your vision</span>
                     <span>◷ &nbsp; 5 min a day</span>
-                    <span>♪ &nbsp; Local + lo-fi radio</span>
+                    <span>♪ &nbsp; Movable radio</span>
                     <span>↗ &nbsp; Track your growth</span>
                 </div>
             </div>
@@ -569,9 +570,13 @@
 <!-- ================= CHILL RADIO (YouTube + Local) ================= -->
 <div class="music-widget" id="musicWidget">
 
-    <button class="music-fab" id="musicFab" type="button" aria-label="Toggle chill radio" title="Chill radio (M)">
+    <button class="music-fab" id="musicFab" type="button" aria-label="Toggle chill radio — drag to move" title="Chill radio (M) · drag to move">
         <span class="music-fab-icon">♪</span>
         <span class="music-fab-ring"></span>
+        <span class="music-fab-grip" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+        </span>
     </button>
 
     <div class="music-panel hidden" id="musicPanel">
@@ -581,7 +586,12 @@
                 <span class="music-dot"></span>
                 <span>CHILL RADIO</span>
             </div>
-            <button class="music-close" id="musicCloseBtn" type="button" aria-label="Close">×</button>
+            <div class="music-head-actions">
+                <button class="music-mini-btn" id="musicResetPos" type="button" title="Reset position" aria-label="Reset position">
+                    ⌖
+                </button>
+                <button class="music-close" id="musicCloseBtn" type="button" aria-label="Close">×</button>
+            </div>
         </div>
 
         <!-- SOURCE TABS -->
@@ -622,9 +632,19 @@
         <div class="music-local-section hidden" id="musicLocalSection">
 
             <div class="music-local-head">
-                <span>YOUR TRACKS · <span id="musicTrackCount">0</span></span>
+                <span class="music-local-title">
+                    YOUR TRACKS · <span id="musicTrackCount">0</span>
+                    <span class="saved-badge hidden" id="musicSavedBadge" title="Saved in this website">
+                        <span class="saved-badge-dot"></span>SAVED
+                    </span>
+                </span>
                 <button class="music-add-btn" id="musicAddBtn" type="button">+ Add files</button>
                 <input type="file" id="musicFileInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" multiple hidden>
+            </div>
+
+            <div class="music-storage-info" id="musicStorageInfo">
+                <span class="storage-icon">💾</span>
+                <span id="musicStorageSize">Stored in this website</span>
             </div>
 
             <div class="music-track-list" id="musicTrackList"></div>
@@ -632,6 +652,7 @@
 
         <div class="music-foot">
             <span id="musicFootText">♞ Train with chill beats</span>
+            <span class="music-drag-hint">✥ drag ♪ to move</span>
         </div>
 
     </div>
