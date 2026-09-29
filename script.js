@@ -1,7 +1,7 @@
 "use strict";
 
 /* ======================================================
-   VISIONCHESS — TRAINING ENGINE (ULTRA)
+   VISIONCHESS — TRAINING ENGINE (ULTRA + CHILL RADIO)
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -20,6 +20,12 @@ const KEYS = {
     xp: "visionchess-xp-v3"
 };
 
+const MUSIC_KEYS = {
+    volume: "visionchess-music-volume-v1",
+    track: "visionchess-music-track-v1",
+    open: "visionchess-music-open-v1"
+};
+
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
@@ -33,7 +39,7 @@ const TIPS = [
     "Look at the board as a complete grid. Train your eyes to move naturally.",
     "Consistency is the secret. A few focused minutes can build a lasting habit.",
     "In knight mode, trace the L-shape: two squares one way, one square sideways.",
-    "Pattern recognition beats counting. Name squares by their neighbors."
+    "Lo-fi beats and board vision — a calm mind sees clearly."
 ];
 
 const MODE_LABELS = {
@@ -81,8 +87,18 @@ const DEFAULT_STATS = {
     flawless: 0
 };
 
-const DEFAULT_DAILY = { date: todayKey(), count: 0, target: 50 };
 const DAILY_TARGET = 50;
+
+/* Chill radio playlist — random lo-fi / chill live streams on YouTube */
+const MUSIC_TRACKS = [
+    { id: "jfKfPfyJRdk", name: "Lofi Girl · Beats to Relax" },
+    { id: "4xDzrJKXOOY", name: "Synthwave Radio · Retro Chill" },
+    { id: "lTRiuFIWV54", name: "Lofi Hip Hop · Study Beats" },
+    { id: "5yx6BWlEVcY", name: "Chillhop Essentials" },
+    { id: "n61ULEU7CO0", name: "Lofi Beats · Deep Focus" },
+    { id: "7NOSDKb0HlU", name: "Coffee Shop Radio" },
+    { id: "0vv7VcHVWSE", name: "Jazz Lofi · Smooth Grooves" }
+];
 
 
 /* ======================================================
@@ -129,7 +145,7 @@ let xp = Number(load(KEYS.xp, 0)) || 0;
 
 let daily = load(KEYS.daily, null);
 if (!daily || daily.date !== todayKey()) {
-    daily = { ...DEFAULT_DAILY };
+    daily = { date: todayKey(), count: 0, target: DAILY_TARGET };
     save(KEYS.daily, daily);
 }
 
@@ -144,10 +160,10 @@ const game = {
     mistakes: 0,
     streak: 0,
     bestStreak: 0,
-    target: null,          // current coordinate
-    knightSource: null,    // source square for knight mode
-    knightRemaining: [],   // remaining valid knight destinations
-    knightFound: [],       // already-found knight destinations
+    target: null,
+    knightSource: null,
+    knightRemaining: [],
+    knightFound: [],
     targetIndex: 0,
     timer: null,
     feedbackTimer: null,
@@ -177,35 +193,24 @@ function playSound(type = "correct") {
         if (audioContext.state === "suspended") audioContext.resume();
 
         const now = audioContext.currentTime;
-        const gain = audioContext.createGain();
-        gain.connect(audioContext.destination);
+        const master = audioContext.createGain();
+        master.connect(audioContext.destination);
 
         const volume = Math.max(0, Math.min(1, game.volume));
         let frequencies = [660, 880];
         let duration = 0.18;
 
-        if (type === "wrong") {
-            frequencies = [220];
-            duration = 0.16;
-        } else if (type === "finish") {
-            frequencies = [523, 659, 784, 1046];
-            duration = 0.55;
-        } else if (type === "tick") {
-            frequencies = [880];
-            duration = 0.06;
-        } else if (type === "achievement") {
-            frequencies = [784, 988, 1318];
-            duration = 0.5;
-        } else if (type === "start") {
-            frequencies = [440, 660];
-            duration = 0.2;
-        }
+        if (type === "wrong") { frequencies = [220]; duration = 0.16; }
+        else if (type === "finish") { frequencies = [523, 659, 784, 1046]; duration = 0.55; }
+        else if (type === "tick") { frequencies = [880]; duration = 0.06; }
+        else if (type === "achievement") { frequencies = [784, 988, 1318]; duration = 0.5; }
+        else if (type === "start") { frequencies = [440, 660]; duration = 0.2; }
 
         frequencies.forEach((freq, index) => {
             const osc = audioContext.createOscillator();
             const g = audioContext.createGain();
             osc.connect(g);
-            g.connect(gain);
+            g.connect(master);
             osc.type = "sine";
             osc.frequency.setValueAtTime(freq, now + index * 0.07);
 
@@ -237,6 +242,258 @@ function toast(message) {
     game.toastTimer = setTimeout(() => {
         $("toast").classList.remove("show");
     }, 2400);
+}
+
+
+/* ======================================================
+   CHILL RADIO (YouTube IFrame API)
+====================================================== */
+
+const music = {
+    player: null,
+    ready: false,
+    apiLoaded: false,
+    playing: false,
+    index: 0,
+    volume: 0.4,
+    panelOpen: false
+};
+
+function loadYouTubeAPI() {
+    if (music.apiLoaded) return;
+    music.apiLoaded = true;
+
+    if (window.YT && window.YT.Player) {
+        createYtPlayer();
+        return;
+    }
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    tag.async = true;
+    document.head.appendChild(tag);
+}
+
+window.onYouTubeIframeAPIReady = function () {
+    createYtPlayer();
+};
+
+function createYtPlayer() {
+    if (!window.YT || !window.YT.Player) return;
+    if (music.player) return;
+
+    try {
+        music.player = new window.YT.Player("ytPlayerHidden", {
+            height: "1",
+            width: "1",
+            videoId: MUSIC_TRACKS[music.index].id,
+            playerVars: {
+                autoplay: 0,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                iv_load_policy: 3,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0
+            },
+            events: {
+                onReady: onYtReady,
+                onStateChange: onYtStateChange,
+                onError: onYtError
+            }
+        });
+    } catch (err) {
+        console.warn("YT player creation failed:", err);
+    }
+}
+
+function onYtReady() {
+    music.ready = true;
+    if (music.player && music.player.setVolume) {
+        music.player.setVolume(Math.round(music.volume * 100));
+    }
+    updateMusicUI();
+}
+
+function onYtStateChange(event) {
+    if (!window.YT) return;
+    if (event.data === window.YT.PlayerState.PLAYING) {
+        music.playing = true;
+    } else if (
+        event.data === window.YT.PlayerState.PAUSED ||
+        event.data === window.YT.PlayerState.ENDED
+    ) {
+        music.playing = false;
+    }
+    updateMusicUI();
+}
+
+function onYtError() {
+    toast("Track unavailable — playing another.");
+    nextTrack();
+}
+
+function playMusic() {
+    if (!music.ready || !music.player) {
+        toast("Radio is still loading...");
+        return;
+    }
+    try {
+        music.player.playVideo();
+    } catch (e) {
+        console.warn(e);
+    }
+}
+
+function pauseMusic() {
+    if (!music.ready || !music.player) return;
+    try {
+        music.player.pauseVideo();
+    } catch (e) {
+        console.warn(e);
+    }
+}
+
+function toggleMusic() {
+    if (music.playing) pauseMusic();
+    else playMusic();
+}
+
+function setTrack(index, autoplay) {
+    const total = MUSIC_TRACKS.length;
+    music.index = ((index % total) + total) % total;
+    save(MUSIC_KEYS.track, music.index);
+    updateMusicUI();
+
+    if (!music.ready || !music.player) return;
+
+    try {
+        if (autoplay && music.player.loadVideoById) {
+            music.player.loadVideoById(MUSIC_TRACKS[music.index].id);
+        } else if (music.player.cueVideoById) {
+            music.player.cueVideoById(MUSIC_TRACKS[music.index].id);
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+}
+
+function nextTrack() {
+    // "Random" — but never the same track twice in a row
+    let next = music.index;
+    if (MUSIC_TRACKS.length > 1) {
+        while (next === music.index) {
+            next = Math.floor(Math.random() * MUSIC_TRACKS.length);
+        }
+    }
+    setTrack(next, true);
+    toast(`♪ ${MUSIC_TRACKS[music.index].name}`);
+}
+
+function prevTrack() {
+    setTrack(music.index - 1, true);
+}
+
+function setMusicVolume(vol) {
+    music.volume = Math.max(0, Math.min(1, vol));
+    save(MUSIC_KEYS.volume, music.volume);
+    if (music.ready && music.player && music.player.setVolume) {
+        music.player.setVolume(Math.round(music.volume * 100));
+    }
+    const volVal = $("musicVolVal");
+    if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
+}
+
+function updateMusicUI() {
+    const nameEl = $("musicTrackName");
+    if (nameEl) nameEl.textContent = MUSIC_TRACKS[music.index].name;
+
+    const playBtn = $("musicPlay");
+    if (playBtn) playBtn.textContent = music.playing ? "❚❚" : "▶";
+
+    const fab = $("musicFab");
+    if (fab) fab.classList.toggle("playing", music.playing);
+
+    const topBtn = $("musicTopBtn");
+    if (topBtn) topBtn.classList.toggle("playing", music.playing);
+}
+
+function openMusicPanel() {
+    const panel = $("musicPanel");
+    const fab = $("musicFab");
+    if (!panel || !fab) return;
+    panel.classList.remove("hidden");
+    fab.classList.add("active");
+    music.panelOpen = true;
+    save(MUSIC_KEYS.open, true);
+}
+
+function closeMusicPanel() {
+    const panel = $("musicPanel");
+    const fab = $("musicFab");
+    if (!panel || !fab) return;
+    panel.classList.add("hidden");
+    fab.classList.remove("active");
+    music.panelOpen = false;
+    save(MUSIC_KEYS.open, false);
+}
+
+function toggleMusicPanel() {
+    if (music.panelOpen) closeMusicPanel();
+    else openMusicPanel();
+}
+
+function setupMusic() {
+    // Restore saved settings
+    music.volume = Number(load(MUSIC_KEYS.volume, 0.4));
+    if (isNaN(music.volume)) music.volume = 0.4;
+
+    music.index = Number(load(MUSIC_KEYS.track, 0)) || 0;
+    if (music.index < 0 || music.index >= MUSIC_TRACKS.length) music.index = 0;
+
+    const volEl = $("musicVolume");
+    if (volEl) volEl.value = String(Math.round(music.volume * 100));
+
+    const volVal = $("musicVolVal");
+    if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
+
+    // FAB + panel
+    const fab = $("musicFab");
+    if (fab) fab.addEventListener("click", toggleMusicPanel);
+
+    const closeBtn = $("musicCloseBtn");
+    if (closeBtn) closeBtn.addEventListener("click", closeMusicPanel);
+
+    const topBtn = $("musicTopBtn");
+    if (topBtn) {
+        topBtn.addEventListener("click", () => {
+            if (!music.panelOpen) openMusicPanel();
+            else closeMusicPanel();
+        });
+    }
+
+    const playBtn = $("musicPlay");
+    if (playBtn) playBtn.addEventListener("click", toggleMusic);
+
+    const nextBtn = $("musicNext");
+    if (nextBtn) nextBtn.addEventListener("click", nextTrack);
+
+    const prevBtn = $("musicPrev");
+    if (prevBtn) prevBtn.addEventListener("click", prevTrack);
+
+    if (volEl) {
+        volEl.addEventListener("input", e => {
+            setMusicVolume(Number(e.target.value) / 100);
+        });
+    }
+
+    // Restore panel open state
+    const wasOpen = load(MUSIC_KEYS.open, false);
+    if (wasOpen) openMusicPanel();
+
+    updateMusicUI();
+    loadYouTubeAPI();
 }
 
 
@@ -432,11 +689,8 @@ function generateNameTarget() {
     clearHighlights();
     highlightSquare(coordinate, "target-highlight");
 
-    // Build choices
     const choices = new Set([coordinate]);
-    while (choices.size < 4) {
-        choices.add(randomSquare());
-    }
+    while (choices.size < 4) choices.add(randomSquare());
     const arr = Array.from(choices).sort(() => Math.random() - 0.5);
 
     const grid = $("choiceGrid");
@@ -532,10 +786,7 @@ function updateTimer() {
 
 function updateProgress() {
     const elapsed = game.duration - game.timeLeft;
-    const percentage = Math.min(
-        100,
-        Math.max(0, (elapsed / game.duration) * 100)
-    );
+    const percentage = Math.min(100, Math.max(0, (elapsed / game.duration) * 100));
     $("progressFill").style.width = `${percentage}%`;
     $("progressText").textContent = `${Math.round(percentage)}%`;
 }
@@ -575,15 +826,11 @@ function accuracy() {
 }
 
 function updateLiveStats() {
-    $("sessionCorrect").textContent =
-        String(game.correct).padStart(2, "0");
-
+    $("sessionCorrect").textContent = String(game.correct).padStart(2, "0");
     $("sessionAccuracy").innerHTML = `${accuracy()}<small>%</small>`;
     $("sessionAccuracy").style.color =
         accuracy() >= 80 ? "var(--green)" : "var(--orange)";
-
-    $("sessionStreak").textContent =
-        String(game.streak).padStart(2, "0");
+    $("sessionStreak").textContent = String(game.streak).padStart(2, "0");
 }
 
 function updateDashboard() {
@@ -603,12 +850,7 @@ function levelInfo(totalXp) {
     const level = Math.floor(totalXp / 250) + 1;
     const intoLevel = totalXp - (level - 1) * 250;
     const toNext = 250 - intoLevel;
-    return {
-        level,
-        intoLevel,
-        toNext,
-        progress: intoLevel / 250
-    };
+    return { level, intoLevel, toNext, progress: intoLevel / 250 };
 }
 
 function levelTitle(level) {
@@ -643,7 +885,7 @@ function addXp(amount) {
 
 function updateDailyUI() {
     const pct = Math.min(1, daily.count / DAILY_TARGET);
-    const circumference = 2 * Math.PI * 33; // r = 33 in ring
+    const circumference = 2 * Math.PI * 33;
     $("goalRingFill").style.strokeDashoffset = String(circumference * (1 - pct));
     $("goalPercent").textContent = `${Math.round(pct * 100)}%`;
     $("goalCurrent").textContent = daily.count;
@@ -735,8 +977,8 @@ function fireConfetti(count = 80) {
 
     for (let i = 0; i < count; i++) {
         particles.push({
-            x: canvas.width / 2 / dpr + (Math.random() - 0.5) * 200,
-            y: canvas.height / 2 / dpr - 40,
+            x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
+            y: window.innerHeight / 2 - 40,
             vx: (Math.random() - 0.5) * 8,
             vy: Math.random() * -8 - 3,
             size: Math.random() * 7 + 4,
@@ -774,9 +1016,8 @@ function fireConfetti(count = 80) {
             ctx.restore();
         });
 
-        if (alive > 0) {
-            raf = requestAnimationFrame(frame);
-        } else {
+        if (alive > 0) raf = requestAnimationFrame(frame);
+        else {
             cancelAnimationFrame(raf);
             ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         }
@@ -865,6 +1106,11 @@ function startTraining() {
 
     toast(`Session started · ${MODE_LABELS[game.mode]}`);
     playSound("start");
+
+    // Auto-play chill radio if the panel is open (user-initiated context)
+    if (music.panelOpen && !music.playing && music.ready) {
+        playMusic();
+    }
 }
 
 function togglePause() {
@@ -924,7 +1170,6 @@ function finishTraining() {
         stats.flawless = (stats.flawless || 0) + 1;
     }
 
-    // XP rewards
     let gainedXp = game.correct * 4;
     if (game.bestStreak >= 10) gainedXp += 30;
     if (game.bestStreak >= 20) gainedXp += 40;
@@ -960,11 +1205,8 @@ function finishTraining() {
 
     playSound("finish");
 
-    if (newRecord && game.correct > 0) {
-        fireConfetti(120);
-    } else if (game.correct >= 20) {
-        fireConfetti(70);
-    }
+    if (newRecord && game.correct > 0) fireConfetti(120);
+    else if (game.correct >= 20) fireConfetti(70);
 
     $("resultsPanel").scrollIntoView({
         behavior: "smooth",
@@ -984,14 +1226,8 @@ function handleSquare(coordinate, square) {
         if (coordinate === game.target) correctFind(square);
         else wrongSquare(square);
     } else if (game.mode === "knight") {
-        if (coordinate === game.knightSource) {
-            // Clicking source is ignored
-            return;
-        }
-        if (game.knightFound.includes(coordinate)) {
-            // Already found — ignore silently
-            return;
-        }
+        if (coordinate === game.knightSource) return;
+        if (game.knightFound.includes(coordinate)) return;
         if (game.knightRemaining.includes(coordinate)) {
             correctKnightStep(coordinate, square);
         } else {
@@ -1021,9 +1257,6 @@ function handleChoice(coord, btn) {
     }
 }
 
-
-/* --- FIND MODE --- */
-
 function correctFind(square) {
     game.correct++;
     game.streak++;
@@ -1046,9 +1279,7 @@ function correctFind(square) {
     save(KEYS.stats, stats);
     playSound("correct");
 
-    if (game.streak > 0 && game.streak % 5 === 0) {
-        toast(`${game.streak} in a row!`);
-    }
+    if (game.streak > 0 && game.streak % 5 === 0) toast(`${game.streak} in a row!`);
 
     clearTimeout(game.feedbackTimer);
     game.feedbackTimer = setTimeout(() => {
@@ -1056,9 +1287,6 @@ function correctFind(square) {
         generateTarget();
     }, 220);
 }
-
-
-/* --- NAME MODE --- */
 
 function correctName(btn) {
     game.correct++;
@@ -1080,9 +1308,7 @@ function correctName(btn) {
 
     setTimeout(() => btn.classList.remove("correct"), 400);
 
-    if (game.streak > 0 && game.streak % 5 === 0) {
-        toast(`${game.streak} in a row!`);
-    }
+    if (game.streak > 0 && game.streak % 5 === 0) toast(`${game.streak} in a row!`);
 
     clearTimeout(game.feedbackTimer);
     game.feedbackTimer = setTimeout(() => {
@@ -1091,16 +1317,12 @@ function correctName(btn) {
     }, 420);
 }
 
-
-/* --- KNIGHT MODE --- */
-
 function correctKnightStep(coordinate, square) {
     game.knightFound.push(coordinate);
     game.knightRemaining = game.knightRemaining.filter(c => c !== coordinate);
 
     square.classList.add("knight-found");
 
-    // Count this as a "hit" — increment streak/total
     game.correct++;
     game.streak++;
     game.bestStreak = Math.max(game.bestStreak, game.streak);
@@ -1113,7 +1335,6 @@ function correctKnightStep(coordinate, square) {
     save(KEYS.stats, stats);
 
     if (game.knightRemaining.length === 0) {
-        // All jumps found
         $("targetPanel").classList.add("correct");
         $("targetFeedback").textContent = "✓ ALL JUMPS FOUND";
         $("targetFeedback").style.color = "var(--green)";
@@ -1131,9 +1352,6 @@ function correctKnightStep(coordinate, square) {
             `${game.knightFound.length} / ${game.knightFound.length + game.knightRemaining.length} jumps found.`;
     }
 }
-
-
-/* --- WRONG --- */
 
 function wrongSquare(square) {
     game.mistakes++;
@@ -1154,11 +1372,9 @@ function wrongSquare(square) {
     $("targetFeedback").style.color = "var(--red)";
 
     if (game.mode === "find") {
-        $("targetHint").textContent =
-            `That was ${square.dataset.square}. Find ${game.target}.`;
+        $("targetHint").textContent = `That was ${square.dataset.square}. Find ${game.target}.`;
     } else if (game.mode === "knight") {
-        $("targetHint").textContent =
-            `${square.dataset.square} is not a legal jump. Keep looking.`;
+        $("targetHint").textContent = `${square.dataset.square} is not a legal jump. Keep looking.`;
     }
 
     updateLiveStats();
@@ -1308,7 +1524,6 @@ function renderChart() {
 
         bar.title = `${session.correct} correct · ${session.accuracy}% accuracy`;
 
-        // stagger animation
         bar.style.transitionDelay = `${i * 40}ms`;
         chart.appendChild(bar);
     });
@@ -1414,13 +1629,16 @@ function setupKeyboard() {
             return;
         }
 
+        if (key === "m") {
+            event.preventDefault();
+            toggleMusicPanel();
+            return;
+        }
+
         if (event.key === "Escape") {
             document.body.classList.remove("sidebar-open");
-            if (game.paused) {
-                togglePause();
-            } else if (game.running) {
-                togglePause();
-            }
+            if (game.paused) togglePause();
+            else if (game.running) togglePause();
         }
     });
 }
@@ -1445,20 +1663,8 @@ function setMode(mode) {
         btn.setAttribute("aria-selected", active ? "true" : "false");
     });
 
-    // Update mission steps
     renderMissionSteps();
-
-    // Reset target display
     resetSession();
-
-    // Update hint text
-    if (mode === "find") {
-        $("targetHint").textContent = "Start your session to begin.";
-    } else if (mode === "name") {
-        $("targetHint").textContent = "Start your session to begin.";
-    } else {
-        $("targetHint").textContent = "Start your session to begin.";
-    }
 }
 
 function renderMissionSteps() {
@@ -1522,7 +1728,9 @@ function exportData() {
             sound: game.sound,
             volume: game.volume,
             labels: game.labels,
-            ticks: game.ticks
+            ticks: game.ticks,
+            musicVolume: music.volume,
+            musicTrack: music.index
         }
     };
 
@@ -1590,6 +1798,14 @@ function importData(file) {
                     $("ticksToggle").checked = game.ticks;
                     save(KEYS.ticks, game.ticks);
                 }
+                if (typeof data.settings.musicVolume === "number") {
+                    setMusicVolume(data.settings.musicVolume);
+                    const mv = $("musicVolume");
+                    if (mv) mv.value = String(Math.round(music.volume * 100));
+                }
+                if (typeof data.settings.musicTrack === "number") {
+                    setTrack(data.settings.musicTrack, false);
+                }
             }
 
             updateDashboard();
@@ -1618,12 +1834,10 @@ function init() {
     createCoordinates();
     createBoard();
 
-    // Themes
     setAppearance(load(KEYS.theme, "dark"));
     setBoardTheme(load(KEYS.board, "rose"));
     setLabels(load(KEYS.labels, false));
 
-    // Sound / ticks / volume
     game.sound = load(KEYS.sound, true) !== false;
     $("soundToggle").checked = game.sound;
 
@@ -1634,7 +1848,7 @@ function init() {
     game.ticks = load(KEYS.ticks, true) !== false;
     $("ticksToggle").checked = game.ticks;
 
-    // Buttons
+    // Training buttons
     $("startBtn").addEventListener("click", startTraining);
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
@@ -1691,7 +1905,6 @@ function init() {
         toast(game.ticks ? "Countdown ticks on." : "Countdown ticks off.");
     });
 
-    // Mode buttons
     document.querySelectorAll(".mode-btn").forEach(btn => {
         btn.addEventListener("click", () => setMode(btn.dataset.mode));
     });
@@ -1699,7 +1912,6 @@ function init() {
     $("fullscreenBtn").addEventListener("click", toggleFullscreen);
     $("clearHistoryBtn").addEventListener("click", clearHistory);
 
-    // Export / Import
     $("exportBtn").addEventListener("click", exportData);
     $("importBtn").addEventListener("click", () => $("importFile").click());
     $("importFile").addEventListener("change", event => {
@@ -1710,6 +1922,7 @@ function init() {
 
     setupNavigation();
     setupKeyboard();
+    setupMusic();
 
     setDailyTip();
     renderMissionSteps();
