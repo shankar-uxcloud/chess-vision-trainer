@@ -1,7 +1,7 @@
 "use strict";
 
 /* ======================================================
-   VISIONCHESS — TRAINING ENGINE (ULTRA + CHILL RADIO)
+   VISIONCHESS — TRAINING ENGINE (ULTRA + RADIO + LOCAL)
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -21,9 +21,10 @@ const KEYS = {
 };
 
 const MUSIC_KEYS = {
-    volume: "visionchess-music-volume-v1",
-    track: "visionchess-music-track-v1",
-    open: "visionchess-music-open-v1"
+    volume: "visionchess-music-volume-v2",
+    track: "visionchess-music-track-v2",
+    open: "visionchess-music-open-v2",
+    source: "visionchess-music-source-v2"
 };
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -99,6 +100,11 @@ const MUSIC_TRACKS = [
     { id: "7NOSDKb0HlU", name: "Coffee Shop Radio" },
     { id: "0vv7VcHVWSE", name: "Jazz Lofi · Smooth Grooves" }
 ];
+
+/* IndexedDB settings for local music storage */
+const IDB_NAME = "visionchess-music-db";
+const IDB_STORE = "tracks";
+const IDB_VERSION = 1;
 
 
 /* ======================================================
@@ -246,22 +252,104 @@ function toast(message) {
 
 
 /* ======================================================
-   CHILL RADIO (YouTube IFrame API)
+   INDEXEDDB — LOCAL MUSIC STORAGE
+====================================================== */
+
+function openMusicDb() {
+    return new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) {
+            reject(new Error("IndexedDB not supported"));
+            return;
+        }
+        const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                db.createObjectStore(IDB_STORE, { keyPath: "id" });
+            }
+        };
+
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function dbAddTrack(file) {
+    const db = await openMusicDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+
+        const id = "local-" + Date.now() + "-" +
+            Math.random().toString(36).slice(2, 8);
+
+        const record = {
+            id,
+            name: file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Untitled",
+            type: file.type || "audio/mpeg",
+            size: file.size,
+            addedAt: Date.now(),
+            blob: file
+        };
+
+        const req = store.add(record);
+        req.onsuccess = () => resolve(record);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function dbGetAllTracks() {
+    const db = await openMusicDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const store = tx.objectStore(IDB_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function dbDeleteTrack(id) {
+    const db = await openMusicDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    });
+}
+
+
+/* ======================================================
+   CHILL RADIO (YouTube Stream + Local Files)
 ====================================================== */
 
 const music = {
-    player: null,
-    ready: false,
-    apiLoaded: false,
-    playing: false,
-    index: 0,
+    // Stream (YouTube)
+    yt: null,
+    ytReady: false,
+    ytApiLoaded: false,
+    streamPlaying: false,
+    streamIndex: 0,
+
+    // Local
+    localTracks: [],
+    localIndex: 0,
+    localPlaying: false,
+    localObjectUrl: null,
+    audioEl: null,
+
+    // Shared
     volume: 0.4,
-    panelOpen: false
+    panelOpen: false,
+    source: "stream"
 };
 
 function loadYouTubeAPI() {
-    if (music.apiLoaded) return;
-    music.apiLoaded = true;
+    if (music.ytApiLoaded) return;
+    music.ytApiLoaded = true;
 
     if (window.YT && window.YT.Player) {
         createYtPlayer();
@@ -280,13 +368,13 @@ window.onYouTubeIframeAPIReady = function () {
 
 function createYtPlayer() {
     if (!window.YT || !window.YT.Player) return;
-    if (music.player) return;
+    if (music.yt) return;
 
     try {
-        music.player = new window.YT.Player("ytPlayerHidden", {
+        music.yt = new window.YT.Player("ytPlayerHidden", {
             height: "1",
             width: "1",
-            videoId: MUSIC_TRACKS[music.index].id,
+            videoId: MUSIC_TRACKS[music.streamIndex].id,
             playerVars: {
                 autoplay: 0,
                 controls: 0,
@@ -309,9 +397,9 @@ function createYtPlayer() {
 }
 
 function onYtReady() {
-    music.ready = true;
-    if (music.player && music.player.setVolume) {
-        music.player.setVolume(Math.round(music.volume * 100));
+    music.ytReady = true;
+    if (music.yt && music.yt.setVolume) {
+        music.yt.setVolume(Math.round(music.volume * 100));
     }
     updateMusicUI();
 }
@@ -319,104 +407,241 @@ function onYtReady() {
 function onYtStateChange(event) {
     if (!window.YT) return;
     if (event.data === window.YT.PlayerState.PLAYING) {
-        music.playing = true;
+        music.streamPlaying = true;
     } else if (
         event.data === window.YT.PlayerState.PAUSED ||
         event.data === window.YT.PlayerState.ENDED
     ) {
-        music.playing = false;
+        music.streamPlaying = false;
     }
     updateMusicUI();
 }
 
 function onYtError() {
+    if (music.source !== "stream") return;
     toast("Track unavailable — playing another.");
-    nextTrack();
+    nextStreamTrack();
 }
 
-function playMusic() {
-    if (!music.ready || !music.player) {
+/* ---------- Stream controls ---------- */
+
+function playStream() {
+    if (!music.ytReady || !music.yt) {
         toast("Radio is still loading...");
         return;
     }
-    try {
-        music.player.playVideo();
-    } catch (e) {
-        console.warn(e);
-    }
+    try { music.yt.playVideo(); } catch (e) { console.warn(e); }
 }
 
-function pauseMusic() {
-    if (!music.ready || !music.player) return;
-    try {
-        music.player.pauseVideo();
-    } catch (e) {
-        console.warn(e);
-    }
+function pauseStream() {
+    if (!music.ytReady || !music.yt) return;
+    try { music.yt.pauseVideo(); } catch (e) { console.warn(e); }
 }
 
-function toggleMusic() {
-    if (music.playing) pauseMusic();
-    else playMusic();
-}
-
-function setTrack(index, autoplay) {
+function setStreamTrack(index, autoplay) {
     const total = MUSIC_TRACKS.length;
-    music.index = ((index % total) + total) % total;
-    save(MUSIC_KEYS.track, music.index);
+    music.streamIndex = ((index % total) + total) % total;
+    save(MUSIC_KEYS.track, music.streamIndex);
     updateMusicUI();
 
-    if (!music.ready || !music.player) return;
-
+    if (!music.ytReady || !music.yt) return;
     try {
-        if (autoplay && music.player.loadVideoById) {
-            music.player.loadVideoById(MUSIC_TRACKS[music.index].id);
-        } else if (music.player.cueVideoById) {
-            music.player.cueVideoById(MUSIC_TRACKS[music.index].id);
-        }
+        const id = MUSIC_TRACKS[music.streamIndex].id;
+        if (autoplay && music.yt.loadVideoById) music.yt.loadVideoById(id);
+        else if (music.yt.cueVideoById) music.yt.cueVideoById(id);
     } catch (e) {
         console.warn(e);
+    }
+}
+
+function nextStreamTrack() {
+    // Random shuffle (never the same twice in a row)
+    let next = music.streamIndex;
+    if (MUSIC_TRACKS.length > 1) {
+        while (next === music.streamIndex) {
+            next = Math.floor(Math.random() * MUSIC_TRACKS.length);
+        }
+    }
+    setStreamTrack(next, true);
+    toast(`♪ ${MUSIC_TRACKS[music.streamIndex].name}`);
+}
+
+function prevStreamTrack() {
+    setStreamTrack(music.streamIndex - 1, true);
+}
+
+/* ---------- Local controls ---------- */
+
+async function loadLocalTracks() {
+    try {
+        music.localTracks = await dbGetAllTracks();
+        music.localTracks.sort((a, b) => a.addedAt - b.addedAt);
+    } catch (err) {
+        console.warn("Local track load failed:", err);
+        music.localTracks = [];
+    }
+    renderLocalTracks();
+}
+
+function playLocalIndex(index) {
+    if (!music.localTracks.length) return;
+
+    const total = music.localTracks.length;
+    music.localIndex = ((index % total) + total) % total;
+    const track = music.localTracks[music.localIndex];
+
+    if (!music.audioEl) return;
+
+    // Revoke old object URL
+    if (music.localObjectUrl) {
+        URL.revokeObjectURL(music.localObjectUrl);
+        music.localObjectUrl = null;
+    }
+
+    try {
+        const url = URL.createObjectURL(track.blob);
+        music.localObjectUrl = url;
+        music.audioEl.src = url;
+        music.audioEl.volume = music.volume;
+        music.audioEl.play().catch(err => {
+            console.warn("Playback failed:", err);
+        });
+    } catch (err) {
+        console.warn("Could not play local track:", err);
+        toast("Could not play that file.");
+    }
+
+    updateMusicUI();
+    renderLocalTracks();
+}
+
+function pauseLocal() {
+    if (!music.audioEl) return;
+    music.audioEl.pause();
+}
+
+function toggleLocal() {
+    if (!music.audioEl) return;
+    if (music.localPlaying) {
+        pauseLocal();
+    } else {
+        if (!music.audioEl.src) {
+            if (!music.localTracks.length) {
+                toast("No local tracks yet — add files first.");
+                return;
+            }
+            playLocalIndex(music.localIndex);
+        } else {
+            music.audioEl.play().catch(err => console.warn(err));
+        }
+    }
+}
+
+function nextLocalTrack() {
+    if (!music.localTracks.length) return;
+    playLocalIndex(music.localIndex + 1);
+}
+
+function prevLocalTrack() {
+    if (!music.localTracks.length) return;
+    playLocalIndex(music.localIndex - 1);
+}
+
+/* ---------- Shared music controls ---------- */
+
+function musicIsPlaying() {
+    return music.source === "stream" ? music.streamPlaying : music.localPlaying;
+}
+
+function togglePlay() {
+    if (music.source === "stream") {
+        if (music.streamPlaying) pauseStream();
+        else playStream();
+    } else {
+        toggleLocal();
     }
 }
 
 function nextTrack() {
-    // "Random" — but never the same track twice in a row
-    let next = music.index;
-    if (MUSIC_TRACKS.length > 1) {
-        while (next === music.index) {
-            next = Math.floor(Math.random() * MUSIC_TRACKS.length);
-        }
-    }
-    setTrack(next, true);
-    toast(`♪ ${MUSIC_TRACKS[music.index].name}`);
+    if (music.source === "stream") nextStreamTrack();
+    else nextLocalTrack();
 }
 
 function prevTrack() {
-    setTrack(music.index - 1, true);
+    if (music.source === "stream") prevStreamTrack();
+    else prevLocalTrack();
 }
 
 function setMusicVolume(vol) {
     music.volume = Math.max(0, Math.min(1, vol));
     save(MUSIC_KEYS.volume, music.volume);
-    if (music.ready && music.player && music.player.setVolume) {
-        music.player.setVolume(Math.round(music.volume * 100));
+
+    if (music.yt && music.yt.setVolume) {
+        music.yt.setVolume(Math.round(music.volume * 100));
     }
+    if (music.audioEl) {
+        music.audioEl.volume = music.volume;
+    }
+
     const volVal = $("musicVolVal");
     if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
 }
 
+function switchSource(source) {
+    if (!["stream", "local"].includes(source)) return;
+    if (music.source === source) return;
+
+    // Pause the other source
+    if (source === "local") {
+        pauseStream();
+    } else {
+        pauseLocal();
+    }
+
+    music.source = source;
+    save(MUSIC_KEYS.source, source);
+
+    document.querySelectorAll(".music-tab").forEach(tab => {
+        const active = tab.dataset.source === source;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    $("musicLocalSection").classList.toggle("hidden", source !== "local");
+
+    updateMusicUI();
+}
+
 function updateMusicUI() {
+    const source = music.source;
+
+    // Now playing label + name
+    const nowLabel = $("musicNowLabel");
     const nameEl = $("musicTrackName");
-    if (nameEl) nameEl.textContent = MUSIC_TRACKS[music.index].name;
 
+    if (source === "stream") {
+        if (nowLabel) nowLabel.textContent = "NOW PLAYING · STREAM";
+        if (nameEl) nameEl.textContent = MUSIC_TRACKS[music.streamIndex].name;
+        if ($("musicFootText")) $("musicFootText").textContent = "♞ Train with chill beats";
+    } else {
+        if (nowLabel) nowLabel.textContent = "NOW PLAYING · LOCAL";
+        if (nameEl) {
+            const track = music.localTracks[music.localIndex];
+            nameEl.textContent = track ? track.name : "No local tracks yet";
+        }
+        if ($("musicFootText")) $("musicFootText").textContent = "♞ Your music, your board";
+    }
+
+    // Play button
     const playBtn = $("musicPlay");
-    if (playBtn) playBtn.textContent = music.playing ? "❚❚" : "▶";
+    if (playBtn) playBtn.textContent = musicIsPlaying() ? "❚❚" : "▶";
 
+    // FAB + topbar indicator
     const fab = $("musicFab");
-    if (fab) fab.classList.toggle("playing", music.playing);
+    if (fab) fab.classList.toggle("playing", musicIsPlaying());
 
     const topBtn = $("musicTopBtn");
-    if (topBtn) topBtn.classList.toggle("playing", music.playing);
+    if (topBtn) topBtn.classList.toggle("playing", musicIsPlaying());
 }
 
 function openMusicPanel() {
@@ -444,17 +669,219 @@ function toggleMusicPanel() {
     else openMusicPanel();
 }
 
+/* ---------- Local tracks UI ---------- */
+
+function formatBytes(bytes) {
+    if (!bytes) return "0 KB";
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(0)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+}
+
+function renderLocalTracks() {
+    const list = $("musicTrackList");
+    const countEl = $("musicTrackCount");
+    if (!list) return;
+
+    if (countEl) countEl.textContent = music.localTracks.length;
+
+    list.innerHTML = "";
+
+    if (!music.localTracks.length) {
+        list.innerHTML = `
+            <div class="music-empty">
+                <span>♪</span>
+                No local tracks yet.<br>
+                Click <strong>+ Add files</strong> to import MP3s, WAVs, and more.
+            </div>
+        `;
+        return;
+    }
+
+    music.localTracks.forEach((track, index) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "music-track-item" +
+            (index === music.localIndex && music.source === "local" ? " active" : "");
+        item.dataset.id = track.id;
+
+        const icon = document.createElement("div");
+        icon.className = "music-track-icon";
+        icon.textContent = index === music.localIndex && music.localPlaying ? "❚❚" : "♪";
+
+        const meta = document.createElement("div");
+        meta.className = "music-track-meta";
+
+        const name = document.createElement("div");
+        name.className = "music-track-name";
+        name.textContent = track.name;
+
+        const size = document.createElement("div");
+        size.className = "music-track-size";
+        const ext = (track.type || "").split("/")[1] || "audio";
+        size.textContent = `${formatBytes(track.size)} · ${ext.toUpperCase()}`;
+
+        meta.append(name, size);
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "music-track-del";
+        del.setAttribute("aria-label", "Remove track");
+        del.textContent = "×";
+        del.addEventListener("click", event => {
+            event.stopPropagation();
+            removeLocalTrack(track.id);
+        });
+
+        item.append(icon, meta, del);
+
+        item.addEventListener("click", () => {
+            if (music.source !== "local") switchSource("local");
+            playLocalIndex(index);
+        });
+
+        list.appendChild(item);
+    });
+}
+
+async function addLocalFiles(files) {
+    if (!files || !files.length) return;
+
+    // Detect IndexedDB availability
+    try {
+        await openMusicDb();
+    } catch (err) {
+        toast("Local storage not available in this browser.");
+        return;
+    }
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const file of files) {
+        if (!file.type.startsWith("audio/") && !/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(file.name)) {
+            skipped++;
+            continue;
+        }
+
+        // Soft size cap (30 MB per file)
+        if (file.size > 30 * 1024 * 1024) {
+            const ok = confirm(`"${file.name}" is ${formatBytes(file.size)}. Add anyway?`);
+            if (!ok) { skipped++; continue; }
+        }
+
+        try {
+            const record = await dbAddTrack(file);
+            music.localTracks.push(record);
+            added++;
+        } catch (err) {
+            console.warn("Add failed:", err);
+            skipped++;
+        }
+    }
+
+    music.localTracks.sort((a, b) => a.addedAt - b.addedAt);
+    renderLocalTracks();
+
+    if (added) {
+        toast(`Added ${added} track${added > 1 ? "s" : ""}${skipped ? ` · ${skipped} skipped` : ""}.`);
+        // Auto-switch to Local tab so the user sees what they added
+        if (music.source !== "local") switchSource("local");
+    } else if (skipped) {
+        toast("No audio files added.");
+    }
+}
+
+async function removeLocalTrack(id) {
+    const track = music.localTracks.find(t => t.id === id);
+    if (!track) return;
+
+    if (!confirm(`Remove "${track.name}" from your local tracks?`)) return;
+
+    try {
+        await dbDeleteTrack(id);
+    } catch (err) {
+        console.warn(err);
+    }
+
+    const wasActive = music.source === "local" && music.localTracks[music.localIndex]?.id === id;
+
+    music.localTracks = music.localTracks.filter(t => t.id !== id);
+
+    if (wasActive) {
+        pauseLocal();
+        if (music.localObjectUrl) {
+            URL.revokeObjectURL(music.localObjectUrl);
+            music.localObjectUrl = null;
+        }
+        if (music.audioEl) music.audioEl.src = "";
+    }
+
+    if (music.localIndex >= music.localTracks.length) {
+        music.localIndex = Math.max(0, music.localTracks.length - 1);
+    }
+
+    renderLocalTracks();
+    updateMusicUI();
+    toast("Track removed.");
+}
+
+/* ---------- Init ---------- */
+
 function setupMusic() {
-    // Restore saved settings
+    // Restore settings
     music.volume = Number(load(MUSIC_KEYS.volume, 0.4));
     if (isNaN(music.volume)) music.volume = 0.4;
 
-    music.index = Number(load(MUSIC_KEYS.track, 0)) || 0;
-    if (music.index < 0 || music.index >= MUSIC_TRACKS.length) music.index = 0;
+    music.streamIndex = Number(load(MUSIC_KEYS.track, 0)) || 0;
+    if (music.streamIndex < 0 || music.streamIndex >= MUSIC_TRACKS.length) {
+        music.streamIndex = 0;
+    }
 
+    music.source = load(MUSIC_KEYS.source, "stream");
+    if (!["stream", "local"].includes(music.source)) music.source = "stream";
+
+    // Audio element for local files
+    music.audioEl = $("localAudio");
+    if (music.audioEl) {
+        music.audioEl.volume = music.volume;
+
+        music.audioEl.addEventListener("play", () => {
+            music.localPlaying = true;
+            updateMusicUI();
+            renderLocalTracks();
+        });
+        music.audioEl.addEventListener("pause", () => {
+            music.localPlaying = false;
+            updateMusicUI();
+            renderLocalTracks();
+        });
+        music.audioEl.addEventListener("ended", () => {
+            // Auto-advance to next local track
+            if (music.localTracks.length > 1) {
+                playLocalIndex(music.localIndex + 1);
+            } else {
+                music.localPlaying = false;
+                updateMusicUI();
+                renderLocalTracks();
+            }
+        });
+        music.audioEl.addEventListener("error", () => {
+            console.warn("Local audio error");
+            music.localPlaying = false;
+            updateMusicUI();
+        });
+    }
+
+    // Volume slider
     const volEl = $("musicVolume");
-    if (volEl) volEl.value = String(Math.round(music.volume * 100));
-
+    if (volEl) {
+        volEl.value = String(Math.round(music.volume * 100));
+        volEl.addEventListener("input", e => {
+            setMusicVolume(Number(e.target.value) / 100);
+        });
+    }
     const volVal = $("musicVolVal");
     if (volVal) volVal.textContent = `${Math.round(music.volume * 100)}%`;
 
@@ -473,8 +900,9 @@ function setupMusic() {
         });
     }
 
+    // Transport
     const playBtn = $("musicPlay");
-    if (playBtn) playBtn.addEventListener("click", toggleMusic);
+    if (playBtn) playBtn.addEventListener("click", togglePlay);
 
     const nextBtn = $("musicNext");
     if (nextBtn) nextBtn.addEventListener("click", nextTrack);
@@ -482,17 +910,42 @@ function setupMusic() {
     const prevBtn = $("musicPrev");
     if (prevBtn) prevBtn.addEventListener("click", prevTrack);
 
-    if (volEl) {
-        volEl.addEventListener("input", e => {
-            setMusicVolume(Number(e.target.value) / 100);
+    // Source tabs
+    document.querySelectorAll(".music-tab").forEach(tab => {
+        tab.addEventListener("click", () => switchSource(tab.dataset.source));
+    });
+
+    // Local file input
+    const addBtn = $("musicAddBtn");
+    const fileInput = $("musicFileInput");
+    if (addBtn && fileInput) {
+        addBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", async event => {
+            const files = Array.from(event.target.files || []);
+            await addLocalFiles(files);
+            event.target.value = "";
         });
     }
+
+    // Apply initial source state
+    document.querySelectorAll(".music-tab").forEach(tab => {
+        const active = tab.dataset.source === music.source;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    $("musicLocalSection").classList.toggle("hidden", music.source !== "local");
 
     // Restore panel open state
     const wasOpen = load(MUSIC_KEYS.open, false);
     if (wasOpen) openMusicPanel();
 
+    // Load local tracks from IndexedDB (async)
+    loadLocalTracks().then(() => updateMusicUI());
+
     updateMusicUI();
+
+    // Init YouTube API (only after first user interaction if we want to be safe,
+    // but loading the script itself is fine)
     loadYouTubeAPI();
 }
 
@@ -1107,9 +1560,13 @@ function startTraining() {
     toast(`Session started · ${MODE_LABELS[game.mode]}`);
     playSound("start");
 
-    // Auto-play chill radio if the panel is open (user-initiated context)
-    if (music.panelOpen && !music.playing && music.ready) {
-        playMusic();
+    // If the radio panel is open and nothing is playing, start the current source
+    if (music.panelOpen && !musicIsPlaying()) {
+        if (music.source === "stream" && music.ytReady) playStream();
+        else if (music.source === "local" && music.localTracks.length) {
+            if (!music.audioEl.src) playLocalIndex(music.localIndex);
+            else music.audioEl.play().catch(() => {});
+        }
     }
 }
 
@@ -1730,7 +2187,8 @@ function exportData() {
             labels: game.labels,
             ticks: game.ticks,
             musicVolume: music.volume,
-            musicTrack: music.index
+            musicTrack: music.streamIndex,
+            musicSource: music.source
         }
     };
 
@@ -1747,7 +2205,7 @@ function exportData() {
     a.remove();
     URL.revokeObjectURL(url);
 
-    toast("Backup exported.");
+    toast("Backup exported. (Local music files are not included.)");
 }
 
 function importData(file) {
@@ -1804,7 +2262,10 @@ function importData(file) {
                     if (mv) mv.value = String(Math.round(music.volume * 100));
                 }
                 if (typeof data.settings.musicTrack === "number") {
-                    setTrack(data.settings.musicTrack, false);
+                    setStreamTrack(data.settings.musicTrack, false);
+                }
+                if (typeof data.settings.musicSource === "string") {
+                    switchSource(data.settings.musicSource);
                 }
             }
 
