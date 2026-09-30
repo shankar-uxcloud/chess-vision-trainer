@@ -1,11 +1,10 @@
 "use strict";
 
 /* ======================================================
-   CHESS VISION TRAINER — ENGINE v3.2.1
-   Fix: updateDashboard() no longer crashes on missing IDs
-   + Both-view dual mode
-   + Random pieces on board
-   + Shuffle-bag random coordinates
+   CHESS VISION TRAINER — ENGINE v3.6
+   + Legendary preloader sequence
+   + Coordinate text colored by current perspective
+   + Auto view + Both view + Random pieces
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -27,7 +26,8 @@ const KEYS = {
     achievements: "cvt-achievements-v3",
     daily: "cvt-daily-v3",
     xp: "cvt-xp-v3",
-    onboarded: "cvt-onboarded-v3"
+    onboarded: "cvt-onboarded-v3",
+    preloaderSeen: "cvt-preloader-v1"
 };
 
 const MUSIC_KEYS = {
@@ -53,7 +53,8 @@ const TIPS = [
     "Look at the board as a complete grid. Train your eyes to move naturally.",
     "Consistency is the secret. A few focused minutes each day compounds.",
     "In knight mode, trace the L-shape: two squares one way, one sideways.",
-    "Both-view mode is the real test: know every square from both sides."
+    "Both-view mode is the real test: know every square from both sides.",
+    "Auto view trains you to switch perspective instantly."
 ];
 
 const MODE_INFO = {
@@ -132,9 +133,6 @@ const DEFAULT_STATS = {
 
 const DAILY_TARGET = 50;
 
-/* ======================================================
-   SHUFFLE BAG — unbiased random square generation
-====================================================== */
 const squareBag = {
     pool: [],
     reset() {
@@ -163,7 +161,6 @@ const squareBag = {
 };
 squareBag.reset();
 
-/* Piece glyphs */
 const PIECE_GLYPHS_WHITE = ["♔","♕","♖","♗","♘","♙"];
 const PIECE_GLYPHS_BLACK = ["♚","♛","♜","♝","♞","♟"];
 const PIECE_COUNT = 10;
@@ -182,21 +179,16 @@ const IDB_NAME = "cvt-music-db";
 const IDB_STORE = "tracks";
 const IDB_VERSION = 1;
 
-/* ======================================================
-   STORAGE
-====================================================== */
 function load(key, fallback) {
     try {
         const v = localStorage.getItem(key);
         return v === null ? fallback : JSON.parse(v);
     } catch { return fallback; }
 }
-
 function save(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); }
     catch (e) { console.warn("Save failed:", e); }
 }
-
 function todayKey() {
     const d = new Date();
     return d.getFullYear() + "-" +
@@ -204,9 +196,6 @@ function todayKey() {
         String(d.getDate()).padStart(2, "0");
 }
 
-/* ======================================================
-   STATE
-====================================================== */
 let stats = { ...DEFAULT_STATS, ...(load(KEYS.stats, {}) || {}) };
 let history = load(KEYS.history, []);
 if (!Array.isArray(history)) history = [];
@@ -224,7 +213,8 @@ if (!daily || daily.date !== todayKey()) {
 
 const game = {
     mode: "square",
-    perspective: "white",     // white | black | mixed | both
+    perspective: "white",
+    autoSide: null,
     dualActive: false,
     dualStep: 0,
     dualTarget: null,
@@ -259,8 +249,140 @@ const game = {
 let audioContext = null;
 
 /* ======================================================
-   SOUND
+   PRELOADER
 ====================================================== */
+const PIECE_LAYOUT = [
+    { r: 0, c: 0, glyph: "♜", color: "black" },
+    { r: 0, c: 3, glyph: "♜", color: "black" },
+    { r: 1, c: 1, glyph: "♟", color: "black" },
+    { r: 1, c: 2, glyph: "♟", color: "black" },
+    { r: 2, c: 1, glyph: "♙", color: "white" },
+    { r: 2, c: 2, glyph: "♙", color: "white" },
+    { r: 3, c: 0, glyph: "♖", color: "white" },
+    { r: 3, c: 3, glyph: "♖", color: "white" }
+];
+
+function runPreloader() {
+    const el = $("preloader");
+    if (!el) return;
+
+    document.body.classList.add("preloading");
+    document.documentElement.style.overflow = "hidden";
+
+    const grid = $("preloaderGrid");
+    const line = $("preloaderLine");
+    const sub = $("preloaderSub");
+    const barFill = $("preloaderBarFill");
+    const percentEl = $("preloaderPercent");
+
+    // Build 4x4 board
+    if (grid) {
+        grid.innerHTML = "";
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+                const sq = document.createElement("div");
+                sq.className = "preloader-square " + ((r + c) % 2 === 0 ? "light" : "dark");
+                grid.appendChild(sq);
+            }
+        }
+    }
+
+    let done = false;
+    const timers = [];
+
+    function finish() {
+        if (done) return;
+        done = true;
+        timers.forEach(clearTimeout);
+        timers.length = 0;
+
+        el.classList.add("done");
+        document.body.classList.remove("preloading");
+        document.documentElement.style.overflow = "";
+        try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
+
+        setTimeout(() => {
+            el.style.display = "none";
+            el.setAttribute("aria-hidden", "true");
+        }, 700);
+    }
+
+    // Click anywhere to skip
+    el.addEventListener("click", () => {
+        if (done) return;
+        timers.forEach(clearTimeout);
+        timers.length = 0;
+        if (percentEl) percentEl.textContent = "100";
+        if (barFill) barFill.style.width = "100%";
+        if (line) line.classList.add("show");
+        if (sub) sub.classList.add("show");
+        setTimeout(finish, 350);
+    }, { once: true });
+
+    // 1. Pieces arrive one by one
+    PIECE_LAYOUT.forEach((p, i) => {
+        timers.push(setTimeout(() => {
+            if (done || !grid) return;
+            const sq = grid.children[p.r * 4 + p.c];
+            if (!sq) return;
+            const piece = document.createElement("span");
+            piece.className = "preloader-piece " + p.color;
+            piece.textContent = p.glyph;
+            piece.setAttribute("aria-hidden", "true");
+            sq.appendChild(piece);
+        }, 140 + i * 200));
+    });
+
+    const piecesDone = 140 + PIECE_LAYOUT.length * 200 + 300;
+
+    // 2. Quote fades in
+    timers.push(setTimeout(() => {
+        if (done) return;
+        if (line) line.classList.add("show");
+        if (sub) sub.classList.add("show");
+    }, piecesDone));
+
+    // 3. Flash on / off (3 pulses)
+    timers.push(setTimeout(() => {
+        if (done) return;
+        if (line) line.classList.add("flash");
+        if (sub) sub.classList.add("flash");
+    }, piecesDone + 500));
+
+    const flashDuration = 1650;
+
+    // 4. Start counter after flash
+    timers.push(setTimeout(() => {
+        if (done) return;
+        if (line) line.classList.remove("flash");
+        if (sub) sub.classList.remove("flash");
+        startCounter();
+    }, piecesDone + 500 + flashDuration));
+
+    function startCounter() {
+        let n = 0;
+        function step() {
+            if (done) return;
+            n++;
+            if (n > 100) n = 100;
+            if (percentEl) percentEl.textContent = String(n);
+            if (barFill) barFill.style.width = n + "%";
+            if (n < 100) {
+                // ease-out: slow near the end
+                const delay = 14 + Math.pow(n / 100, 3) * 48;
+                timers.push(setTimeout(step, delay));
+            } else {
+                // 5. Hold 2 seconds then finish
+                timers.push(setTimeout(finish, 2000));
+            }
+        }
+        step();
+    }
+
+    // Safety: max 12s
+    timers.push(setTimeout(finish, 12000));
+}
+
 function playSound(type = "correct") {
     if (!game.sound) return;
     try {
@@ -284,6 +406,7 @@ function playSound(type = "correct") {
         else if (type === "start") { freqs = [440, 660]; dur = 0.2; }
         else if (type === "count") { freqs = [523]; dur = 0.12; }
         else if (type === "flip") { freqs = [587, 784]; dur = 0.18; }
+        else if (type === "side") { freqs = [784, 1046]; dur = 0.16; }
 
         freqs.forEach((f, i) => {
             const osc = audioContext.createOscillator();
@@ -303,9 +426,6 @@ function playSound(type = "correct") {
     } catch (e) { console.warn("Audio:", e); }
 }
 
-/* ======================================================
-   TOAST
-====================================================== */
 function toast(msg) {
     const el = $("toastMessage");
     if (el) el.textContent = msg;
@@ -316,9 +436,6 @@ function toast(msg) {
     game.toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
 
-/* ======================================================
-   INDEXEDDB
-====================================================== */
 function openDb() {
     return new Promise((resolve, reject) => {
         if (!("indexedDB" in window)) return reject(new Error("No IndexedDB"));
@@ -371,9 +488,6 @@ async function dbDel(id) {
     });
 }
 
-/* ======================================================
-   MUSIC
-====================================================== */
 const music = {
     yt: null, ytReady: false, ytApiLoaded: false,
     streamPlaying: false, streamIndex: 0,
@@ -689,9 +803,6 @@ async function restoreLocal() {
     updateMusicUI();
 }
 
-/* ======================================================
-   DRAGGABLE WIDGET
-====================================================== */
 const drag = {
     offsetX: 0, offsetY: 0,
     dragging: false, moved: false,
@@ -852,9 +963,6 @@ async function setupMusic() {
     loadYtApi();
 }
 
-/* ======================================================
-   BOARD
-====================================================== */
 function buildCoords() {
     ["topCoordinates","bottomCoordinates","leftCoordinates","rightCoordinates"].forEach(id => {
         const el = $(id); if (el) el.innerHTML = "";
@@ -876,6 +984,7 @@ function buildCoords() {
         });
     });
 }
+
 function buildBoard() {
     const b = $("chessboard");
     if (!b) return;
@@ -891,21 +1000,27 @@ function buildBoard() {
             sq.dataset.square = coord;
             sq.setAttribute("role", "gridcell");
             sq.setAttribute("aria-label", "Square " + coord);
-            sq.disabled = true;
+            sq.setAttribute("aria-disabled", "true");
             const lbl = document.createElement("span");
             lbl.className = "square-label";
             lbl.textContent = coord;
             sq.appendChild(lbl);
-            sq.addEventListener("click", () => handleSquare(coord, sq));
+            sq.addEventListener("click", (e) => {
+                e.preventDefault();
+                handleSquare(coord, sq);
+            });
             b.appendChild(sq);
         }
     }
     renderPieces();
 }
 
-/* ======================================================
-   PIECES
-====================================================== */
+function enableBoard(on) {
+    document.querySelectorAll(".square").forEach(sq => {
+        sq.setAttribute("aria-disabled", on ? "false" : "true");
+    });
+}
+
 function generatePieces() {
     game.pieces = {};
     if (!game.piecesEnabled) { renderPieces(); return; }
@@ -947,16 +1062,10 @@ function setPiecesEnabled(on) {
     else { game.pieces = {}; renderPieces(); }
 }
 
-/* ======================================================
-   BOARD HELPERS
-====================================================== */
 function clearHighlights() {
     document.querySelectorAll(".square").forEach(sq => {
         sq.classList.remove("last-correct","last-wrong","target-highlight","knight-source","knight-found");
     });
-}
-function enableBoard(on) {
-    document.querySelectorAll(".square").forEach(sq => { sq.disabled = !on; });
 }
 function hl(coord, cls) {
     const sq = document.querySelector('.square[data-square="' + coord + '"]');
@@ -985,13 +1094,11 @@ function nextTarget() {
     return squareBag.next(game.target);
 }
 
-/* ======================================================
-   BOARD VIEW / PERSPECTIVE
-====================================================== */
 function setPerspective(p) {
-    if (!["white", "black", "mixed", "both"].includes(p)) p = "white";
+    if (!["white", "black", "mixed", "both", "auto"].includes(p)) p = "white";
     game.perspective = p;
     save(KEYS.perspective, p);
+    document.body.dataset.perspective = p;
 
     document.querySelectorAll(".perspective-btn").forEach(b => {
         const on = b.dataset.perspective === p;
@@ -999,7 +1106,11 @@ function setPerspective(p) {
         b.setAttribute("aria-selected", on ? "true" : "false");
     });
 
-    if (!game.running) applyFlipForQuestion(true);
+    if (!game.running) {
+        if (p === "auto" || p === "both") setBoardFlip(false);
+        else applyFlipForQuestion(true);
+    }
+    applyTargetSide(false);
 
     const ft = $("flipToggle");
     if (ft) {
@@ -1008,6 +1119,7 @@ function setPerspective(p) {
         else { ft.disabled = true; }
     }
 }
+
 function applyFlipForQuestion(force) {
     let flip;
     if (game.perspective === "white") flip = false;
@@ -1021,13 +1133,60 @@ function applyFlipForQuestion(force) {
         save(KEYS.flip, flip);
     }
 }
+
 function setBoardFlip(flip) {
     document.body.dataset.flip = flip ? "true" : "false";
     save(KEYS.flip, flip);
 }
-function isDualMode() {
-    return game.perspective === "both";
+
+function isDualMode() { return game.perspective === "both"; }
+function isAutoMode() { return game.perspective === "auto"; }
+
+function pickAutoSide() {
+    if (!isAutoMode()) { game.autoSide = null; return; }
+    game.autoSide = game.autoSide === "white" ? "black" : "white";
 }
+
+function getCurrentSide() {
+    switch (game.perspective) {
+        case "white":  return "white";
+        case "black":  return "black";
+        case "mixed":  return document.body.dataset.flip === "true" ? "black" : "white";
+        case "both":   return game.dualStep === 0 ? "white" : "black";
+        case "auto":   return game.autoSide || "white";
+        default:       return "white";
+    }
+}
+
+function applyTargetSide(force) {
+    const panel = $("targetPanel");
+    const badge = $("sideBadge");
+    const coord = $("targetCoordinate");
+    if (!panel) return;
+
+    const hasTarget = game.target !== null && game.running;
+
+    if (hasTarget) {
+        const side = getCurrentSide();
+        panel.dataset.side = side;
+        if (badge) {
+            badge.classList.remove("hidden");
+            badge.textContent = side === "white" ? "♔ WHITE" : "♚ BLACK";
+            badge.className = "side-badge " + side;
+        }
+        if (coord) {
+            coord.classList.remove("side-swap");
+            void coord.offsetWidth;
+            coord.classList.add("side-swap");
+        }
+        if (force) playSound("side");
+    } else {
+        panel.removeAttribute("data-side");
+        if (badge) badge.classList.add("hidden");
+        if (coord) coord.classList.remove("side-swap");
+    }
+}
+
 function updateDualIndicator() {
     const el = $("dualIndicator");
     if (!el) return;
@@ -1045,15 +1204,14 @@ function updateDualIndicator() {
         '<span class="dual-text">' + step + ' / 2 · ' + label + '</span>';
 }
 
-/* ======================================================
-   TARGETS
-====================================================== */
 function genTarget() {
     game.dualStep = 0;
     game.dualTarget = null;
 
-    if (isDualMode()) setBoardFlip(false);
+    if (isDualMode() || isAutoMode()) setBoardFlip(false);
     else applyFlipForQuestion(false);
+
+    pickAutoSide();
 
     game.questionStartTime = Date.now();
     const mode = game.mode;
@@ -1064,6 +1222,7 @@ function genTarget() {
     else if (mode === "color") genColorTarget();
     else genSquareTarget();
 
+    applyTargetSide(false);
     updateDualIndicator();
 }
 
@@ -1128,10 +1287,7 @@ function genNameTarget(count) {
 function genKnightTarget() {
     let src = nextTarget();
     let tries = 0;
-    while (knightMoves(src).length < 2 && tries < 40) {
-        src = nextTarget();
-        tries++;
-    }
+    while (knightMoves(src).length < 2 && tries < 40) { src = nextTarget(); tries++; }
     game.knightSource = src;
     game.target = src;
     game.questionIndex++;
@@ -1189,29 +1345,32 @@ function resetTarget() {
     game.dualTarget = null;
     $("targetCoordinate").classList.add("muted");
     $("targetCoordinate").textContent = "—";
+    $("targetCoordinate").classList.remove("side-swap");
     $("targetHint").textContent = "Press Start to begin your session.";
     $("targetFeedback").textContent = "";
     $("targetNumber").textContent = "QUESTION 00";
     $("targetLabelText").textContent = "FIND THIS SQUARE";
     $("targetPanel").classList.remove("correct","wrong");
+    $("targetPanel").removeAttribute("data-side");
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
     $("dualIndicator").classList.add("hidden");
     $("dualIndicator").classList.remove("step-2");
+    $("sideBadge").classList.add("hidden");
     clearHighlights();
 }
 
-/* ======================================================
-   ANSWER HANDLING
-====================================================== */
 function recordReaction() {
     if (game.questionStartTime) {
         const rt = Date.now() - game.questionStartTime;
         if (rt > 0 && rt < 30000) game.reactionTimes.push(rt);
     }
 }
+
 function handleSquare(coord, sq) {
     if (!game.running || game.paused || !game.target) return;
+    if (sq && sq.getAttribute("aria-disabled") === "true") return;
+
     if (game.mode === "square" || game.mode === "blindfold") {
         if (coord === game.target) {
             if (isDualMode()) correctDual(sq);
@@ -1223,6 +1382,7 @@ function handleSquare(coord, sq) {
         else wrongSquare(sq);
     }
 }
+
 function correctDual(sq) {
     if (game.dualStep === 0) {
         game.dualStep = 1;
@@ -1232,13 +1392,12 @@ function correctDual(sq) {
         $("targetFeedback").style.color = "var(--green)";
         $("targetHint").textContent = "Board is flipping — click " + game.target + " again.";
         playSound("correct");
-
         setTimeout(() => {
             setBoardFlip(true);
             playSound("flip");
+            applyTargetSide(true);
             updateDualIndicator();
         }, 300);
-
         clearTimeout(game.feedbackTimer);
         game.feedbackTimer = setTimeout(() => {
             if (!game.running) return;
@@ -1247,7 +1406,6 @@ function correctDual(sq) {
         }, 700);
         return;
     }
-
     game.dualStep = 0;
     game.dualTarget = null;
     onCorrectBase();
@@ -1258,7 +1416,6 @@ function correctDual(sq) {
     $("targetFeedback").style.color = "var(--green)";
     $("targetHint").textContent = "Next target coming...";
     updateDualIndicator();
-
     clearTimeout(game.feedbackTimer);
     game.feedbackTimer = setTimeout(() => {
         if (!game.running) return;
@@ -1266,6 +1423,7 @@ function correctDual(sq) {
         genTarget();
     }, 500);
 }
+
 function handleChoice(coord, btn) {
     if (!game.running || game.paused) return;
     if (game.mode !== "coordinate" && game.mode !== "reverse") return;
@@ -1288,6 +1446,7 @@ function handleChoice(coord, btn) {
         }, 500);
     }
 }
+
 function handleColorChoice(val, btn) {
     if (!game.running || game.paused || !game.target) return;
     const isLight = isLightSquare(game.target);
@@ -1311,6 +1470,7 @@ function handleColorChoice(val, btn) {
         }, 500);
     }
 }
+
 function onCorrectBase() {
     recordReaction();
     game.correct++;
@@ -1325,6 +1485,7 @@ function onCorrectBase() {
     playSound("correct");
     if (game.streak > 0 && game.streak % 5 === 0) toast(game.streak + " in a row!");
 }
+
 function correctFind(sq) {
     onCorrectBase();
     clearHighlights();
@@ -1340,6 +1501,7 @@ function correctFind(sq) {
         genTarget();
     }, 320);
 }
+
 function correctName(btn) {
     onCorrectBase();
     $("targetPanel").classList.add("correct");
@@ -1354,6 +1516,7 @@ function correctName(btn) {
         genTarget();
     }, 480);
 }
+
 function correctColor(btn) {
     onCorrectBase();
     $("targetPanel").classList.add("correct");
@@ -1368,6 +1531,7 @@ function correctColor(btn) {
         genTarget();
     }, 420);
 }
+
 function correctKnight(coord, sq) {
     game.knightFound.push(coord);
     game.knightRemaining = game.knightRemaining.filter(c => c !== coord);
@@ -1402,6 +1566,7 @@ function correctKnight(coord, sq) {
             (game.knightFound.length + game.knightRemaining.length) + " jumps found.";
     }
 }
+
 function wrongSquare(sq) {
     game.mistakes++;
     stats.totalMistakes++;
@@ -1421,7 +1586,9 @@ function wrongSquare(sq) {
             const view = game.dualStep === 0 ? "white" : "black";
             $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + " from the " + view + " view.";
         } else {
-            $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + ".";
+            const side = getCurrentSide();
+            const sideText = side === "white" ? "white's view" : "black's view";
+            $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + " from " + sideText + ".";
         }
     } else if (game.mode === "knight") {
         $("targetHint").textContent = sq.dataset.square + " is not a legal jump. Keep looking.";
@@ -1452,9 +1619,6 @@ function wrongSquare(sq) {
     }, 520);
 }
 
-/* ======================================================
-   TIMER + PROGRESS
-====================================================== */
 function fmtTime(s) {
     const m = Math.floor(s / 60);
     const r = s % 60;
@@ -1493,20 +1657,15 @@ function updateLive() {
     if (s) s.textContent = String(game.streak).padStart(2, "0");
 }
 
-/* ======================================================
-   FIXED: updateDashboard() — null-safe, matches current HTML
-====================================================== */
 function updateDashboard() {
     const totalAtt = stats.totalCorrect + (stats.totalMistakes || 0);
     const acc = totalAtt > 0
         ? Math.round(stats.totalCorrect / totalAtt * 100) + "%"
         : "—";
-
     const set = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
     };
-
     set("statAccuracy", acc);
     set("statStreak",   stats.bestStreak  || 0);
     set("statBest",     stats.personalBest || 0);
@@ -1514,9 +1673,6 @@ function updateDashboard() {
     set("sidebarBest",  stats.personalBest || 0);
 }
 
-/* ======================================================
-   XP / LEVEL
-====================================================== */
 function levelInfo(x) {
     const level = Math.floor(x / 250) + 1;
     const into = x - (level - 1) * 250;
@@ -1545,9 +1701,6 @@ function updateLevelUI() {
 }
 function addXp(n) { if (n <= 0) return; xp += n; save(KEYS.xp, xp); updateLevelUI(); }
 
-/* ======================================================
-   DAILY GOAL
-====================================================== */
 function updateDailyUI() {
     const pct = Math.min(1, daily.count / DAILY_TARGET);
     const c = 2 * Math.PI * 33;
@@ -1573,9 +1726,6 @@ function bumpDaily(n) {
     updateDailyUI();
 }
 
-/* ======================================================
-   ACHIEVEMENTS
-====================================================== */
 function renderAchievements() {
     const g = $("achievementsGrid");
     if (!g) return;
@@ -1611,9 +1761,6 @@ function checkAchievements() {
     }
 }
 
-/* ======================================================
-   CONFETTI
-====================================================== */
 let confettiRaf = null;
 function fireConfetti(count) {
     count = count || 80;
@@ -1675,9 +1822,6 @@ function fireConfetti(count) {
     frame();
 }
 
-/* ======================================================
-   SESSION
-====================================================== */
 function resetSession() {
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
@@ -1697,6 +1841,7 @@ function resetSession() {
     game.questionIndex = 0;
     game.dualStep = 0;
     game.dualTarget = null;
+    game.autoSide = null;
 
     $("sessionStateText").textContent = "READY";
     $("topStatus").textContent = "READY";
@@ -1724,6 +1869,7 @@ function startSession() {
 
     resetSession();
     squareBag.reset();
+    game.autoSide = null;
 
     if (game.mode === "blindfold") {
         document.body.setAttribute("data-labels", "false");
@@ -1733,7 +1879,7 @@ function startSession() {
         document.body.setAttribute("data-coords", load(KEYS.coords, true) !== false ? "visible" : "hidden");
     }
 
-    if (isDualMode()) setBoardFlip(false);
+    if (isDualMode() || isAutoMode()) setBoardFlip(false);
     else applyFlipForQuestion(true);
 
     if (game.piecesEnabled) generatePieces();
@@ -1859,6 +2005,7 @@ function finishSession() {
     if (acc === 100 && game.correct >= 15) gained += 60;
     if (newRecord && game.correct > 0) gained += 25;
     if (isDualMode()) gained += Math.round(gained * 0.15);
+    if (isAutoMode()) gained += Math.round(gained * 0.10);
 
     addXp(gained);
 
@@ -1926,9 +2073,6 @@ function showResults(newRecord, gained) {
     $("resultsPanel").classList.remove("hidden");
 }
 
-/* ======================================================
-   VIEW ROUTING
-====================================================== */
 const VIEW_TITLES = {
     dashboard: ["Home", "Dashboard"],
     training: ["Workspace", "Training"],
@@ -1976,9 +2120,6 @@ function setupNav() {
     });
 }
 
-/* ======================================================
-   MODE
-====================================================== */
 function setMode(mode) {
     if (!MODE_INFO[mode]) return;
     if (game.running) { toast("Finish the current session to change mode."); return; }
@@ -2012,9 +2153,6 @@ function renderMission() {
     $("missionTitle").textContent = MODE_INFO[game.mode].label;
 }
 
-/* ======================================================
-   THEMES / SETTINGS
-====================================================== */
 function setTheme(t) {
     if (!["dark","light","neon","heavy"].includes(t)) t = "dark";
     document.body.dataset.theme = t;
@@ -2074,7 +2212,7 @@ function setupSettings() {
             toast("Finish the current session first.");
             return;
         }
-        if (game.perspective === "mixed" || game.perspective === "both") {
+        if (game.perspective === "mixed" || game.perspective === "both" || game.perspective === "auto") {
             e.target.checked = document.body.dataset.flip === "true";
             toast("Flip is controlled by Board View.");
             return;
@@ -2099,9 +2237,6 @@ function setupSettings() {
     });
 }
 
-/* ======================================================
-   ANALYTICS
-====================================================== */
 function renderAnalytics() {
     const total = stats.totalCorrect || 0;
     const totalAtt = total + (stats.totalMistakes || 0);
@@ -2218,7 +2353,7 @@ function renderHistory() {
         return;
     }
 
-    const perspNames = { white: "White", black: "Black", mixed: "Mixed", both: "Both" };
+    const perspNames = { white: "White", black: "Black", mixed: "Mixed", both: "Both", auto: "Auto" };
 
     history.slice(0, 10).forEach((s, i) => {
         const d = new Date(s.date);
@@ -2269,9 +2404,6 @@ function clearHistory() {
     );
 }
 
-/* ======================================================
-   CONFIRM MODAL
-====================================================== */
 let confirmCallback = null;
 function openConfirm(title, msg, cb) {
     $("confirmTitle").textContent = title;
@@ -2284,12 +2416,9 @@ function closeConfirm() {
     confirmCallback = null;
 }
 
-/* ======================================================
-   EXPORT / IMPORT / RESET
-====================================================== */
 function exportData() {
     const payload = {
-        version: 3.2,
+        version: 3.6,
         exportedAt: new Date().toISOString(),
         stats, history, xp, unlocked, daily,
         settings: {
@@ -2401,9 +2530,6 @@ function resetProgress() {
     );
 }
 
-/* ======================================================
-   KEYBOARD
-====================================================== */
 function setupKeyboard() {
     document.addEventListener("keydown", e => {
         const t = e.target;
@@ -2438,9 +2564,6 @@ async function toggleFullscreen() {
     } catch { toast("Fullscreen unavailable."); }
 }
 
-/* ======================================================
-   ONBOARDING
-====================================================== */
 function checkOnboarding() {
     if (!load(KEYS.onboarded, false)) $("onboarding").classList.remove("hidden");
 }
@@ -2450,18 +2573,12 @@ function completeOnboarding() {
     toast("Welcome! Choose a mode to begin.");
 }
 
-/* ======================================================
-   DAILY TIP
-====================================================== */
 function setTip() {
     const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
     const el = $("tipText");
     if (el) el.textContent = TIPS[day % TIPS.length];
 }
 
-/* ======================================================
-   INIT
-====================================================== */
 function init() {
     buildCoords();
     buildBoard();
@@ -2512,9 +2629,10 @@ function init() {
             setPerspective(b.dataset.perspective);
             const labels = {
                 white: "White's view",
-                black: "Black's view",
+                black: "Black's view (board flips)",
                 mixed: "Mixed view (flips randomly)",
-                both: "Both views (find each square twice)"
+                both: "Both views (find each square twice)",
+                auto: "Auto view (display swaps sides)"
             };
             toast("Board view: " + labels[b.dataset.perspective]);
         });
@@ -2564,7 +2682,17 @@ function init() {
 
     checkOnboarding();
 
-    console.log("Chess Vision Trainer v3.2.1 ready.");
+    console.log("Chess Vision Trainer v3.6 ready.");
 }
 
-document.addEventListener("DOMContentLoaded", init);
+/* ======================================================
+   BOOT — preloader runs first, init runs in parallel
+====================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+    // Kick off the app initialization immediately so the
+    // page is fully ready by the time the preloader fades out.
+    init();
+
+    // Then run the preloader sequence on top.
+    runPreloader();
+});
