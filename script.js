@@ -1,7 +1,9 @@
 "use strict";
 
 /* ======================================================
-   CHESS VISION TRAINER — ENGINE v3
+   CHESS VISION TRAINER — ENGINE v3.1
+   + White / Black / Mixed board view
+   + Shuffle-bag random coordinate generation
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -12,6 +14,7 @@ const KEYS = {
     theme: "cvt-theme-v3",
     board: "cvt-board-v3",
     flip: "cvt-flip-v3",
+    perspective: "cvt-perspective-v3",     // new
     labels: "cvt-labels-v3",
     coords: "cvt-coords-v3",
     sound: "cvt-sound-v3",
@@ -47,17 +50,17 @@ const TIPS = [
     "Look at the board as a complete grid. Train your eyes to move naturally.",
     "Consistency is the secret. A few focused minutes each day compounds.",
     "In knight mode, trace the L-shape: two squares one way, one sideways.",
-    "Chill music, calm mind, clear vision."
+    "Mixed view is real chess vision — learn to read from both sides."
 ];
 
 const MODE_INFO = {
-    square:    { label: "Square Vision",        sub: "Find the coordinate on the board.",       targetLabel: "FIND THIS SQUARE" },
-    coordinate:{ label: "Coordinate Trainer",   sub: "Name the highlighted square.",           targetLabel: "NAME THIS SQUARE" },
-    reverse:   { label: "Reverse Coordinates",  sub: "Pick the correct coordinate.",           targetLabel: "IDENTIFY THIS SQUARE" },
-    knight:    { label: "Knight Vision",        sub: "Find every legal knight jump.",          targetLabel: "KNIGHT JUMPS FROM" },
-    blindfold: { label: "Blindfold Training",   sub: "No coordinates — pure visualization.",   targetLabel: "FIND THIS SQUARE" },
-    color:     { label: "Color Recognition",    sub: "Is the square light or dark?",           targetLabel: "SQUARE COLOR" },
-    custom:    { label: "Custom Practice",      sub: "Your configuration.",                    targetLabel: "TARGET" }
+    square:     { label: "Square Vision",       sub: "Find the coordinate on the board." },
+    coordinate: { label: "Coordinate Trainer",  sub: "Name the highlighted square." },
+    reverse:    { label: "Reverse Coordinates", sub: "Pick the correct coordinate." },
+    knight:     { label: "Knight Vision",       sub: "Find every legal knight jump." },
+    blindfold:  { label: "Blindfold Training",  sub: "No coordinates — pure visualization." },
+    color:      { label: "Color Recognition",   sub: "Is the square light or dark?" },
+    custom:     { label: "Custom Practice",     sub: "Your configuration." }
 };
 
 const MISSION_STEPS = {
@@ -99,18 +102,18 @@ const MISSION_STEPS = {
 };
 
 const ACHIEVEMENTS = [
-    { id: "first",    icon: "✦", title: "First Light",     desc: "Answer your first question correctly.",          check: s => s.totalCorrect >= 1 },
-    { id: "streak10", icon: "♨", title: "Warming Up",       desc: "10 correct answers in a row.",                   check: s => s.bestStreak >= 10 },
-    { id: "streak25", icon: "⚡", title: "Unstoppable",      desc: "25 correct answers in a row.",                   check: s => s.bestStreak >= 25 },
-    { id: "streak50", icon: "◈", title: "Locked In",        desc: "50 correct answers in a row.",                   check: s => s.bestStreak >= 50 },
-    { id: "c100",     icon: "♛", title: "Century",          desc: "100 correct answers total.",                     check: s => s.totalCorrect >= 100 },
-    { id: "c500",     icon: "♚", title: "Vision Master",    desc: "500 correct answers total.",                     check: s => s.totalCorrect >= 500 },
-    { id: "c1000",    icon: "◉", title: "Grandmaster Eye",  desc: "1000 correct answers total.",                    check: s => s.totalCorrect >= 1000 },
-    { id: "sess20",   icon: "▥", title: "Sharp Eye",        desc: "20 correct in one session.",                     check: s => s.personalBest >= 20 },
-    { id: "sess40",   icon: "◎", title: "Grand Vision",     desc: "40 correct in one session.",                     check: s => s.personalBest >= 40 },
-    { id: "sess10",   icon: "◷", title: "Dedicated",        desc: "Complete 10 sessions.",                          check: s => s.totalSessions >= 10 },
-    { id: "sess50",   icon: "◆", title: "Committed",        desc: "Complete 50 sessions.",                          check: s => s.totalSessions >= 50 },
-    { id: "perfect",  icon: "♞", title: "Flawless",         desc: "100% accuracy with 15+ correct in a session.",   check: s => (s.flawless || 0) >= 1 }
+    { id: "first",    icon: "✦", title: "First Light",     desc: "Answer your first question correctly.",        check: s => s.totalCorrect >= 1 },
+    { id: "streak10", icon: "♨", title: "Warming Up",       desc: "10 correct answers in a row.",                 check: s => s.bestStreak >= 10 },
+    { id: "streak25", icon: "⚡", title: "Unstoppable",      desc: "25 correct answers in a row.",                 check: s => s.bestStreak >= 25 },
+    { id: "streak50", icon: "◈", title: "Locked In",        desc: "50 correct answers in a row.",                 check: s => s.bestStreak >= 50 },
+    { id: "c100",     icon: "♛", title: "Century",          desc: "100 correct answers total.",                   check: s => s.totalCorrect >= 100 },
+    { id: "c500",     icon: "♚", title: "Vision Master",    desc: "500 correct answers total.",                   check: s => s.totalCorrect >= 500 },
+    { id: "c1000",    icon: "◉", title: "Grandmaster Eye",  desc: "1000 correct answers total.",                  check: s => s.totalCorrect >= 1000 },
+    { id: "sess20",   icon: "▥", title: "Sharp Eye",        desc: "20 correct in one session.",                   check: s => s.personalBest >= 20 },
+    { id: "sess40",   icon: "◎", title: "Grand Vision",     desc: "40 correct in one session.",                   check: s => s.personalBest >= 40 },
+    { id: "sess10",   icon: "◷", title: "Dedicated",        desc: "Complete 10 sessions.",                        check: s => s.totalSessions >= 10 },
+    { id: "sess50",   icon: "◆", title: "Committed",        desc: "Complete 50 sessions.",                        check: s => s.totalSessions >= 50 },
+    { id: "perfect",  icon: "♞", title: "Flawless",         desc: "100% accuracy with 15+ correct in a session.", check: s => (s.flawless || 0) >= 1 }
 ];
 
 const DEFAULT_STATS = {
@@ -126,6 +129,37 @@ const DEFAULT_STATS = {
 
 const DAILY_TARGET = 50;
 
+/* ======================================================
+   SHUFFLE BAG — unbiased random square generation
+====================================================== */
+const squareBag = {
+    pool: [],
+    reset() {
+        this.pool = [];
+        for (const f of FILES) for (const r of RANKS) this.pool.push(f + r);
+        this.shuffle();
+    },
+    shuffle() {
+        for (let i = this.pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const t = this.pool[i];
+            this.pool[i] = this.pool[j];
+            this.pool[j] = t;
+        }
+    },
+    next(exclude) {
+        if (!this.pool.length) this.reset();
+        if (exclude && this.pool.length > 1 && this.pool[0] === exclude) {
+            const j = 1 + Math.floor(Math.random() * (this.pool.length - 1));
+            const t = this.pool[0];
+            this.pool[0] = this.pool[j];
+            this.pool[j] = t;
+        }
+        return this.pool.shift();
+    }
+};
+squareBag.reset();
+
 const MUSIC_STREAM = [
     { id: "jfKfPfyJRdk", name: "Lofi Girl · Beats to Relax" },
     { id: "4xDzrJKXOOY", name: "Synthwave Radio · Retro Chill" },
@@ -140,11 +174,9 @@ const IDB_NAME = "cvt-music-db";
 const IDB_STORE = "tracks";
 const IDB_VERSION = 1;
 
-
 /* ======================================================
    STORAGE
 ====================================================== */
-
 function load(key, fallback) {
     try {
         const v = localStorage.getItem(key);
@@ -164,11 +196,9 @@ function todayKey() {
         String(d.getDate()).padStart(2, "0");
 }
 
-
 /* ======================================================
    STATE
 ====================================================== */
-
 let stats = { ...DEFAULT_STATS, ...(load(KEYS.stats, {}) || {}) };
 let history = load(KEYS.history, []);
 if (!Array.isArray(history)) history = [];
@@ -186,6 +216,7 @@ if (!daily || daily.date !== todayKey()) {
 
 const game = {
     mode: "square",
+    perspective: "white",   // white | black | mixed
     running: false,
     paused: false,
     completed: false,
@@ -214,11 +245,9 @@ const game = {
 
 let audioContext = null;
 
-
 /* ======================================================
    SOUND
 ====================================================== */
-
 function playSound(type = "correct") {
     if (!game.sound) return;
     try {
@@ -260,11 +289,9 @@ function playSound(type = "correct") {
     } catch (e) { console.warn("Audio:", e); }
 }
 
-
 /* ======================================================
    TOAST
 ====================================================== */
-
 function toast(msg) {
     $("toastMessage").textContent = msg;
     $("toast").classList.add("show");
@@ -272,11 +299,9 @@ function toast(msg) {
     game.toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2600);
 }
 
-
 /* ======================================================
    INDEXEDDB
 ====================================================== */
-
 function openDb() {
     return new Promise((resolve, reject) => {
         if (!("indexedDB" in window)) return reject(new Error("No IndexedDB"));
@@ -291,14 +316,13 @@ function openDb() {
         req.onerror = () => reject(req.error);
     });
 }
-
 async function dbAdd(file) {
     const db = await openDb();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(IDB_STORE, "readwrite");
         const store = tx.objectStore(IDB_STORE);
         const id = "t-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
-        const record = {
+        const rec = {
             id,
             name: file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Track",
             type: file.type || "audio/mpeg",
@@ -306,12 +330,11 @@ async function dbAdd(file) {
             addedAt: Date.now(),
             blob: file
         };
-        const req = store.add(record);
-        req.onsuccess = () => resolve(record);
+        const req = store.add(rec);
+        req.onsuccess = () => resolve(rec);
         req.onerror = () => reject(req.error);
     });
 }
-
 async function dbAll() {
     const db = await openDb();
     return new Promise((resolve, reject) => {
@@ -321,7 +344,6 @@ async function dbAll() {
         req.onerror = () => reject(req.error);
     });
 }
-
 async function dbDel(id) {
     const db = await openDb();
     return new Promise((resolve, reject) => {
@@ -332,11 +354,9 @@ async function dbDel(id) {
     });
 }
 
-
 /* ======================================================
    MUSIC
 ====================================================== */
-
 const music = {
     yt: null, ytReady: false, ytApiLoaded: false,
     streamPlaying: false, streamIndex: 0,
@@ -354,7 +374,6 @@ function loadYtApi() {
     s.async = true;
     document.head.appendChild(s);
 }
-
 window.onYouTubeIframeAPIReady = function () { createYt(); };
 
 function createYt() {
@@ -393,12 +412,10 @@ function playStream() {
     if (!music.ytReady || !music.yt) { toast("Radio is loading..."); return; }
     try { music.yt.playVideo(); } catch (e) { console.warn(e); }
 }
-
 function pauseStream() {
     if (!music.ytReady || !music.yt) return;
     try { music.yt.pauseVideo(); } catch (e) { console.warn(e); }
 }
-
 function setStream(idx, autoplay) {
     const total = MUSIC_STREAM.length;
     music.streamIndex = ((idx % total) + total) % total;
@@ -411,7 +428,6 @@ function setStream(idx, autoplay) {
         else if (music.yt.cueVideoById) music.yt.cueVideoById(id);
     } catch (e) { console.warn(e); }
 }
-
 function nextStream() {
     let n = music.streamIndex;
     if (MUSIC_STREAM.length > 1) {
@@ -420,16 +436,13 @@ function nextStream() {
     setStream(n, true);
     toast("♪ " + MUSIC_STREAM[music.streamIndex].name);
 }
-
 function prevStream() { setStream(music.streamIndex - 1, true); }
 
 async function loadLocal() {
-    try {
-        music.localTracks = (await dbAll()).sort((a, b) => a.addedAt - b.addedAt);
-    } catch (e) { music.localTracks = []; }
+    try { music.localTracks = (await dbAll()).sort((a, b) => a.addedAt - b.addedAt); }
+    catch { music.localTracks = []; }
     renderLocal();
 }
-
 function playLocalIdx(idx) {
     if (!music.localTracks.length) return;
     const total = music.localTracks.length;
@@ -448,35 +461,23 @@ function playLocalIdx(idx) {
     updateMusicUI();
     renderLocal();
 }
-
 function pauseLocal() { if (music.audioEl) music.audioEl.pause(); }
-
 function toggleLocal() {
     if (!music.audioEl) return;
     if (music.localPlaying) pauseLocal();
     else if (!music.audioEl.src) {
         if (!music.localTracks.length) { toast("No local tracks — add files first."); return; }
         playLocalIdx(music.localIndex);
-    } else {
-        music.audioEl.play().catch(e => console.warn(e));
-    }
+    } else music.audioEl.play().catch(e => console.warn(e));
 }
-
 function nextLocal() { if (music.localTracks.length) playLocalIdx(music.localIndex + 1); }
 function prevLocal() { if (music.localTracks.length) playLocalIdx(music.localIndex - 1); }
 
-function isMusicPlaying() {
-    return music.source === "stream" ? music.streamPlaying : music.localPlaying;
-}
-
+function isMusicPlaying() { return music.source === "stream" ? music.streamPlaying : music.localPlaying; }
 function togglePlay() {
-    if (music.source === "stream") {
-        if (music.streamPlaying) pauseStream(); else playStream();
-    } else {
-        toggleLocal();
-    }
+    if (music.source === "stream") music.streamPlaying ? pauseStream() : playStream();
+    else toggleLocal();
 }
-
 function nextMusic() { music.source === "stream" ? nextStream() : nextLocal(); }
 function prevMusic() { music.source === "stream" ? prevStream() : prevLocal(); }
 
@@ -535,14 +536,12 @@ function openPanel() {
     save(MUSIC_KEYS.open, true);
     requestAnimationFrame(() => { clampWidget(); applyWidgetPos(); });
 }
-
 function closePanel() {
     $("musicPanel").classList.add("hidden");
     $("musicFab").classList.remove("active");
     music.panelOpen = false;
     save(MUSIC_KEYS.open, false);
 }
-
 function togglePanel() { music.panelOpen ? closePanel() : openPanel(); }
 
 function fmtBytes(b) {
@@ -558,22 +557,18 @@ function renderLocal() {
     if (!list) return;
     if (cnt) cnt.textContent = music.localTracks.length;
     list.innerHTML = "";
-
     if (!music.localTracks.length) {
         list.innerHTML = '<div class="music-empty"><span>♪</span>No local tracks yet. Click <strong>+ Add</strong> to import MP3s, WAVs, and more.</div>';
         return;
     }
-
     music.localTracks.forEach((t, i) => {
         const item = document.createElement("button");
         item.type = "button";
         item.className = "music-track-item" + (i === music.localIndex && music.source === "local" ? " active" : "");
         item.dataset.id = t.id;
-
         const icon = document.createElement("div");
         icon.className = "music-track-icon";
         icon.textContent = (i === music.localIndex && music.localPlaying) ? "❚❚" : "♪";
-
         const meta = document.createElement("div");
         meta.className = "music-track-meta";
         const name = document.createElement("div");
@@ -584,14 +579,12 @@ function renderLocal() {
         const ext = (t.type || "").split("/")[1] || "audio";
         size.textContent = fmtBytes(t.size) + " · " + ext.toUpperCase();
         meta.append(name, size);
-
         const del = document.createElement("button");
         del.type = "button";
         del.className = "music-track-del";
         del.textContent = "×";
         del.setAttribute("aria-label", "Remove track");
         del.addEventListener("click", e => { e.stopPropagation(); removeLocal(t.id); });
-
         item.append(icon, meta, del);
         item.addEventListener("click", () => {
             if (music.source !== "local") switchSource("local");
@@ -604,12 +597,9 @@ function renderLocal() {
 async function addLocalFiles(files) {
     if (!files || !files.length) return;
     try { await openDb(); } catch { toast("Local storage unavailable."); return; }
-
     let added = 0, skipped = 0;
     for (const f of files) {
-        if (!f.type.startsWith("audio/") && !/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(f.name)) {
-            skipped++; continue;
-        }
+        if (!f.type.startsWith("audio/") && !/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(f.name)) { skipped++; continue; }
         if (f.size > 30 * 1024 * 1024) {
             if (!confirm('"' + f.name + '" is ' + fmtBytes(f.size) + '. Add anyway?')) { skipped++; continue; }
         }
@@ -654,7 +644,6 @@ function saveMusicPos() {
     save(MUSIC_KEYS.lastLocal, t.id);
     save(MUSIC_KEYS.position, { id: t.id, time: music.audioEl.currentTime || 0, updatedAt: Date.now() });
 }
-
 async function restoreLocal() {
     const lastId = load(MUSIC_KEYS.lastLocal, null);
     if (!lastId) return;
@@ -681,11 +670,9 @@ async function restoreLocal() {
     updateMusicUI();
 }
 
-
 /* ======================================================
    DRAGGABLE WIDGET
 ====================================================== */
-
 const drag = {
     offsetX: 0, offsetY: 0,
     dragging: false, moved: false,
@@ -698,7 +685,6 @@ function applyWidgetPos() {
     const w = $("musicWidget");
     if (w) w.style.transform = "translate(" + drag.offsetX + "px, " + drag.offsetY + "px)";
 }
-
 function clampWidget() {
     const w = $("musicWidget");
     if (!w) return;
@@ -715,16 +701,10 @@ function clampWidget() {
         applyWidgetPos();
     }
 }
-
-function saveWidgetPos() {
-    save(MUSIC_KEYS.widget, { x: drag.offsetX, y: drag.offsetY });
-}
-
+function saveWidgetPos() { save(MUSIC_KEYS.widget, { x: drag.offsetX, y: drag.offsetY }); }
 function resetWidgetPos() {
-    drag.offsetX = 0;
-    drag.offsetY = 0;
-    applyWidgetPos();
-    saveWidgetPos();
+    drag.offsetX = 0; drag.offsetY = 0;
+    applyWidgetPos(); saveWidgetPos();
     toast("Music position reset.");
 }
 
@@ -732,14 +712,12 @@ function setupDrag() {
     const w = $("musicWidget");
     const fab = $("musicFab");
     if (!w || !fab) return;
-
     const saved = load(MUSIC_KEYS.widget, { x: 0, y: 0 });
     drag.offsetX = Number(saved.x) || 0;
     drag.offsetY = Number(saved.y) || 0;
     applyWidgetPos();
 
     const THRESH = 5;
-
     function onDown(e) {
         if (e.pointerType === "mouse" && e.button !== 0) return;
         drag.dragging = true;
@@ -752,7 +730,6 @@ function setupDrag() {
         w.classList.add("dragging");
         try { fab.setPointerCapture(e.pointerId); } catch {}
     }
-
     function onMove(e) {
         if (!drag.dragging || e.pointerId !== drag.pointerId) return;
         const dx = e.clientX - drag.startX;
@@ -763,7 +740,6 @@ function setupDrag() {
         drag.offsetY = drag.startOffsetY + dy;
         applyWidgetPos();
     }
-
     function onUp(e) {
         if (!drag.dragging || e.pointerId !== drag.pointerId) return;
         drag.dragging = false;
@@ -776,20 +752,16 @@ function setupDrag() {
             setTimeout(() => drag.justDragged = false, 60);
         }
     }
-
     fab.addEventListener("pointerdown", onDown);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
-
     fab.addEventListener("click", e => {
         if (drag.justDragged) { e.preventDefault(); e.stopPropagation(); return; }
         togglePanel();
     }, true);
-
     const rb = $("musicResetPos");
     if (rb) rb.addEventListener("click", resetWidgetPos);
-
     window.addEventListener("resize", () => { clampWidget(); saveWidgetPos(); });
 }
 
@@ -827,16 +799,12 @@ async function setupMusic() {
 
     const tb = $("musicTopBtn");
     if (tb) tb.addEventListener("click", () => music.panelOpen ? closePanel() : openPanel());
-
     const cb = $("musicCloseBtn");
     if (cb) cb.addEventListener("click", closePanel);
-
     const pb = $("musicPlay");
     if (pb) pb.addEventListener("click", togglePlay);
-
     const nb = $("musicNext");
     if (nb) nb.addEventListener("click", nextMusic);
-
     const prb = $("musicPrev");
     if (prb) prb.addEventListener("click", prevMusic);
 
@@ -872,11 +840,9 @@ async function setupMusic() {
     loadYtApi();
 }
 
-
 /* ======================================================
    BOARD
 ====================================================== */
-
 function buildCoords() {
     ["topCoordinates","bottomCoordinates","leftCoordinates","rightCoordinates"].forEach(id => {
         const el = $(id); if (el) el.innerHTML = "";
@@ -905,7 +871,6 @@ function buildBoard() {
             const file = FILES[col];
             const rank = RANKS[row];
             const coord = file + rank;
-
             const sq = document.createElement("button");
             sq.type = "button";
             sq.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
@@ -913,12 +878,10 @@ function buildBoard() {
             sq.setAttribute("role", "gridcell");
             sq.setAttribute("aria-label", "Square " + coord);
             sq.disabled = true;
-
             const lbl = document.createElement("span");
             lbl.className = "square-label";
             lbl.textContent = coord;
             sq.appendChild(lbl);
-
             sq.addEventListener("click", () => handleSquare(coord, sq));
             b.appendChild(sq);
         }
@@ -930,22 +893,18 @@ function clearHighlights() {
         sq.classList.remove("last-correct","last-wrong","target-highlight","knight-source","knight-found");
     });
 }
-
 function enableBoard(on) {
     document.querySelectorAll(".square").forEach(sq => { sq.disabled = !on; });
 }
-
 function hl(coord, cls) {
     const sq = document.querySelector('.square[data-square="' + coord + '"]');
     if (sq) sq.classList.add(cls);
 }
-
 function isLightSquare(coord) {
     const f = FILES.indexOf(coord[0]);
     const r = RANKS.indexOf(Number(coord[1]));
     return (f + r) % 2 === 0;
 }
-
 function knightMoves(coord) {
     const fi = FILES.indexOf(coord[0]);
     const ri = RANKS.indexOf(Number(coord[1]));
@@ -957,21 +916,67 @@ function knightMoves(coord) {
     }
     return out;
 }
-
 function randomSquare() {
     return FILES[Math.floor(Math.random() * 8)] + RANKS[Math.floor(Math.random() * 8)];
 }
+/* Target generator — never repeats within a session (shuffle bag) */
+function nextTarget() {
+    return squareBag.next(game.target);
+}
 
+/* ======================================================
+   BOARD VIEW / PERSPECTIVE
+====================================================== */
+function setPerspective(p) {
+    if (!["white", "black", "mixed"].includes(p)) p = "white";
+    game.perspective = p;
+    save(KEYS.perspective, p);
+
+    document.querySelectorAll(".perspective-btn").forEach(b => {
+        const on = b.dataset.perspective === p;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+
+    // Update flip immediately when not running
+    if (!game.running) applyFlipForQuestion(true);
+
+    // Sync flip toggle in settings
+    const ft = $("flipToggle");
+    if (ft) {
+        if (p === "white") { ft.checked = false; ft.disabled = false; }
+        else if (p === "black") { ft.checked = true; ft.disabled = false; }
+        else { ft.disabled = true; }
+    }
+}
+
+/* Called at the start of every question.
+   White -> never flip. Black -> always flip. Mixed -> 50/50. */
+function applyFlipForQuestion(force) {
+    let flip;
+    if (game.perspective === "white") flip = false;
+    else if (game.perspective === "black") flip = true;
+    else flip = Math.random() < 0.5;
+
+    const current = document.body.dataset.flip === "true";
+    if (force || flip !== current) {
+        document.body.dataset.flip = flip ? "true" : "false";
+        save(KEYS.flip, flip);
+    }
+}
 
 /* ======================================================
    TARGETS
 ====================================================== */
-
 function genTarget() {
-    const mode = game.mode;
+    // Choose board orientation first, so the target lands on the correct view
+    applyFlipForQuestion(false);
+
     game.questionStartTime = Date.now();
+    const mode = game.mode;
     if (mode === "square" || mode === "blindfold") genSquareTarget();
-    else if (mode === "coordinate" || mode === "reverse") genNameTarget(mode === "reverse" ? 6 : 4);
+    else if (mode === "coordinate") genNameTarget(4);
+    else if (mode === "reverse") genNameTarget(6);
     else if (mode === "knight") genKnightTarget();
     else if (mode === "color") genColorTarget();
     else genSquareTarget();
@@ -982,14 +987,12 @@ function updateQuestionNumber() {
 }
 
 function genSquareTarget() {
-    let coord;
-    let tries = 0;
-    do { coord = randomSquare(); tries++; } while (coord === game.target && tries < 20);
+    const coord = nextTarget();
     game.target = coord;
     game.questionIndex++;
     updateQuestionNumber();
 
-    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
+    $("targetLabelText").textContent = "FIND THIS SQUARE";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coord;
     $("targetHint").textContent = "Click the matching square on the board.";
@@ -1001,12 +1004,12 @@ function genSquareTarget() {
 }
 
 function genNameTarget(count) {
-    const coord = randomSquare();
+    const coord = nextTarget();
     game.target = coord;
     game.questionIndex++;
     updateQuestionNumber();
 
-    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
+    $("targetLabelText").textContent = game.mode === "reverse" ? "IDENTIFY THIS SQUARE" : "NAME THIS SQUARE";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = "?";
     $("targetHint").textContent = "Which coordinate is highlighted?";
@@ -1037,11 +1040,12 @@ function genNameTarget(count) {
 }
 
 function genKnightTarget() {
-    let src;
+    let src = nextTarget();
     let tries = 0;
-    do { src = randomSquare(); tries++; }
-    while ((src === game.knightSource || knightMoves(src).length < 2) && tries < 40);
-
+    while (knightMoves(src).length < 2 && tries < 40) {
+        src = nextTarget();
+        tries++;
+    }
     game.knightSource = src;
     game.target = src;
     game.questionIndex++;
@@ -1049,7 +1053,7 @@ function genKnightTarget() {
     game.knightFound = [];
 
     updateQuestionNumber();
-    $("targetLabelText").textContent = MODE_INFO.knight.targetLabel;
+    $("targetLabelText").textContent = "KNIGHT JUMPS FROM";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = src;
     $("targetHint").textContent = "Click every square this knight can move to.";
@@ -1062,12 +1066,12 @@ function genKnightTarget() {
 }
 
 function genColorTarget() {
-    const coord = randomSquare();
+    const coord = nextTarget();
     game.target = coord;
     game.questionIndex++;
     updateQuestionNumber();
 
-    $("targetLabelText").textContent = MODE_INFO.color.targetLabel;
+    $("targetLabelText").textContent = "SQUARE COLOR";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coord;
     $("targetHint").textContent = "Is this square light or dark?";
@@ -1102,18 +1106,16 @@ function resetTarget() {
     $("targetHint").textContent = "Press Start to begin your session.";
     $("targetFeedback").textContent = "";
     $("targetNumber").textContent = "QUESTION 00";
-    $("targetLabelText").textContent = MODE_INFO[game.mode].targetLabel;
+    $("targetLabelText").textContent = "FIND THIS SQUARE";
     $("targetPanel").classList.remove("correct","wrong");
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
     clearHighlights();
 }
 
-
 /* ======================================================
    ANSWER HANDLING
 ====================================================== */
-
 function recordReaction() {
     if (game.questionStartTime) {
         const rt = Date.now() - game.questionStartTime;
@@ -1245,7 +1247,6 @@ function correctKnight(coord, sq) {
     game.knightFound.push(coord);
     game.knightRemaining = game.knightRemaining.filter(c => c !== coord);
     sq.classList.add("knight-found");
-
     game.correct++;
     game.streak++;
     game.bestStreak = Math.max(game.bestStreak, game.streak);
@@ -1281,13 +1282,11 @@ function wrongSquare(sq) {
     game.mistakes++;
     stats.totalMistakes++;
     game.streak = 0;
-
     clearHighlights();
     if (game.mode === "knight" && game.knightSource) {
         hl(game.knightSource, "knight-source");
         game.knightFound.forEach(c => hl(c, "knight-found"));
     }
-
     sq.classList.add("last-wrong");
     $("targetPanel").classList.add("wrong");
     $("targetFeedback").textContent = "✕ TRY AGAIN";
@@ -1319,44 +1318,36 @@ function wrongSquare(sq) {
     }, 520);
 }
 
-
 /* ======================================================
    TIMER + PROGRESS
 ====================================================== */
-
 function fmtTime(s) {
     const m = Math.floor(s / 60);
     const r = s % 60;
     return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
 }
-
 function updateTimer() {
     $("timerDisplay").textContent = fmtTime(game.timeLeft);
     $("timerDisplay").style.color =
-        game.timeLeft <= 10 && game.running && !game.paused
-            ? "var(--red)" : "var(--gold)";
+        game.timeLeft <= 10 && game.running && !game.paused ? "var(--red)" : "var(--gold)";
 }
-
 function updateProgress() {
     const elapsed = game.duration - game.timeLeft;
     const pct = Math.min(100, Math.max(0, (elapsed / game.duration) * 100));
     $("progressFill").style.width = pct + "%";
     $("progressText").textContent = Math.round(pct) + "%";
 }
-
 function accuracy() {
     const attempts = game.correct + game.mistakes;
     if (attempts === 0) return 100;
     return Math.round((game.correct / attempts) * 100);
 }
-
 function updateLive() {
     $("sessionCorrect").textContent = String(game.correct).padStart(2, "0");
     $("sessionAccuracy").innerHTML = accuracy() + "<small>%</small>";
     $("sessionAccuracy").style.color = accuracy() >= 80 ? "var(--green)" : "var(--gold)";
     $("sessionStreak").textContent = String(game.streak).padStart(2, "0");
 }
-
 function updateDashboard() {
     $("statStreak").textContent = stats.bestStreak || 0;
     $("statBest").textContent = stats.personalBest || 0;
@@ -1370,17 +1361,14 @@ function updateDashboard() {
     $("sidebarBest").textContent = stats.personalBest || 0;
 }
 
-
 /* ======================================================
    XP / LEVEL
 ====================================================== */
-
 function levelInfo(x) {
     const level = Math.floor(x / 250) + 1;
     const into = x - (level - 1) * 250;
     return { level, into, toNext: 250 - into, progress: into / 250 };
 }
-
 function levelTitle(l) {
     if (l >= 20) return "Grandmaster";
     if (l >= 15) return "Master";
@@ -1389,7 +1377,6 @@ function levelTitle(l) {
     if (l >= 4) return "Apprentice";
     return "Novice";
 }
-
 function updateLevelUI() {
     const info = levelInfo(xp);
     $("levelLabel").textContent = "LEVEL " + info.level;
@@ -1398,19 +1385,11 @@ function updateLevelUI() {
     $("profileTitle").textContent = levelTitle(info.level);
     $("profileXp").textContent = xp + " XP · Level " + info.level;
 }
-
-function addXp(n) {
-    if (n <= 0) return;
-    xp += n;
-    save(KEYS.xp, xp);
-    updateLevelUI();
-}
-
+function addXp(n) { if (n <= 0) return; xp += n; save(KEYS.xp, xp); updateLevelUI(); }
 
 /* ======================================================
    DAILY GOAL
 ====================================================== */
-
 function updateDailyUI() {
     const pct = Math.min(1, daily.count / DAILY_TARGET);
     const c = 2 * Math.PI * 33;
@@ -1422,7 +1401,6 @@ function updateDailyUI() {
     $("sidebarGoalTarget").textContent = DAILY_TARGET;
     $("sidebarGoalFill").style.width = (pct * 100) + "%";
 }
-
 function bumpDaily(n) {
     if (daily.date !== todayKey()) daily = { date: todayKey(), count: 0 };
     daily.count += n;
@@ -1430,11 +1408,9 @@ function bumpDaily(n) {
     updateDailyUI();
 }
 
-
 /* ======================================================
    ACHIEVEMENTS
 ====================================================== */
-
 function renderAchievements() {
     const g = $("achievementsGrid");
     if (!g) return;
@@ -1451,7 +1427,6 @@ function renderAchievements() {
     const sum = $("achievementSummary");
     if (sum) sum.textContent = unlocked.length + " of " + ACHIEVEMENTS.length + " unlocked";
 }
-
 function checkAchievements() {
     const newly = [];
     ACHIEVEMENTS.forEach(a => {
@@ -1471,13 +1446,10 @@ function checkAchievements() {
     }
 }
 
-
 /* ======================================================
    CONFETTI
 ====================================================== */
-
 let confettiRaf = null;
-
 function fireConfetti(count) {
     count = count || 80;
     const canvas = $("confettiCanvas");
@@ -1504,10 +1476,8 @@ function fireConfetti(count) {
             max: 90 + Math.random() * 40
         });
     }
-
     const grav = 0.28;
     if (confettiRaf) cancelAnimationFrame(confettiRaf);
-
     function frame() {
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         let alive = 0;
@@ -1515,8 +1485,7 @@ function fireConfetti(count) {
             if (p.life > p.max) return;
             alive++;
             p.life++;
-            p.x += p.vx;
-            p.y += p.vy;
+            p.x += p.vx; p.y += p.vy;
             p.vy += grav;
             p.vx *= 0.995;
             p.rot += p.vrot;
@@ -1540,11 +1509,9 @@ function fireConfetti(count) {
     frame();
 }
 
-
 /* ======================================================
    SESSION
 ====================================================== */
-
 function resetSession() {
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
@@ -1588,16 +1555,18 @@ function startSession() {
     if (game.running) { finishSession(); return; }
 
     resetSession();
-    const mode = game.mode;
+    squareBag.reset();
 
-    // Apply mode-specific board visibility
-    if (mode === "blindfold") {
+    if (game.mode === "blindfold") {
         document.body.setAttribute("data-labels", "false");
         document.body.setAttribute("data-coords", "hidden");
     } else {
         document.body.setAttribute("data-labels", load(KEYS.labels, false) ? "true" : "false");
         document.body.setAttribute("data-coords", load(KEYS.coords, true) !== false ? "visible" : "hidden");
     }
+
+    // Pre-decide orientation for the first question
+    applyFlipForQuestion(true);
 
     $("countdownOverlay").classList.remove("hidden");
     let count = 3;
@@ -1732,6 +1701,7 @@ function finishSession() {
         bestStreak: game.bestStreak,
         duration: game.duration,
         mode: game.mode,
+        perspective: game.perspective,
         xp: gained,
         avgReaction: avgRt,
         date: new Date().toISOString()
@@ -1757,7 +1727,7 @@ function finishSession() {
     $("resultsPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function showResults(newRecord, gained, avgRt) {
+function showResults(newRecord, gained) {
     $("resultCorrect").textContent = game.correct;
     $("resultAccuracy").textContent = accuracy() + "%";
     $("resultStreak").textContent = game.bestStreak;
@@ -1784,11 +1754,9 @@ function showResults(newRecord, gained, avgRt) {
     $("resultsPanel").classList.remove("hidden");
 }
 
-
 /* ======================================================
    VIEW ROUTING
 ====================================================== */
-
 const VIEW_TITLES = {
     dashboard: ["Home", "Dashboard"],
     training: ["Workspace", "Training"],
@@ -1800,17 +1768,12 @@ const VIEW_TITLES = {
 function setView(name) {
     if (!VIEW_TITLES[name]) name = "dashboard";
     document.body.dataset.view = name;
-    document.querySelectorAll(".view").forEach(v => {
-        v.classList.toggle("active", v.dataset.view === name);
-    });
-    document.querySelectorAll(".nav-link").forEach(l => {
-        l.classList.toggle("active", l.dataset.nav === name);
-    });
+    document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.dataset.view === name));
+    document.querySelectorAll(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.nav === name));
     $("breadcrumbParent").textContent = VIEW_TITLES[name][0];
     $("breadcrumbCurrent").textContent = VIEW_TITLES[name][1];
     document.body.classList.remove("sidebar-open");
     window.scrollTo({ top: 0, behavior: "smooth" });
-
     if (name === "analytics") renderAnalytics();
     if (name === "achievements") renderAchievements();
 }
@@ -1822,26 +1785,16 @@ function setupNav() {
             setView(el.dataset.nav);
         });
     });
-
-    $("mobileMenu").addEventListener("click", () => {
-        document.body.classList.toggle("sidebar-open");
-    });
-
+    $("mobileMenu").addEventListener("click", () => document.body.classList.toggle("sidebar-open"));
     document.addEventListener("click", e => {
         if (document.body.classList.contains("sidebar-open") &&
-            !e.target.closest(".sidebar") &&
-            !e.target.closest("#mobileMenu")) {
+            !e.target.closest(".sidebar") && !e.target.closest("#mobileMenu")) {
             document.body.classList.remove("sidebar-open");
         }
     });
-
     document.querySelectorAll("[data-action='quick-train']").forEach(el => {
-        el.addEventListener("click", () => {
-            setView("training");
-            setTimeout(() => startSession(), 320);
-        });
+        el.addEventListener("click", () => { setView("training"); setTimeout(() => startSession(), 320); });
     });
-
     document.querySelectorAll(".mode-card").forEach(el => {
         el.addEventListener("click", () => {
             setMode(el.dataset.mode);
@@ -1851,11 +1804,9 @@ function setupNav() {
     });
 }
 
-
 /* ======================================================
    MODE
 ====================================================== */
-
 function setMode(mode) {
     if (!MODE_INFO[mode]) return;
     if (game.running) { toast("Finish the current session to change mode."); return; }
@@ -1869,7 +1820,6 @@ function setMode(mode) {
 
     $("trainingTitle").textContent = MODE_INFO[mode].label;
     $("trainingSub").textContent = MODE_INFO[mode].sub;
-    $("targetLabelText").textContent = MODE_INFO[mode].targetLabel;
 
     renderMission();
     resetSession();
@@ -1890,43 +1840,31 @@ function renderMission() {
     $("missionTitle").textContent = MODE_INFO[game.mode].label;
 }
 
-
 /* ======================================================
    THEMES / SETTINGS
 ====================================================== */
-
 function setTheme(t) {
     if (!["dark","light","neon","heavy"].includes(t)) t = "dark";
     document.body.dataset.theme = t;
     $("appearanceTheme").value = t;
     save(KEYS.theme, t);
 }
-
 function setBoardTheme(t) {
     if (!["emerald","walnut","ice","rose","midnight","classic"].includes(t)) t = "emerald";
     document.body.dataset.board = t;
     $("boardTheme").value = t;
     save(KEYS.board, t);
 }
-
-function setFlip(on) {
-    document.body.dataset.flip = on ? "true" : "false";
-    $("flipToggle").checked = on;
-    save(KEYS.flip, on);
-}
-
 function setLabels(on) {
     document.body.dataset.labels = on ? "true" : "false";
     $("labelsToggle").checked = on;
     save(KEYS.labels, on);
 }
-
 function setCoords(on) {
     document.body.dataset.coords = on ? "visible" : "hidden";
     $("coordsToggle").checked = on;
     save(KEYS.coords, on);
 }
-
 function setBoardSize(pct) {
     const w = $("boardWrapper");
     if (w) w.style.maxWidth = (660 * pct / 100) + "px";
@@ -1939,27 +1877,31 @@ function setupSettings() {
         setTheme(e.target.value);
         toast("Theme: " + e.target.options[e.target.selectedIndex].text);
     });
-
     $("boardTheme").addEventListener("change", e => {
         setBoardTheme(e.target.value);
         toast("Board theme updated.");
     });
-
     $("boardSize").addEventListener("input", e => setBoardSize(Number(e.target.value)));
-
-    $("flipToggle").addEventListener("change", e => {
-        setFlip(e.target.checked);
-        toast(e.target.checked ? "Board flipped." : "Board reset.");
-    });
 
     $("labelsToggle").addEventListener("change", e => {
         setLabels(e.target.checked);
         toast(e.target.checked ? "Labels shown." : "Labels hidden.");
     });
-
     $("coordsToggle").addEventListener("change", e => {
         setCoords(e.target.checked);
         toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden.");
+    });
+
+    // Manual flip toggle syncs with perspective
+    $("flipToggle").addEventListener("change", e => {
+        const on = e.target.checked;
+        if (game.running) {
+            e.target.checked = document.body.dataset.flip === "true";
+            toast("Finish the current session first.");
+            return;
+        }
+        setPerspective(on ? "black" : "white");
+        toast(on ? "Black view." : "White view.");
     });
 
     $("soundToggle").addEventListener("change", e => {
@@ -1968,12 +1910,10 @@ function setupSettings() {
         if (game.sound) playSound("correct");
         toast(game.sound ? "Sound on." : "Sound off.");
     });
-
     $("volumeRange").addEventListener("input", e => {
         game.volume = Number(e.target.value) / 100;
         save(KEYS.volume, game.volume);
     });
-
     $("ticksToggle").addEventListener("change", e => {
         game.ticks = e.target.checked;
         save(KEYS.ticks, game.ticks);
@@ -1981,11 +1921,9 @@ function setupSettings() {
     });
 }
 
-
 /* ======================================================
    ANALYTICS
 ====================================================== */
-
 function renderAnalytics() {
     const total = stats.totalCorrect || 0;
     const totalAtt = total + (stats.totalMistakes || 0);
@@ -2020,10 +1958,7 @@ function renderChartBars(id, values, maxOverride) {
     const c = $(id);
     if (!c) return;
     c.innerHTML = "";
-    if (!values.length) {
-        c.innerHTML = '<div class="chart-empty">No sessions yet</div>';
-        return;
-    }
+    if (!values.length) { c.innerHTML = '<div class="chart-empty">No sessions yet</div>'; return; }
     const max = maxOverride || Math.max(...values, 1);
     values.forEach((v, i) => {
         const bar = document.createElement("div");
@@ -2041,10 +1976,7 @@ function renderModeChart(id, arr) {
     const c = $(id);
     if (!c) return;
     c.innerHTML = "";
-    if (!arr.length) {
-        c.innerHTML = '<div class="chart-empty">No mode data yet</div>';
-        return;
-    }
+    if (!arr.length) { c.innerHTML = '<div class="chart-empty">No mode data yet</div>'; return; }
     const max = Math.max(...arr.map(a => a.val), 1);
     arr.forEach((a, i) => {
         const bar = document.createElement("div");
@@ -2073,7 +2005,6 @@ function renderActivityChart() {
             String(d.getDate()).padStart(2, "0");
         days[k] = 0;
     }
-
     history.forEach(h => {
         const d = new Date(h.date);
         const k = d.getFullYear() + "-" +
@@ -2081,10 +2012,8 @@ function renderActivityChart() {
             String(d.getDate()).padStart(2, "0");
         if (k in days) days[k] += h.correct;
     });
-
     const entries = Object.entries(days);
     const max = Math.max(...entries.map(e => e[1]), 1);
-
     entries.forEach(([k, v], i) => {
         const bar = document.createElement("div");
         bar.className = "chart-bar";
@@ -2115,11 +2044,13 @@ function renderHistory() {
         const d = new Date(s.date);
         const dateTxt = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
         const timeTxt = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+        const modeLabel = MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training";
+        const perspLabel = s.perspective === "black" ? " · Black" : s.perspective === "mixed" ? " · Mixed" : "";
 
         const html =
             '<div class="history-item-icon">♞</div>' +
             '<div class="history-item-info">' +
-                '<strong>' + (MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training") + '</strong>' +
+                '<strong>' + modeLabel + perspLabel + '</strong>' +
                 '<span>' + dateTxt + ' · ' + timeTxt + ' · ' + Math.round(s.duration / 60) + 'm</span>' +
             '</div>' +
             '<div class="history-item-score">' +
@@ -2156,38 +2087,33 @@ function clearHistory() {
     );
 }
 
-
 /* ======================================================
    CONFIRM MODAL
 ====================================================== */
-
 let confirmCallback = null;
-
 function openConfirm(title, msg, cb) {
     $("confirmTitle").textContent = title;
     $("confirmMessage").textContent = msg;
     confirmCallback = cb;
     $("confirmOverlay").classList.remove("hidden");
 }
-
 function closeConfirm() {
     $("confirmOverlay").classList.add("hidden");
     confirmCallback = null;
 }
 
-
 /* ======================================================
    EXPORT / IMPORT / RESET
 ====================================================== */
-
 function exportData() {
     const payload = {
-        version: 3,
+        version: 3.1,
         exportedAt: new Date().toISOString(),
         stats, history, xp, unlocked, daily,
         settings: {
             theme: document.body.dataset.theme,
             board: document.body.dataset.board,
+            perspective: game.perspective,
             flip: document.body.dataset.flip === "true",
             labels: document.body.dataset.labels === "true",
             coords: document.body.dataset.coords !== "hidden",
@@ -2230,7 +2156,8 @@ function importData(file) {
                 const s = data.settings;
                 if (s.theme) setTheme(s.theme);
                 if (s.board) setBoardTheme(s.board);
-                if (typeof s.flip === "boolean") setFlip(s.flip);
+                if (s.perspective) setPerspective(s.perspective);
+                else if (typeof s.flip === "boolean") setPerspective(s.flip ? "black" : "white");
                 if (typeof s.labels === "boolean") setLabels(s.labels);
                 if (typeof s.coords === "boolean") setCoords(s.coords);
                 if (typeof s.sound === "boolean") { game.sound = s.sound; $("soundToggle").checked = s.sound; save(KEYS.sound, s.sound); }
@@ -2290,18 +2217,14 @@ function resetProgress() {
     );
 }
 
-
 /* ======================================================
    KEYBOARD
 ====================================================== */
-
 function setupKeyboard() {
     document.addEventListener("keydown", e => {
         const t = e.target;
         if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") return;
-
         const k = e.key.toLowerCase();
-
         if (k === "r") {
             e.preventDefault();
             if (game.running) finishSession();
@@ -2331,47 +2254,36 @@ async function toggleFullscreen() {
     } catch { toast("Fullscreen unavailable."); }
 }
 
-
 /* ======================================================
    ONBOARDING
 ====================================================== */
-
 function checkOnboarding() {
-    if (!load(KEYS.onboarded, false)) {
-        $("onboarding").classList.remove("hidden");
-    }
+    if (!load(KEYS.onboarded, false)) $("onboarding").classList.remove("hidden");
 }
-
 function completeOnboarding() {
     save(KEYS.onboarded, true);
     $("onboarding").classList.add("hidden");
     toast("Welcome! Choose a mode to begin.");
 }
 
-
 /* ======================================================
    DAILY TIP
 ====================================================== */
-
 function setTip() {
     const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
     const el = $("tipText");
     if (el) el.textContent = TIPS[day % TIPS.length];
 }
 
-
 /* ======================================================
    INIT
 ====================================================== */
-
 function init() {
     buildCoords();
     buildBoard();
 
-    // Restore settings
     setTheme(load(KEYS.theme, "dark"));
     setBoardTheme(load(KEYS.board, "emerald"));
-    setFlip(load(KEYS.flip, false));
     setLabels(load(KEYS.labels, false));
     setCoords(load(KEYS.coords, true) !== false);
     setBoardSize(Number(load(KEYS.boardSize, 100)) || 100);
@@ -2394,7 +2306,6 @@ function init() {
         startSession();
         $("training").scrollIntoView({ behavior: "smooth", block: "start" });
     });
-
     $("durationSelect").addEventListener("change", () => {
         if (game.running) {
             $("durationSelect").value = game.duration;
@@ -2409,7 +2320,19 @@ function init() {
         b.addEventListener("click", () => setMode(b.dataset.mode));
     });
 
-    // Nav
+    // Perspective buttons (Board View)
+    document.querySelectorAll(".perspective-btn").forEach(b => {
+        b.addEventListener("click", () => {
+            if (game.running) { toast("Finish the current session to change view."); return; }
+            setPerspective(b.dataset.perspective);
+            const labels = { white: "White's view", black: "Black's view", mixed: "Mixed view (flips randomly)" };
+            toast("Board view: " + labels[b.dataset.perspective]);
+        });
+    });
+
+    // Restore perspective setting
+    setPerspective(load(KEYS.perspective, "white"));
+
     setupNav();
     setupSettings();
     setupKeyboard();
@@ -2439,7 +2362,7 @@ function init() {
     });
     $("resetBtn").addEventListener("click", resetProgress);
 
-    // Init music (async)
+    // Music
     setupMusic();
 
     setTip();
@@ -2456,7 +2379,7 @@ function init() {
 
     checkOnboarding();
 
-    console.log("Chess Vision Trainer v3 ready.");
+    console.log("Chess Vision Trainer v3.1 ready.");
 }
 
 document.addEventListener("DOMContentLoaded", init);
