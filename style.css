@@ -1,7 +1,5 @@
 /* ======================================================
    CHESS VISION TRAINER — DESIGN SYSTEM v3.2
-   + Both-view dual mode
-   + Board pieces
 ====================================================== */
 
 :root {
@@ -101,9 +99,6 @@ input:focus-visible {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ======================================================
-   THEMES
-====================================================== */
 body[data-theme="light"] {
     --bg: #f4f6fa;
     --sidebar: #ffffff;
@@ -166,9 +161,6 @@ body[data-theme="heavy"] {
     --shadow-lg: 0 30px 100px rgba(0,0,0,.95);
 }
 
-/* ======================================================
-   APP LAYOUT
-====================================================== */
 .app-shell { min-height: 100vh; }
 .sidebar {
     position: fixed;
@@ -190,9 +182,6 @@ body[data-theme="heavy"] {
     max-width: 1800px;
 }
 
-/* ======================================================
-   BRAND
-====================================================== */
 .brand { display: flex; align-items: center; gap: 14px; padding: 4px 6px; margin-bottom: 46px; }
 .brand-icon {
     display: grid;
@@ -214,9 +203,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
     letter-spacing: .2em;
 }
 
-/* ======================================================
-   SIDEBAR NAV
-====================================================== */
 .side-label {
     margin: 0 12px 14px;
     color: var(--muted);
@@ -296,9 +282,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 .online-dot { background: var(--green); box-shadow: 0 0 10px var(--green); margin-left: auto; }
 .status-dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite; }
 
-/* ======================================================
-   TOPBAR
-====================================================== */
 .topbar {
     position: sticky;
     top: 0;
@@ -360,15 +343,9 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
     animation: pulse 1.2s infinite;
 }
 
-/* ======================================================
-   VIEWS
-====================================================== */
 .view { display: none; padding-top: 10px; }
 .view.active { display: block; animation: fadeIn .3s ease; }
 
-/* ======================================================
-   HERO
-====================================================== */
 .hero {
     position: relative;
     display: flex;
@@ -431,9 +408,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
     letter-spacing: .2em;
 }
 
-/* ======================================================
-   SECTION HEADS
-====================================================== */
 .section-head {
     display: flex;
     justify-content: space-between;
@@ -457,9 +431,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
     text-transform: uppercase;
 }
 
-/* ======================================================
-   STAT CARDS
-====================================================== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -514,9 +485,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 }
 .stat-tag { color: var(--accent); font: 500 12px "DM Mono", monospace; letter-spacing: .1em; }
 
-/* ======================================================
-   MODES GRID
-====================================================== */
 .modes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -555,9 +523,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 .mode-card-body strong { font-size: var(--fs-body); font-weight: 600; line-height: 1.35; }
 .mode-card-body span { color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
 
-/* ======================================================
-   DASHBOARD GRID
-====================================================== */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
@@ -565,9 +530,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
     margin-top: 22px;
 }
 
-/* ======================================================
-   PANELS
-====================================================== */
 .panel {
     padding: 26px;
     border: 1px solid var(--border);
@@ -611,9 +573,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 }
 .tip-foot { color: var(--muted); font: 500 12px "DM Mono", monospace; letter-spacing: .14em; }
 
-/* ======================================================
-   HISTORY LIST
-====================================================== */
 .history-list { display: grid; gap: 12px; }
 .history-item {
     display: flex;
@@ -660,9 +619,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 .empty-state span { color: var(--accent); font-size: 44px; margin-bottom: 14px; opacity: .7; }
 .empty-state p { font-size: var(--fs-body); line-height: 1.6; }
 
-/* ======================================================
-   TRAINING LAYOUT
-====================================================== */
 .training-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(320px, .95fr);
@@ -711,9 +667,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 }
 .mode-btn-text small { font-size: var(--fs-xxs); color: var(--muted); line-height: 1.4; }
 
-/* ======================================================
-   BOARD VIEW / PERSPECTIVE BAR
-====================================================== */
 .perspective-bar {
     display: flex;
     align-items: center;
@@ -760,9 +713,6 @@ body[data-theme="heavy"] .brand-icon { color: #1a0d00; }
 }
 .perspective-icon { font-size: 16px; line-height: 1; }
 
-/* ======================================================
-   SESSION CONTROLS
-====================================================== */
 .session-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -852,9 +802,6 @@ body[data-theme="heavy"] .primary-button { color: #1a0d00; }
 .text-button.danger:hover { color: var(--red); border-color: var(--red); }
 .button-arrow { font-size: 20px; }
 
-/* ======================================================
-   LIVE STATS
-====================================================== */
 .live-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -889,9 +836,6 @@ body[data-theme="heavy"] .primary-button { color: #1a0d00; }
 .live-stat .accent-amber { color: var(--gold); }
 .live-stat small { font-size: 16px; font-weight: 600; }
 
-/* ======================================================
-   TARGET PANEL
-====================================================== */
 .target-panel {
     display: flex;
     flex-direction: column;
@@ -948,7 +892,6 @@ body[data-theme="heavy"] .primary-button { color: #1a0d00; }
 }
 .target-coordinate.muted { color: var(--muted); }
 
-/* Dual indicator */
 .dual-indicator {
     display: inline-flex;
     align-items: center;
@@ -1028,9 +971,6 @@ body[data-theme="heavy"] .primary-button { color: #1a0d00; }
     animation: shake .3s ease;
 }
 
-/* ======================================================
-   PROGRESS
-====================================================== */
 .progress-header {
     display: flex;
     justify-content: space-between;
@@ -1054,9 +994,6 @@ body[data-theme="heavy"] .primary-button { color: #1a0d00; }
     transition: width .4s linear;
 }
 
-/* ======================================================
-   CHESSBOARD
-====================================================== */
 .board-section {
     display: flex;
     justify-content: center;
@@ -1175,7 +1112,6 @@ body[data-labels="true"] .square-label { opacity: .75; }
 .square.light .square-label { color: var(--board-dark); }
 .square.dark .square-label { color: var(--board-light); }
 
-/* Piece glyphs on squares */
 .piece {
     position: absolute;
     inset: 0;
@@ -1192,7 +1128,6 @@ body[data-labels="true"] .square-label { opacity: .75; }
 .piece-white { color: #ffffff; -webkit-text-stroke: 1px rgba(0,0,0,.45); }
 .piece-black { color: #1a1a1a; text-shadow: 0 1px 2px rgba(255,255,255,.25); }
 
-/* Board themes */
 body[data-board="emerald"]  { --board-light: #eeeed2; --board-dark: #4a7c3a; }
 body[data-board="walnut"]   { --board-light: #f0d9b5; --board-dark: #a66d43; }
 body[data-board="ice"]      { --board-light: #dce9f5; --board-dark: #5a7fa3; }
@@ -1223,9 +1158,6 @@ kbd {
     font: 500 13px "DM Mono", monospace;
 }
 
-/* ======================================================
-   RESULTS
-====================================================== */
 .results-panel {
     margin-top: 28px;
     padding: 28px;
@@ -1294,9 +1226,6 @@ kbd {
 }
 .results-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
-/* ======================================================
-   MISSION STEPS
-====================================================== */
 .mission-steps { display: grid; gap: 20px; }
 .mission-step {
     display: grid;
@@ -1317,9 +1246,6 @@ kbd {
 .mission-step strong { font-size: var(--fs-body); font-weight: 600; line-height: 1.4; }
 .mission-step p { margin-top: 8px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.65; }
 
-/* ======================================================
-   GOAL + PERSONAL
-====================================================== */
 .goal-row {
     display: flex;
     justify-content: space-between;
@@ -1412,9 +1338,6 @@ kbd {
     transition: width .6s ease;
 }
 
-/* ======================================================
-   ACHIEVEMENTS
-====================================================== */
 .achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1457,9 +1380,6 @@ kbd {
 .achievement-text strong { font-size: var(--fs-body); font-weight: 600; line-height: 1.35; }
 .achievement-text span { color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
 
-/* ======================================================
-   SETTINGS
-====================================================== */
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -1585,9 +1505,6 @@ input[type="range"]::-moz-range-thumb {
 }
 body[data-theme="heavy"] .switch input:checked + .switch-track::before { background: #1a0d00; }
 
-/* ======================================================
-   CHARTS
-====================================================== */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1637,9 +1554,6 @@ body[data-theme="heavy"] .switch input:checked + .switch-track::before { backgro
     border-radius: 12px;
 }
 
-/* ======================================================
-   FOOTER
-====================================================== */
 .footer {
     display: flex;
     justify-content: space-between;
@@ -1664,9 +1578,6 @@ body[data-theme="heavy"] .switch input:checked + .switch-track::before { backgro
     letter-spacing: .12em;
 }
 
-/* ======================================================
-   OVERLAYS
-====================================================== */
 .pause-overlay,
 .countdown-overlay,
 .confirm-overlay,
@@ -1788,9 +1699,6 @@ body[data-theme="heavy"] .onboarding-icon { color: #1a0d00; }
 .onboarding-features strong { font-size: var(--fs-body); font-weight: 600; line-height: 1.4; }
 .onboarding-card .primary-button { width: 100%; }
 
-/* ======================================================
-   CONFETTI + TOAST
-====================================================== */
 .confetti-canvas {
     position: fixed;
     inset: 0;
@@ -1824,9 +1732,6 @@ body[data-theme="heavy"] .onboarding-icon { color: #1a0d00; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-icon { color: var(--accent); font-size: 22px; }
 
-/* ======================================================
-   MUSIC WIDGET
-====================================================== */
 .music-widget {
     position: fixed;
     left: 28px;
@@ -2202,9 +2107,6 @@ body[data-theme="heavy"] .music-track-item.active .music-track-icon { color: #1a
 }
 .music-drag-hint { color: var(--accent); opacity: .75; white-space: nowrap; }
 
-/* ======================================================
-   ANIMATIONS
-====================================================== */
 @keyframes rotateOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes knightFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -2220,9 +2122,6 @@ body[data-theme="heavy"] .music-track-item.active .music-track-icon { color: #1a
     100% { transform: scale(1); opacity: .9; }
 }
 
-/* ======================================================
-   RESPONSIVE
-====================================================== */
 @media (max-width: 1300px) {
     :root {
         --sidebar-width: 244px;
