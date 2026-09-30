@@ -1,9 +1,10 @@
 "use strict";
 
 /* ======================================================
-   CHESS VISION TRAINER — ENGINE v3.1
-   + White / Black / Mixed board view
-   + Shuffle-bag random coordinate generation
+   CHESS VISION TRAINER — ENGINE v3.2
+   + Both-view dual mode
+   + Random pieces on board
+   + Shuffle-bag random coordinates
 ====================================================== */
 
 const $ = id => document.getElementById(id);
@@ -14,9 +15,10 @@ const KEYS = {
     theme: "cvt-theme-v3",
     board: "cvt-board-v3",
     flip: "cvt-flip-v3",
-    perspective: "cvt-perspective-v3",     // new
+    perspective: "cvt-perspective-v3",
     labels: "cvt-labels-v3",
     coords: "cvt-coords-v3",
+    pieces: "cvt-pieces-v3",
     sound: "cvt-sound-v3",
     volume: "cvt-volume-v3",
     ticks: "cvt-ticks-v3",
@@ -50,7 +52,7 @@ const TIPS = [
     "Look at the board as a complete grid. Train your eyes to move naturally.",
     "Consistency is the secret. A few focused minutes each day compounds.",
     "In knight mode, trace the L-shape: two squares one way, one sideways.",
-    "Mixed view is real chess vision — learn to read from both sides."
+    "Both-view mode is the real test: know every square from both sides."
 ];
 
 const MODE_INFO = {
@@ -160,6 +162,11 @@ const squareBag = {
 };
 squareBag.reset();
 
+/* Piece glyphs */
+const PIECE_GLYPHS_WHITE = ["♔","♕","♖","♗","♘","♙"];
+const PIECE_GLYPHS_BLACK = ["♚","♛","♜","♝","♞","♟"];
+const PIECE_COUNT = 10;
+
 const MUSIC_STREAM = [
     { id: "jfKfPfyJRdk", name: "Lofi Girl · Beats to Relax" },
     { id: "4xDzrJKXOOY", name: "Synthwave Radio · Retro Chill" },
@@ -216,7 +223,15 @@ if (!daily || daily.date !== todayKey()) {
 
 const game = {
     mode: "square",
-    perspective: "white",   // white | black | mixed
+    perspective: "white",     // white | black | mixed | both
+    // Dual-mode state
+    dualActive: false,
+    dualStep: 0,              // 0 or 1 — which sub-answer we are on
+    dualTarget: null,         // coordinate being resolved in dual mode
+    // Pieces
+    piecesEnabled: false,
+    pieces: {},               // { square: { color, glyph } }
+    // Session
     running: false,
     paused: false,
     completed: false,
@@ -270,6 +285,7 @@ function playSound(type = "correct") {
         else if (type === "achievement") { freqs = [784, 988, 1318]; dur = 0.5; }
         else if (type === "start") { freqs = [440, 660]; dur = 0.2; }
         else if (type === "count") { freqs = [523]; dur = 0.12; }
+        else if (type === "flip") { freqs = [587, 784]; dur = 0.18; }
 
         freqs.forEach((f, i) => {
             const osc = audioContext.createOscillator();
@@ -407,7 +423,6 @@ function createYt() {
         });
     } catch (e) { console.warn("YT:", e); }
 }
-
 function playStream() {
     if (!music.ytReady || !music.yt) { toast("Radio is loading..."); return; }
     try { music.yt.playVideo(); } catch (e) { console.warn(e); }
@@ -550,7 +565,6 @@ function fmtBytes(b) {
     if (kb < 1024) return kb.toFixed(0) + " KB";
     return (kb / 1024).toFixed(1) + " MB";
 }
-
 function renderLocal() {
     const list = $("musicTrackList");
     const cnt = $("musicTrackCount");
@@ -593,7 +607,6 @@ function renderLocal() {
         list.appendChild(item);
     });
 }
-
 async function addLocalFiles(files) {
     if (!files || !files.length) return;
     try { await openDb(); } catch { toast("Local storage unavailable."); return; }
@@ -618,7 +631,6 @@ async function addLocalFiles(files) {
         if (music.source !== "local") switchSource("local");
     } else if (skipped) toast("No audio files added.");
 }
-
 async function removeLocal(id) {
     const t = music.localTracks.find(x => x.id === id);
     if (!t) return;
@@ -636,7 +648,6 @@ async function removeLocal(id) {
     updateMusicUI();
     toast("Track removed.");
 }
-
 function saveMusicPos() {
     if (music.source !== "local" || !music.audioEl || !music.audioEl.src) return;
     const t = music.localTracks[music.localIndex];
@@ -680,7 +691,6 @@ const drag = {
     startX: 0, startY: 0,
     startOffsetX: 0, startOffsetY: 0
 };
-
 function applyWidgetPos() {
     const w = $("musicWidget");
     if (w) w.style.transform = "translate(" + drag.offsetX + "px, " + drag.offsetY + "px)";
@@ -695,11 +705,7 @@ function clampWidget() {
     if (r.right > vw - m) dx = (vw - m) - r.right;
     if (r.top < m) dy = m - r.top;
     if (r.bottom > vh - m) dy = (vh - m) - r.bottom;
-    if (dx || dy) {
-        drag.offsetX += dx;
-        drag.offsetY += dy;
-        applyWidgetPos();
-    }
+    if (dx || dy) { drag.offsetX += dx; drag.offsetY += dy; applyWidgetPos(); }
 }
 function saveWidgetPos() { save(MUSIC_KEYS.widget, { x: drag.offsetX, y: drag.offsetY }); }
 function resetWidgetPos() {
@@ -707,7 +713,6 @@ function resetWidgetPos() {
     applyWidgetPos(); saveWidgetPos();
     toast("Music position reset.");
 }
-
 function setupDrag() {
     const w = $("musicWidget");
     const fab = $("musicFab");
@@ -832,10 +837,8 @@ async function setupMusic() {
 
     setupDrag();
     if (load(MUSIC_KEYS.open, false)) openPanel();
-
     await loadLocal();
     if (music.localTracks.length) await restoreLocal();
-
     updateMusicUI();
     loadYtApi();
 }
@@ -862,7 +865,6 @@ function buildCoords() {
         });
     });
 }
-
 function buildBoard() {
     const b = $("chessboard");
     b.innerHTML = "";
@@ -886,8 +888,59 @@ function buildBoard() {
             b.appendChild(sq);
         }
     }
+    renderPieces();
 }
 
+/* ======================================================
+   PIECES — random pieces on board for context
+====================================================== */
+function generatePieces() {
+    game.pieces = {};
+    if (!game.piecesEnabled) { renderPieces(); return; }
+
+    const occupied = new Set();
+    let attempts = 0;
+    while (Object.keys(game.pieces).length < PIECE_COUNT && attempts < 200) {
+        attempts++;
+        const sq = randomSquare();
+        if (occupied.has(sq)) continue;
+        occupied.add(sq);
+        const color = Math.random() < 0.5 ? "white" : "black";
+        const glyph = color === "white"
+            ? PIECE_GLYPHS_WHITE[Math.floor(Math.random() * PIECE_GLYPHS_WHITE.length)]
+            : PIECE_GLYPHS_BLACK[Math.floor(Math.random() * PIECE_GLYPHS_BLACK.length)];
+        game.pieces[sq] = { color, glyph };
+    }
+    renderPieces();
+}
+
+function renderPieces() {
+    document.querySelectorAll(".piece").forEach(p => p.remove());
+    if (!game.piecesEnabled) return;
+    Object.keys(game.pieces).forEach(sq => {
+        const sqEl = document.querySelector('.square[data-square="' + sq + '"]');
+        if (!sqEl) return;
+        const p = game.pieces[sq];
+        const el = document.createElement("span");
+        el.className = "piece piece-" + p.color;
+        el.textContent = p.glyph;
+        el.setAttribute("aria-hidden", "true");
+        sqEl.appendChild(el);
+    });
+}
+
+function setPiecesEnabled(on) {
+    game.piecesEnabled = !!on;
+    save(KEYS.pieces, game.piecesEnabled);
+    const pt = $("piecesToggle");
+    if (pt) pt.checked = game.piecesEnabled;
+    if (game.piecesEnabled) generatePieces();
+    else { game.pieces = {}; renderPieces(); }
+}
+
+/* ======================================================
+   BOARD HELPERS
+====================================================== */
 function clearHighlights() {
     document.querySelectorAll(".square").forEach(sq => {
         sq.classList.remove("last-correct","last-wrong","target-highlight","knight-source","knight-found");
@@ -919,7 +972,6 @@ function knightMoves(coord) {
 function randomSquare() {
     return FILES[Math.floor(Math.random() * 8)] + RANKS[Math.floor(Math.random() * 8)];
 }
-/* Target generator — never repeats within a session (shuffle bag) */
 function nextTarget() {
     return squareBag.next(game.target);
 }
@@ -928,7 +980,7 @@ function nextTarget() {
    BOARD VIEW / PERSPECTIVE
 ====================================================== */
 function setPerspective(p) {
-    if (!["white", "black", "mixed"].includes(p)) p = "white";
+    if (!["white", "black", "mixed", "both"].includes(p)) p = "white";
     game.perspective = p;
     save(KEYS.perspective, p);
 
@@ -951,12 +1003,14 @@ function setPerspective(p) {
 }
 
 /* Called at the start of every question.
-   White -> never flip. Black -> always flip. Mixed -> 50/50. */
+   white -> never flip. black -> always flip. mixed -> 50/50.
+   both -> handled by dual-mode logic. */
 function applyFlipForQuestion(force) {
     let flip;
     if (game.perspective === "white") flip = false;
     else if (game.perspective === "black") flip = true;
-    else flip = Math.random() < 0.5;
+    else if (game.perspective === "mixed") flip = Math.random() < 0.5;
+    else flip = false; // both mode starts in white view
 
     const current = document.body.dataset.flip === "true";
     if (force || flip !== current) {
@@ -965,12 +1019,50 @@ function applyFlipForQuestion(force) {
     }
 }
 
+function setBoardFlip(flip) {
+    document.body.dataset.flip = flip ? "true" : "false";
+    save(KEYS.flip, flip);
+}
+
+/* ======================================================
+   DUAL MODE ("Both" board view)
+====================================================== */
+function isDualMode() {
+    return game.perspective === "both";
+}
+
+function updateDualIndicator() {
+    const el = $("dualIndicator");
+    if (!el) return;
+    if (!isDualMode() || !game.running) {
+        el.classList.add("hidden");
+        el.classList.remove("step-2");
+        return;
+    }
+    el.classList.remove("hidden");
+    const step = game.dualStep + 1; // 1 or 2
+    const label = step === 1 ? "WHITE VIEW" : "BLACK VIEW";
+    el.classList.toggle("step-2", step === 2);
+    el.innerHTML =
+        '<span class="dual-dot"></span>' +
+        '<span class="dual-text">' + step + ' / 2 · ' + label + '</span>';
+}
+
 /* ======================================================
    TARGETS
 ====================================================== */
 function genTarget() {
-    // Choose board orientation first, so the target lands on the correct view
-    applyFlipForQuestion(false);
+    // Reset dual-mode state for a new question
+    game.dualStep = 0;
+    game.dualTarget = null;
+
+    // Choose board orientation first
+    if (isDualMode()) {
+        // Both mode always starts in white view for each new question
+        setBoardFlip(false);
+    } else {
+        applyFlipForQuestion(false);
+    }
 
     game.questionStartTime = Date.now();
     const mode = game.mode;
@@ -980,6 +1072,8 @@ function genTarget() {
     else if (mode === "knight") genKnightTarget();
     else if (mode === "color") genColorTarget();
     else genSquareTarget();
+
+    updateDualIndicator();
 }
 
 function updateQuestionNumber() {
@@ -989,13 +1083,16 @@ function updateQuestionNumber() {
 function genSquareTarget() {
     const coord = nextTarget();
     game.target = coord;
+    if (isDualMode()) game.dualTarget = coord;
     game.questionIndex++;
     updateQuestionNumber();
 
-    $("targetLabelText").textContent = "FIND THIS SQUARE";
+    $("targetLabelText").textContent = isDualMode() ? "FIND IN BOTH VIEWS" : "FIND THIS SQUARE";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coord;
-    $("targetHint").textContent = "Click the matching square on the board.";
+    $("targetHint").textContent = isDualMode()
+        ? "Click this square from white's view."
+        : "Click the matching square on the board.";
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
@@ -1101,6 +1198,8 @@ function resetTarget() {
     game.knightRemaining = [];
     game.knightFound = [];
     game.questionIndex = 0;
+    game.dualStep = 0;
+    game.dualTarget = null;
     $("targetCoordinate").classList.add("muted");
     $("targetCoordinate").textContent = "—";
     $("targetHint").textContent = "Press Start to begin your session.";
@@ -1110,6 +1209,8 @@ function resetTarget() {
     $("targetPanel").classList.remove("correct","wrong");
     $("choiceGrid").classList.add("hidden");
     $("choiceGrid").innerHTML = "";
+    $("dualIndicator").classList.add("hidden");
+    $("dualIndicator").classList.remove("step-2");
     clearHighlights();
 }
 
@@ -1126,13 +1227,65 @@ function recordReaction() {
 function handleSquare(coord, sq) {
     if (!game.running || game.paused || !game.target) return;
     if (game.mode === "square" || game.mode === "blindfold") {
-        if (coord === game.target) correctFind(sq);
-        else wrongSquare(sq);
+        if (coord === game.target) {
+            if (isDualMode()) correctDual(sq);
+            else correctFind(sq);
+        } else wrongSquare(sq);
     } else if (game.mode === "knight") {
         if (coord === game.knightSource || game.knightFound.includes(coord)) return;
         if (game.knightRemaining.includes(coord)) correctKnight(coord, sq);
         else wrongSquare(sq);
     }
+}
+
+/* Dual-mode step handler */
+function correctDual(sq) {
+    // First correct in a dual pair → flip and ask for second
+    if (game.dualStep === 0) {
+        game.dualStep = 1;
+
+        // Visual feedback for first half
+        sq.classList.add("last-correct");
+        $("targetPanel").classList.add("correct");
+        $("targetFeedback").textContent = "✓ WHITE SIDE · NOW FIND IT FROM BLACK";
+        $("targetFeedback").style.color = "var(--green)";
+        $("targetHint").textContent = "Board is flipping — click " + game.target + " again.";
+        playSound("correct");
+
+        // Flip the board
+        setTimeout(() => {
+            setBoardFlip(true);
+            playSound("flip");
+            updateDualIndicator();
+        }, 300);
+
+        clearTimeout(game.feedbackTimer);
+        game.feedbackTimer = setTimeout(() => {
+            if (!game.running) return;
+            $("targetPanel").classList.remove("correct");
+            clearHighlights();
+        }, 700);
+        return;
+    }
+
+    // Second correct → count the full question, advance
+    game.dualStep = 0;
+    game.dualTarget = null;
+    onCorrectBase();
+    clearHighlights();
+    sq.classList.add("last-correct");
+    $("targetPanel").classList.add("correct");
+    $("targetFeedback").textContent = "✓ BOTH SIDES COMPLETE";
+    $("targetFeedback").style.color = "var(--green)";
+    $("targetHint").textContent = "Next target coming...";
+    updateDualIndicator();
+
+    clearTimeout(game.feedbackTimer);
+    game.feedbackTimer = setTimeout(() => {
+        if (!game.running) return;
+        $("targetPanel").classList.remove("correct");
+        genTarget();
+    }, 500);
 }
 
 function handleChoice(coord, btn) {
@@ -1293,7 +1446,12 @@ function wrongSquare(sq) {
     $("targetFeedback").style.color = "var(--red)";
 
     if (game.mode === "square" || game.mode === "blindfold") {
-        $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + ".";
+        if (isDualMode()) {
+            const view = game.dualStep === 0 ? "white" : "black";
+            $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + " from the " + view + " view.";
+        } else {
+            $("targetHint").textContent = "That was " + sq.dataset.square + ". Find " + game.target + ".";
+        }
     } else if (game.mode === "knight") {
         $("targetHint").textContent = sq.dataset.square + " is not a legal jump. Keep looking.";
     }
@@ -1307,7 +1465,12 @@ function wrongSquare(sq) {
         $("targetPanel").classList.remove("wrong");
         $("targetFeedback").textContent = "";
         if (game.mode === "square" || game.mode === "blindfold") {
-            $("targetHint").textContent = "Try again — find the correct square.";
+            if (isDualMode()) {
+                const view = game.dualStep === 0 ? "white" : "black";
+                $("targetHint").textContent = "Find " + game.target + " from the " + view + " view.";
+            } else {
+                $("targetHint").textContent = "Try again — find the correct square.";
+            }
             clearHighlights();
         } else if (game.mode === "knight") {
             $("targetHint").textContent =
@@ -1529,6 +1692,8 @@ function resetSession() {
     game.lastTick = -1;
     game.reactionTimes = [];
     game.questionIndex = 0;
+    game.dualStep = 0;
+    game.dualTarget = null;
 
     $("sessionStateText").textContent = "READY";
     $("topStatus").textContent = "READY";
@@ -1566,7 +1731,11 @@ function startSession() {
     }
 
     // Pre-decide orientation for the first question
-    applyFlipForQuestion(true);
+    if (isDualMode()) setBoardFlip(false);
+    else applyFlipForQuestion(true);
+
+    // Regenerate pieces for this session if enabled
+    if (game.piecesEnabled) generatePieces();
 
     $("countdownOverlay").classList.remove("hidden");
     let count = 3;
@@ -1667,6 +1836,7 @@ function finishSession() {
     $("targetHint").textContent = "Session complete! Review your results below.";
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden");
+    $("dualIndicator").classList.add("hidden");
     clearHighlights();
 
     stats.totalSessions++;
@@ -1687,6 +1857,7 @@ function finishSession() {
     if (game.bestStreak >= 30) gained += 60;
     if (acc === 100 && game.correct >= 15) gained += 60;
     if (newRecord && game.correct > 0) gained += 25;
+    if (isDualMode()) gained += Math.round(gained * 0.15); // dual bonus
 
     addXp(gained);
 
@@ -1892,12 +2063,21 @@ function setupSettings() {
         toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden.");
     });
 
-    // Manual flip toggle syncs with perspective
+    $("piecesToggle").addEventListener("change", e => {
+        setPiecesEnabled(e.target.checked);
+        toast(e.target.checked ? "Pieces shown on board." : "Pieces hidden.");
+    });
+
     $("flipToggle").addEventListener("change", e => {
         const on = e.target.checked;
         if (game.running) {
             e.target.checked = document.body.dataset.flip === "true";
             toast("Finish the current session first.");
+            return;
+        }
+        if (game.perspective === "mixed" || game.perspective === "both") {
+            e.target.checked = document.body.dataset.flip === "true";
+            toast("Flip is controlled by Board View.");
             return;
         }
         setPerspective(on ? "black" : "white");
@@ -2040,12 +2220,16 @@ function renderHistory() {
         return;
     }
 
+    const perspNames = { white: "White", black: "Black", mixed: "Mixed", both: "Both" };
+
     history.slice(0, 10).forEach((s, i) => {
         const d = new Date(s.date);
         const dateTxt = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
         const timeTxt = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
         const modeLabel = MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training";
-        const perspLabel = s.perspective === "black" ? " · Black" : s.perspective === "mixed" ? " · Mixed" : "";
+        const perspLabel = s.perspective && s.perspective !== "white"
+            ? " · " + (perspNames[s.perspective] || s.perspective)
+            : "";
 
         const html =
             '<div class="history-item-icon">♞</div>' +
@@ -2107,7 +2291,7 @@ function closeConfirm() {
 ====================================================== */
 function exportData() {
     const payload = {
-        version: 3.1,
+        version: 3.2,
         exportedAt: new Date().toISOString(),
         stats, history, xp, unlocked, daily,
         settings: {
@@ -2117,6 +2301,7 @@ function exportData() {
             flip: document.body.dataset.flip === "true",
             labels: document.body.dataset.labels === "true",
             coords: document.body.dataset.coords !== "hidden",
+            pieces: game.piecesEnabled,
             sound: game.sound,
             volume: game.volume,
             ticks: game.ticks,
@@ -2160,6 +2345,7 @@ function importData(file) {
                 else if (typeof s.flip === "boolean") setPerspective(s.flip ? "black" : "white");
                 if (typeof s.labels === "boolean") setLabels(s.labels);
                 if (typeof s.coords === "boolean") setCoords(s.coords);
+                if (typeof s.pieces === "boolean") setPiecesEnabled(s.pieces);
                 if (typeof s.sound === "boolean") { game.sound = s.sound; $("soundToggle").checked = s.sound; save(KEYS.sound, s.sound); }
                 if (typeof s.volume === "number") { game.volume = s.volume; $("volumeRange").value = Math.round(s.volume * 100); save(KEYS.volume, s.volume); }
                 if (typeof s.ticks === "boolean") { game.ticks = s.ticks; $("ticksToggle").checked = s.ticks; save(KEYS.ticks, s.ticks); }
@@ -2288,6 +2474,11 @@ function init() {
     setCoords(load(KEYS.coords, true) !== false);
     setBoardSize(Number(load(KEYS.boardSize, 100)) || 100);
 
+    // Pieces (restore before building board state)
+    game.piecesEnabled = load(KEYS.pieces, false) === true;
+    const pt = $("piecesToggle");
+    if (pt) pt.checked = game.piecesEnabled;
+
     game.sound = load(KEYS.sound, true) !== false;
     $("soundToggle").checked = game.sound;
 
@@ -2298,7 +2489,6 @@ function init() {
     game.ticks = load(KEYS.ticks, true) !== false;
     $("ticksToggle").checked = game.ticks;
 
-    // Session buttons
     $("startBtn").addEventListener("click", startSession);
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
@@ -2315,7 +2505,6 @@ function init() {
         resetSession();
     });
 
-    // Mode buttons
     document.querySelectorAll(".mode-btn").forEach(b => {
         b.addEventListener("click", () => setMode(b.dataset.mode));
     });
@@ -2325,7 +2514,12 @@ function init() {
         b.addEventListener("click", () => {
             if (game.running) { toast("Finish the current session to change view."); return; }
             setPerspective(b.dataset.perspective);
-            const labels = { white: "White's view", black: "Black's view", mixed: "Mixed view (flips randomly)" };
+            const labels = {
+                white: "White's view",
+                black: "Black's view",
+                mixed: "Mixed view (flips randomly)",
+                both: "Both views (find each square twice)"
+            };
             toast("Board view: " + labels[b.dataset.perspective]);
         });
     });
@@ -2333,11 +2527,13 @@ function init() {
     // Restore perspective setting
     setPerspective(load(KEYS.perspective, "white"));
 
+    // If pieces were enabled, generate them now
+    if (game.piecesEnabled) generatePieces();
+
     setupNav();
     setupSettings();
     setupKeyboard();
 
-    // Confirm modal
     $("confirmCancel").addEventListener("click", closeConfirm);
     $("confirmOk").addEventListener("click", () => {
         const cb = confirmCallback;
@@ -2345,13 +2541,9 @@ function init() {
         if (cb) cb();
     });
 
-    // Onboarding
     $("onboardingStart").addEventListener("click", completeOnboarding);
-
-    // Fullscreen
     $("fullscreenBtn").addEventListener("click", toggleFullscreen);
 
-    // History / data
     $("clearHistoryBtn").addEventListener("click", clearHistory);
     $("exportBtn").addEventListener("click", exportData);
     $("importBtn").addEventListener("click", () => $("importFile").click());
@@ -2362,7 +2554,6 @@ function init() {
     });
     $("resetBtn").addEventListener("click", resetProgress);
 
-    // Music
     setupMusic();
 
     setTip();
@@ -2379,7 +2570,7 @@ function init() {
 
     checkOnboarding();
 
-    console.log("Chess Vision Trainer v3.1 ready.");
+    console.log("Chess Vision Trainer v3.2 ready.");
 }
 
 document.addEventListener("DOMContentLoaded", init);
