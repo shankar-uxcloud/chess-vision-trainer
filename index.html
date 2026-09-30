@@ -146,7 +146,7 @@
           <button class="mode-btn" data-mode="custom" role="tab" aria-selected="false"><span class="mode-btn-icon">✦</span><span class="mode-btn-text"><strong>Custom</strong><small>Your setup</small></span></button>
         </div>
 
-        <!-- BOARD VIEW (new) -->
+        <!-- BOARD VIEW -->
         <div class="perspective-bar" id="perspectiveBar" role="tablist" aria-label="Board view perspective">
           <span class="perspective-label">BOARD VIEW</span>
           <div class="perspective-options">
@@ -158,6 +158,9 @@
             </button>
             <button class="perspective-btn" data-perspective="mixed" role="tab" aria-selected="false" type="button">
               <span class="perspective-icon">⇄</span><span>Mixed</span>
+            </button>
+            <button class="perspective-btn" data-perspective="both" role="tab" aria-selected="false" type="button" title="Find the same square from both sides">
+              <span class="perspective-icon">⇅</span><span>Both</span>
             </button>
           </div>
         </div>
@@ -194,6 +197,10 @@
             <span class="target-number" id="targetNumber">QUESTION 00</span>
           </div>
           <div class="target-coordinate muted" id="targetCoordinate">—</div>
+          <div class="dual-indicator hidden" id="dualIndicator">
+            <span class="dual-dot" data-step="1"></span>
+            <span class="dual-text">1 / 2 · WHITE VIEW</span>
+          </div>
           <p class="target-hint" id="targetHint">Press Start to begin your session.</p>
           <div class="target-feedback" id="targetFeedback" aria-live="polite"></div>
           <div class="choice-grid hidden" id="choiceGrid"></div>
@@ -386,6 +393,10 @@
           <label class="switch"><input type="checkbox" id="coordsToggle" checked><span class="switch-track"></span></label>
         </div>
         <div class="setting-row switch-row">
+          <label for="piecesToggle">Show pieces <span class="setting-hint">Random pieces on board</span></label>
+          <label class="switch"><input type="checkbox" id="piecesToggle"><span class="switch-track"></span></label>
+        </div>
+        <div class="setting-row switch-row">
           <label for="flipToggle">Flip board <span class="setting-hint">Synced with Board View</span></label>
           <label class="switch"><input type="checkbox" id="flipToggle"><span class="switch-track"></span></label>
         </div>
@@ -403,7 +414,7 @@
   <footer class="footer">
     <div class="footer-brand"><span class="footer-knight">♞</span><span>CHESS VISION TRAINER</span></div>
     <span class="footer-center">BUILT FOR BETTER BOARD VISION.</span>
-    <span class="footer-version">v3.1</span>
+    <span class="footer-version">v3.2</span>
   </footer>
 </main>
 
@@ -476,7 +487,7 @@
     <p>Master board vision, coordinates, knight geometry, and blindfold visualization in a distraction-free environment.</p>
     <div class="onboarding-features">
       <div><span>◎</span><strong>7 training modes</strong></div>
-      <div><span>⇄</span><strong>White / Black / Mixed view</strong></div>
+      <div><span>⇅</span><strong>White / Black / Mixed / Both</strong></div>
       <div><span>♞</span><strong>Daily goals & achievements</strong></div>
     </div>
     <button class="primary-button" id="onboardingStart">Begin training <span class="button-arrow">→</span></button>
