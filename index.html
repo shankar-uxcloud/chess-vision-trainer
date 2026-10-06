@@ -6,48 +6,33 @@
 <meta name="theme-color" content="#0a0e14">
 <meta name="description" content="Chess Vision Trainer — premium board vision, coordinate, knight, and blindfold training.">
 <title>Chess Vision Trainer — Premium Board Vision Training</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 <link rel="stylesheet" href="./style.css">
 </head>
-
 <body data-theme="dark" data-board="emerald" data-view="dashboard" data-flip="false" data-perspective="white">
 
-<!-- ======================================================
-     PRELOADER — legendary loading sequence
-====================================================== -->
 <div class="preloader" id="preloader" aria-hidden="true">
   <div class="preloader-bg"></div>
   <div class="preloader-scanline"></div>
-
   <div class="preloader-inner">
     <div class="preloader-brand">
       <span class="preloader-brand-icon">♞</span>
       <span class="preloader-brand-text">CHESS<b>VISION</b></span>
     </div>
-
     <div class="preloader-grid" id="preloaderGrid" aria-hidden="true"></div>
-
     <div class="preloader-copy">
       <p class="preloader-line" id="preloaderLine">The board is a mirror of the mind.</p>
       <p class="preloader-sub" id="preloaderSub">EVERY SQUARE A DECISION · EVERY MOVE A MEMORY</p>
     </div>
-
     <div class="preloader-progress">
-      <div class="preloader-bar-track">
-        <div class="preloader-bar-fill" id="preloaderBarFill"></div>
-      </div>
+      <div class="preloader-bar-track"><div class="preloader-bar-fill" id="preloaderBarFill"></div></div>
       <div class="preloader-meta">
         <span class="preloader-label">LOADING</span>
-        <span class="preloader-counter">
-          <span id="preloaderPercent">0</span><span class="preloader-percent">%</span>
-        </span>
+        <span class="preloader-counter"><span id="preloaderPercent">0</span><span class="preloader-percent">%</span></span>
       </div>
     </div>
-
     <div class="preloader-hint">click anywhere to skip</div>
   </div>
 </div>
@@ -65,6 +50,8 @@
   <nav class="side-nav" id="sideNav">
     <a href="#" class="nav-link active" data-nav="dashboard"><span class="nav-icon">◆</span><span>Dashboard</span><span class="nav-arrow">→</span></a>
     <a href="#" class="nav-link" data-nav="training"><span class="nav-icon">◎</span><span>Training</span></a>
+    <a href="#" class="nav-link" data-nav="daily"><span class="nav-icon">◆</span><span>Daily Challenge</span></a>
+    <a href="#" class="nav-link" data-nav="mindpalace"><span class="nav-icon">🧠</span><span>Mind Palace</span></a>
     <a href="#" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
     <a href="#" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
     <a href="#" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
@@ -106,10 +93,10 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="eyebrow-line"></span>CHESS VISION TRAINER</div>
         <h1>See the board.<br><span>Own the game.</span></h1>
-        <p class="hero-description">Master square recognition, knight geometry, and blindfold visualization with seven focused training modes.</p>
+        <p class="hero-description">Master square recognition, knight geometry, and blindfold visualization with eight focused training modes.</p>
         <div class="hero-actions">
           <button class="primary-button" data-action="quick-train">Start training <span class="button-arrow">→</span></button>
-          <button class="ghost-button" data-nav="analytics">View analytics</button>
+          <button class="ghost-button" data-nav="mindpalace">🧠 Mind Palace</button>
         </div>
       </div>
       <div class="hero-art">
@@ -140,6 +127,17 @@
       <button class="mode-card" data-mode="blindfold"><div class="mode-card-icon">◉</div><div class="mode-card-body"><strong>Blindfold</strong><span>No coordinates</span></div></button>
       <button class="mode-card" data-mode="color"><div class="mode-card-icon">▧</div><div class="mode-card-body"><strong>Color Recognition</strong><span>Light or dark</span></div></button>
       <button class="mode-card" data-mode="custom"><div class="mode-card-icon">✦</div><div class="mode-card-body"><strong>Custom Practice</strong><span>Configure it</span></div></button>
+      <button class="mode-card mode-card-mindpalace" data-nav="mindpalace"><div class="mode-card-icon">🧠</div><div class="mode-card-body"><strong>Mind Palace</strong><span>See it. Remember it. Rebuild it.</span></div></button>
+    </div>
+
+    <div class="panel daily-challenge-card">
+      <div class="daily-challenge-copy">
+        <div class="section-kicker">DAILY CHALLENGE</div>
+        <h3 id="dailyChallengeTitle">ChessVision Daily</h3>
+        <p id="dailyChallengeStatus">20 deterministic questions for today's board-vision test.</p>
+        <span class="daily-challenge-meta" id="dailyChallengeMeta">Official attempt available</span>
+      </div>
+      <button class="primary-button" id="dailyChallengeBtn" type="button">Play today's challenge <span class="button-arrow">→</span></button>
     </div>
 
     <div class="dashboard-grid">
@@ -158,6 +156,94 @@
     </div>
   </section>
 
+  <section class="view view-mindpalace" data-view="mindpalace">
+    <div class="mp-hero">
+      <div class="mp-hero-copy">
+        <div class="section-kicker">SIGNATURE MODE</div>
+        <h1>🧠 Mind Palace</h1>
+        <p class="mp-hero-tag">SEE IT. REMEMBER IT. REBUILD IT.</p>
+        <p class="mp-hero-desc">
+          A chess position flashes on the board. Then it disappears. Rebuild it from
+          memory using the piece palette. As you succeed, more pieces appear and less
+          time is given. This is real blindfold-vision training — the loop that makes
+          strong players strong.
+        </p>
+        <div class="hero-actions">
+          <button class="primary-button" id="mpStartBtn" type="button">Begin training <span class="button-arrow">→</span></button>
+          <button class="ghost-button" data-nav="training" type="button">Back to training</button>
+        </div>
+      </div>
+      <div class="mp-hero-art" aria-hidden="true">🧠</div>
+    </div>
+
+    <div class="section-head">
+      <div><div class="section-kicker">YOUR PROGRESS</div><h2>Mind Palace statistics</h2></div>
+    </div>
+
+    <div class="mp-stats-grid">
+      <div class="mp-stat-card"><div class="mp-stat-label">BEST VISION SCORE</div><div class="mp-stat-value" id="mpBestScore">0</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">SESSIONS</div><div class="mp-stat-value" id="mpSessions">0</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">ACCURACY</div><div class="mp-stat-value" id="mpAccuracy">—</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">BEST STREAK</div><div class="mp-stat-value" id="mpBestStreak">0</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">PERFECT ROUNDS</div><div class="mp-stat-value" id="mpPerfect">0</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">TOTAL ROUNDS</div><div class="mp-stat-value" id="mpTotalRounds">0</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">AVG RECALL</div><div class="mp-stat-value" id="mpAvgRecall">—</div></div>
+      <div class="mp-stat-card"><div class="mp-stat-label">HIGHEST LEVEL</div><div class="mp-stat-value" id="mpHighestLevel">Beginner</div></div>
+    </div>
+
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">DIFFICULTY</div>
+        <h2>Choose your depth</h2>
+        <p class="section-sub">Piece count adapts as you play — start where you're comfortable.</p>
+      </div>
+    </div>
+
+    <div class="mp-difficulty-grid" id="mpDifficultyGrid">
+      <button class="mp-difficulty-card" data-mp-diff="beginner" type="button">
+        <span class="mp-difficulty-dot" style="background:#3ddc97;color:#3ddc97"></span>
+        <span class="mp-difficulty-name">🟢 Beginner</span>
+        <span class="mp-difficulty-desc">1–3 pieces. Plenty of time to memorize.</span>
+        <span class="mp-difficulty-meta"><span>8s memorize</span><span>×1.0 score</span></span>
+      </button>
+      <button class="mp-difficulty-card" data-mp-diff="focus" type="button">
+        <span class="mp-difficulty-dot" style="background:#5ea3ff;color:#5ea3ff"></span>
+        <span class="mp-difficulty-name">🔵 Focus</span>
+        <span class="mp-difficulty-desc">3–5 pieces. Wider board coverage.</span>
+        <span class="mp-difficulty-meta"><span>6s memorize</span><span>×1.25 score</span></span>
+      </button>
+      <button class="mp-difficulty-card" data-mp-diff="memory" type="button">
+        <span class="mp-difficulty-dot" style="background:#a78bfa;color:#a78bfa"></span>
+        <span class="mp-difficulty-name">🟣 Memory</span>
+        <span class="mp-difficulty-desc">5–7 pieces. Tight time window.</span>
+        <span class="mp-difficulty-meta"><span>5s memorize</span><span>×1.5 score</span></span>
+      </button>
+      <button class="mp-difficulty-card" data-mp-diff="blindfold" type="button">
+        <span class="mp-difficulty-dot" style="background:#ff6b81;color:#ff6b81"></span>
+        <span class="mp-difficulty-name">🔴 Blindfold</span>
+        <span class="mp-difficulty-desc">7–10 pieces. Real mental stamina.</span>
+        <span class="mp-difficulty-meta"><span>4s memorize</span><span>×2.0 score</span></span>
+      </button>
+      <button class="mp-difficulty-card" data-mp-diff="grandmaster" type="button">
+        <span class="mp-difficulty-dot" style="background:#e8b458;color:#e8b458"></span>
+        <span class="mp-difficulty-name">⚫ Grandmaster</span>
+        <span class="mp-difficulty-desc">10–16 pieces. Elite visualization.</span>
+        <span class="mp-difficulty-meta"><span>3s memorize</span><span>×3.0 score</span></span>
+      </button>
+    </div>
+
+    <div class="panel">
+      <div class="section-kicker">HOW IT WORKS</div>
+      <h3>Four phases per round</h3>
+      <div class="mp-phases">
+        <div class="mp-phase-step"><div class="mp-phase-num">01</div><div><strong>Memorize</strong><p>A position flashes on the board for a few seconds. Study it.</p></div></div>
+        <div class="mp-phase-step"><div class="mp-phase-num">02</div><div><strong>Rebuild</strong><p>The board is cleared. Use the piece palette to place every piece back where you remember it.</p></div></div>
+        <div class="mp-phase-step"><div class="mp-phase-num">03</div><div><strong>Check</strong><p>Press <em>Check Position</em>. Every square is validated — correct, wrong, missing, or extra.</p></div></div>
+        <div class="mp-phase-step"><div class="mp-phase-num">04</div><div><strong>Learn</strong><p>The original position returns with your mistakes highlighted. Difficulty adapts. Next round.</p></div></div>
+      </div>
+    </div>
+  </section>
+
   <section class="view view-training" data-view="training">
     <div class="training-layout">
       <div class="panel training-panel">
@@ -169,6 +255,10 @@
           </div>
           <div class="status-pill session-pill"><span class="status-dot"></span><span id="sessionStateText">READY</span></div>
         </div>
+        <div class="adaptive-status hidden" id="adaptiveStatus" role="status">
+          <span class="adaptive-status-dot"></span>
+          <div><strong>Adaptive Training ON</strong><span>Your practice is currently targeting your weakest squares.</span></div>
+        </div>
 
         <div class="mode-selector" id="modeSelector" role="tablist" aria-label="Training mode">
           <button class="mode-btn active" data-mode="square" role="tab" aria-selected="true"><span class="mode-btn-icon">◎</span><span class="mode-btn-text"><strong>Square Vision</strong><small>Coordinate → board</small></span></button>
@@ -178,26 +268,28 @@
           <button class="mode-btn" data-mode="blindfold" role="tab" aria-selected="false"><span class="mode-btn-icon">◉</span><span class="mode-btn-text"><strong>Blindfold</strong><small>No labels</small></span></button>
           <button class="mode-btn" data-mode="color" role="tab" aria-selected="false"><span class="mode-btn-icon">▧</span><span class="mode-btn-text"><strong>Color</strong><small>Light or dark</small></span></button>
           <button class="mode-btn" data-mode="custom" role="tab" aria-selected="false"><span class="mode-btn-icon">✦</span><span class="mode-btn-text"><strong>Custom</strong><small>Your setup</small></span></button>
+          <button class="mode-btn mode-btn-mindpalace" data-mode="mindpalace" role="tab" aria-selected="false"><span class="mode-btn-icon">🧠</span><span class="mode-btn-text"><strong>Mind Palace</strong><small>Rebuild the board</small></span></button>
         </div>
 
         <div class="perspective-bar" id="perspectiveBar" role="tablist" aria-label="Board view perspective">
           <span class="perspective-label">BOARD VIEW</span>
           <div class="perspective-options">
-            <button class="perspective-btn active" data-perspective="white" role="tab" aria-selected="true" type="button" title="Board stays as white's view">
-              <span class="perspective-icon">♔</span><span>White</span>
-            </button>
-            <button class="perspective-btn" data-perspective="black" role="tab" aria-selected="false" type="button" title="Board flips to black's view">
-              <span class="perspective-icon">♚</span><span>Black</span>
-            </button>
-            <button class="perspective-btn" data-perspective="mixed" role="tab" aria-selected="false" type="button" title="Board flips randomly each question">
-              <span class="perspective-icon">⇄</span><span>Mixed</span>
-            </button>
-            <button class="perspective-btn" data-perspective="both" role="tab" aria-selected="false" type="button" title="Find the same square from both sides">
-              <span class="perspective-icon">⇅</span><span>Both</span>
-            </button>
-            <button class="perspective-btn" data-perspective="auto" role="tab" aria-selected="false" type="button" title="Display swaps sides — board stays put">
-              <span class="perspective-icon">◐</span><span>Auto</span>
-            </button>
+            <button class="perspective-btn active" data-perspective="white" type="button"><span class="perspective-icon">♔</span><span>White</span></button>
+            <button class="perspective-btn" data-perspective="black" type="button"><span class="perspective-icon">♚</span><span>Black</span></button>
+            <button class="perspective-btn" data-perspective="mixed" type="button"><span class="perspective-icon">⇄</span><span>Mixed</span></button>
+            <button class="perspective-btn" data-perspective="both" type="button"><span class="perspective-icon">⇅</span><span>Both</span></button>
+            <button class="perspective-btn" data-perspective="auto" type="button"><span class="perspective-icon">◐</span><span>Auto</span></button>
+          </div>
+        </div>
+
+        <div class="mp-difficulty-bar hidden" id="mpDifficultyBar">
+          <span class="perspective-label">DIFFICULTY</span>
+          <div class="mp-difficulty-options">
+            <button class="perspective-btn" data-mp-diff="beginner" type="button">🟢 Beginner</button>
+            <button class="perspective-btn" data-mp-diff="focus" type="button">🔵 Focus</button>
+            <button class="perspective-btn" data-mp-diff="memory" type="button">🟣 Memory</button>
+            <button class="perspective-btn" data-mp-diff="blindfold" type="button">🔴 Blindfold</button>
+            <button class="perspective-btn" data-mp-diff="grandmaster" type="button">⚫ Grandmaster</button>
           </div>
         </div>
 
@@ -224,9 +316,10 @@
           <div class="live-stat"><span class="live-stat-label">CORRECT</span><strong id="sessionCorrect">00</strong></div>
           <div class="live-stat"><span class="live-stat-label">ACCURACY</span><strong class="accent-green" id="sessionAccuracy">100<small>%</small></strong></div>
           <div class="live-stat"><span class="live-stat-label">STREAK</span><strong id="sessionStreak">00</strong></div>
-          <div class="live-stat"><span class="live-stat-label">TIME LEFT</span><strong class="accent-amber" id="timerDisplay">01:00</strong></div>
+          <div class="live-stat"><span class="live-stat-label">SCORE</span><strong class="accent-amber" id="timerDisplay">00:00</strong></div>
         </div>
 
+        <!-- ==== NORMAL TARGET PANEL (all non-MP modes) ==== -->
         <div class="target-panel" id="targetPanel">
           <div class="target-topline">
             <span class="target-label"><span class="target-pulse"></span><span id="targetLabelText">FIND THIS SQUARE</span></span>
@@ -236,13 +329,74 @@
             </div>
           </div>
           <div class="target-coordinate muted" id="targetCoordinate">—</div>
-          <div class="dual-indicator hidden" id="dualIndicator">
-            <span class="dual-dot" data-step="1"></span>
-            <span class="dual-text">1 / 2 · WHITE VIEW</span>
-          </div>
+          <div class="dual-indicator hidden" id="dualIndicator"><span class="dual-dot"></span><span class="dual-text">1 / 2 · WHITE VIEW</span></div>
           <p class="target-hint" id="targetHint">Press Start to begin your session.</p>
           <div class="target-feedback" id="targetFeedback" aria-live="polite"></div>
           <div class="choice-grid hidden" id="choiceGrid"></div>
+        </div>
+
+        <!-- ==== MIND PALACE PANEL (replaces target-panel when mode = mindpalace) ==== -->
+        <div class="target-panel mp-panel hidden" id="mpPanel">
+          <div class="target-topline">
+            <span class="target-label">
+              <span class="mp-phase-badge" id="mpPhaseBadge" data-phase="idle">READY</span>
+            </span>
+            <span class="target-number" id="mpRoundNumber">ROUND 00 / 10</span>
+          </div>
+
+          <div class="mp-status-line" id="mpStatusLine">Ready when you are</div>
+
+          <div class="mp-countdown hidden" id="mpCountdown">5</div>
+
+          <div class="mp-rebuild-ui hidden" id="mpRebuildUI">
+            <div class="mp-rebuild-timer">
+              <span class="mp-rebuild-label">RECONSTRUCTION</span>
+              <span class="mp-rebuild-time" id="mpTimer">0.0s</span>
+            </div>
+
+            <div class="mp-palette" id="mpPalette">
+              <div class="mp-palette-row">
+                <span class="mp-palette-label">WHITE</span>
+                <button class="mp-piece-btn" data-color="white" data-type="king" aria-label="White King">♔</button>
+                <button class="mp-piece-btn" data-color="white" data-type="queen" aria-label="White Queen">♕</button>
+                <button class="mp-piece-btn" data-color="white" data-type="rook" aria-label="White Rook">♖</button>
+                <button class="mp-piece-btn" data-color="white" data-type="bishop" aria-label="White Bishop">♗</button>
+                <button class="mp-piece-btn" data-color="white" data-type="knight" aria-label="White Knight">♘</button>
+                <button class="mp-piece-btn" data-color="white" data-type="pawn" aria-label="White Pawn">♙</button>
+              </div>
+              <div class="mp-palette-row">
+                <span class="mp-palette-label">BLACK</span>
+                <button class="mp-piece-btn" data-color="black" data-type="king" aria-label="Black King">♚</button>
+                <button class="mp-piece-btn" data-color="black" data-type="queen" aria-label="Black Queen">♛</button>
+                <button class="mp-piece-btn" data-color="black" data-type="rook" aria-label="Black Rook">♜</button>
+                <button class="mp-piece-btn" data-color="black" data-type="bishop" aria-label="Black Bishop">♝</button>
+                <button class="mp-piece-btn" data-color="black" data-type="knight" aria-label="Black Knight">♞</button>
+                <button class="mp-piece-btn" data-color="black" data-type="pawn" aria-label="Black Pawn">♟</button>
+              </div>
+              <div class="mp-palette-row mp-palette-tools">
+                <button class="mp-piece-btn mp-tool-btn" data-tool="erase" aria-label="Erase tool">✕ Erase</button>
+              </div>
+            </div>
+
+            <div class="mp-actions">
+              <button class="ghost-button" id="mpClearBtn" type="button">Clear</button>
+              <button class="ghost-button" id="mpUndoBtn" type="button">Undo</button>
+              <button class="primary-button" id="mpCheckBtn" type="button">Check Position <span class="button-arrow">→</span></button>
+            </div>
+
+            <p class="mp-hint-text">Click a square to place · Right-click a square to erase</p>
+          </div>
+
+          <div class="mp-results hidden" id="mpResults">
+            <div class="mp-results-title" id="mpResultsTitle">POSITION COMPLETE</div>
+            <div class="mp-results-score" id="mpResultsScore">0 / 0 pieces</div>
+            <div class="mp-results-meta">
+              <span class="mp-results-accuracy" id="mpResultsAccuracy">0% accuracy</span>
+              <span class="mp-results-vision" id="mpResultsVision">+0 Vision</span>
+            </div>
+            <div class="mp-results-list" id="mpResultsList"></div>
+            <button class="primary-button" id="mpNextBtn" type="button">Next Round <span class="button-arrow">→</span></button>
+          </div>
         </div>
 
         <div class="progress-header"><span>SESSION PROGRESS</span><strong id="progressText">0%</strong></div>
@@ -277,7 +431,7 @@
           </div>
           <div class="new-record hidden" id="newRecord">✦ NEW PERSONAL RECORD</div>
           <div class="results-grid">
-            <div class="result-stat"><span>CORRECT</span><strong id="resultCorrect">0</strong></div>
+            <div class="result-stat"><span id="resultPrimaryLabel">CORRECT</span><strong id="resultCorrect">0</strong></div>
             <div class="result-stat"><span>ACCURACY</span><strong id="resultAccuracy">0%</strong></div>
             <div class="result-stat"><span>BEST STREAK</span><strong id="resultStreak">0</strong></div>
             <div class="result-stat"><span>XP EARNED</span><strong id="resultXp">+0</strong></div>
@@ -285,6 +439,10 @@
           <div class="results-actions">
             <button class="ghost-button" data-nav="dashboard">Back to dashboard</button>
             <button class="primary-button" id="resultRestart">Train again <span class="button-arrow">→</span></button>
+          </div>
+          <div class="daily-result-actions hidden" id="dailyResultActions">
+            <button class="ghost-button" id="dailyShareBtn" type="button">Share result</button>
+            <button class="primary-button" id="dailyReplayBtn" type="button">Replay as practice <span class="button-arrow">→</span></button>
           </div>
         </div>
       </div>
@@ -324,29 +482,68 @@
     </div>
   </section>
 
-  <section class="view view-analytics" data-view="analytics">
+  <section class="view view-daily" data-view="daily">
     <div class="section-head">
-      <div>
-        <div class="section-kicker">PERFORMANCE</div>
-        <h2>Analytics</h2>
-        <p class="section-sub">Track your improvement across every training mode.</p>
+      <div><div class="section-kicker">DAILY CHALLENGE</div><h2 id="dailyViewTitle">ChessVision Daily</h2><p class="section-sub">The same seeded 20-question challenge for everyone today.</p></div>
+    </div>
+    <div class="panel daily-view-panel">
+      <div class="daily-view-number" id="dailyViewNumber">#—</div>
+      <p id="dailyViewDescription">Complete the official attempt to set today's result.</p>
+      <div class="daily-view-stats" id="dailyViewStats"></div>
+      <div class="results-actions">
+        <button class="primary-button" id="dailyViewStartBtn" type="button">Play official attempt <span class="button-arrow">→</span></button>
+        <button class="ghost-button" id="dailyViewReplayBtn" type="button">Replay as practice</button>
       </div>
     </div>
+  </section>
 
+  <section class="view view-analytics" data-view="analytics">
+    <div class="section-head">
+      <div><div class="section-kicker">PERFORMANCE</div><h2>Analytics</h2><p class="section-sub">Track your improvement across every training mode.</p></div>
+    </div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-head"><span>TOTAL CORRECT</span><span class="stat-icon emerald">♛</span></div><div class="stat-value" id="anTotal">0</div><div class="stat-foot"><span>Lifetime</span></div></div>
       <div class="stat-card"><div class="stat-head"><span>AVG ACCURACY</span><span class="stat-icon blue">◎</span></div><div class="stat-value" id="anAccuracy">0%</div><div class="stat-foot"><span>All sessions</span></div></div>
       <div class="stat-card"><div class="stat-head"><span>AVG REACTION</span><span class="stat-icon amber">◷</span></div><div class="stat-value" id="anReaction">—</div><div class="stat-foot"><span>Per question</span></div></div>
       <div class="stat-card"><div class="stat-head"><span>TRAINING TIME</span><span class="stat-icon violet">◈</span></div><div class="stat-value" id="anTime">0m</div><div class="stat-foot"><span>Total</span></div></div>
+      <div class="stat-card rating-stat-card"><div class="stat-head"><span>VISION RATING</span><span class="stat-icon emerald">✦</span></div><div class="stat-value" id="visionRatingValue">1000</div><div class="stat-foot"><span id="visionRatingWeek">+0 this week</span><span class="stat-tag">LOCAL</span></div></div>
     </div>
-
+    <div class="panel rating-intro">
+      <div><div class="section-kicker">VISION RATING</div><h3>A local measure of your board-vision progress</h3><p class="panel-sub">This is not an official chess Elo rating. It reflects accuracy, reaction time, difficulty, consistency, and recent performance in Chess Vision Trainer.</p></div>
+      <div class="rating-large"><strong id="visionRatingLarge">1000</strong><span id="visionRatingChange">+0 this week</span></div>
+    </div>
     <div class="charts-grid">
       <div class="panel chart-panel"><div class="panel-head"><div><div class="section-kicker">TREND</div><h3>Correct answers over time</h3></div></div><div class="chart" id="chartCorrect"></div></div>
       <div class="panel chart-panel"><div class="panel-head"><div><div class="section-kicker">TREND</div><h3>Accuracy over time</h3></div></div><div class="chart" id="chartAccuracy"></div></div>
       <div class="panel chart-panel"><div class="panel-head"><div><div class="section-kicker">BREAKDOWN</div><h3>Mode distribution</h3></div></div><div class="chart" id="chartModes"></div></div>
       <div class="panel chart-panel"><div class="panel-head"><div><div class="section-kicker">ACTIVITY</div><h3>Last 14 days</h3></div></div><div class="chart" id="chartActivity"></div></div>
+      <div class="panel chart-panel rating-chart-panel"><div class="panel-head"><div><div class="section-kicker">VISION RATING</div><h3>Rating history over time</h3></div></div><div class="chart" id="chartRating"></div></div>
     </div>
-
+    <div class="intelligence-grid">
+      <div class="panel intelligence-panel intelligence-heatmap-panel">
+        <div class="panel-head">
+          <div><div class="section-kicker">VISION INTELLIGENCE</div><h3>Weakness heatmap</h3><p class="panel-sub">Accuracy by square from your recorded answers.</p></div>
+          <span class="intelligence-sample" id="intelligenceSample">0 answers</span>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-axis heatmap-files" id="heatmapFiles"></div>
+          <div class="heatmap-body">
+            <div class="heatmap-axis heatmap-ranks" id="heatmapRanks"></div>
+            <div class="heatmap-grid" id="weaknessHeatmap" role="grid" aria-label="Weakness heatmap"></div>
+          </div>
+          <div class="heatmap-legend"><span><i class="heatmap-swatch no-data"></i>No data</span><span><i class="heatmap-swatch weak"></i>Needs work</span><span><i class="heatmap-swatch strong"></i>Strong</span></div>
+          <div class="intelligence-summary" id="intelligenceSummary">No answer data yet.</div>
+        </div>
+      </div>
+      <div class="panel intelligence-panel">
+        <div class="panel-head"><div><div class="section-kicker">PERSONALIZED COACHING</div><h3>Training recommendations</h3></div></div>
+        <div class="recommendation-card" id="recommendationCard"><strong>Build your profile</strong><p>Complete a few answers to unlock recommendations based on your actual square performance.</p></div>
+        <div class="intelligence-lists">
+          <div><div class="intelligence-list-title">YOUR WEAKEST SQUARES</div><div class="intelligence-list" id="weakestSquares"></div></div>
+          <div><div class="intelligence-list-title">YOUR STRONGEST SQUARES</div><div class="intelligence-list" id="strongestSquares"></div></div>
+        </div>
+      </div>
+    </div>
     <div class="panel">
       <div class="panel-head"><div><div class="section-kicker">HISTORY</div><h3>Recent sessions</h3></div><button class="text-button danger" id="clearHistoryBtn">Clear</button></div>
       <div class="history-list" id="historyList"></div>
@@ -355,24 +552,15 @@
 
   <section class="view view-achievements" data-view="achievements">
     <div class="section-head">
-      <div>
-        <div class="section-kicker">MILESTONES</div>
-        <h2>Achievements</h2>
-        <p class="section-sub" id="achievementSummary">0 of 12 unlocked</p>
-      </div>
+      <div><div class="section-kicker">MILESTONES</div><h2>Achievements</h2><p class="section-sub" id="achievementSummary">0 of 12 unlocked</p></div>
     </div>
     <div class="achievements-grid" id="achievementsGrid"></div>
   </section>
 
   <section class="view view-settings" data-view="settings">
     <div class="section-head">
-      <div>
-        <div class="section-kicker">PREFERENCES</div>
-        <h2>Settings</h2>
-        <p class="section-sub">Customize your training environment.</p>
-      </div>
+      <div><div class="section-kicker">PREFERENCES</div><h2>Settings</h2><p class="section-sub">Customize your training environment.</p></div>
     </div>
-
     <div class="settings-grid">
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">APPEARANCE</div><h3>Theme</h3></div></div>
@@ -401,43 +589,23 @@
           <input type="range" id="boardSize" min="60" max="100" step="5" value="100">
         </div>
       </div>
-
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">AUDIO</div><h3>Sound</h3></div></div>
-        <div class="setting-row switch-row">
-          <label for="soundToggle">Sound effects</label>
-          <label class="switch"><input type="checkbox" id="soundToggle" checked><span class="switch-track"></span></label>
-        </div>
-        <div class="setting-row">
-          <label for="volumeRange">Volume</label>
-          <input type="range" id="volumeRange" min="0" max="100" value="60">
-        </div>
-        <div class="setting-row switch-row">
-          <label for="ticksToggle">Countdown ticks</label>
-          <label class="switch"><input type="checkbox" id="ticksToggle" checked><span class="switch-track"></span></label>
-        </div>
+        <div class="setting-row switch-row"><label for="soundToggle">Sound effects</label><label class="switch"><input type="checkbox" id="soundToggle" checked><span class="switch-track"></span></label></div>
+        <div class="setting-row"><label for="volumeRange">Volume</label><input type="range" id="volumeRange" min="0" max="100" value="60"></div>
+        <div class="setting-row switch-row"><label for="ticksToggle">Countdown ticks</label><label class="switch"><input type="checkbox" id="ticksToggle" checked><span class="switch-track"></span></label></div>
       </div>
-
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">BOARD</div><h3>Board display</h3></div></div>
-        <div class="setting-row switch-row">
-          <label for="labelsToggle">Show square labels</label>
-          <label class="switch"><input type="checkbox" id="labelsToggle"><span class="switch-track"></span></label>
-        </div>
-        <div class="setting-row switch-row">
-          <label for="coordsToggle">Show board coordinates</label>
-          <label class="switch"><input type="checkbox" id="coordsToggle" checked><span class="switch-track"></span></label>
-        </div>
-        <div class="setting-row switch-row">
-          <label for="piecesToggle">Show pieces <span class="setting-hint">Random pieces on board</span></label>
-          <label class="switch"><input type="checkbox" id="piecesToggle"><span class="switch-track"></span></label>
-        </div>
-        <div class="setting-row switch-row">
-          <label for="flipToggle">Flip board <span class="setting-hint">Synced with Board View</span></label>
-          <label class="switch"><input type="checkbox" id="flipToggle"><span class="switch-track"></span></label>
-        </div>
+        <div class="setting-row switch-row"><label for="labelsToggle">Show square labels</label><label class="switch"><input type="checkbox" id="labelsToggle"><span class="switch-track"></span></label></div>
+        <div class="setting-row switch-row"><label for="coordsToggle">Show board coordinates</label><label class="switch"><input type="checkbox" id="coordsToggle" checked><span class="switch-track"></span></label></div>
+        <div class="setting-row switch-row"><label for="piecesToggle">Show pieces</label><label class="switch"><input type="checkbox" id="piecesToggle"><span class="switch-track"></span></label></div>
+        <div class="setting-row switch-row"><label for="flipToggle">Flip board <span class="setting-hint">Synced with Board View</span></label><label class="switch"><input type="checkbox" id="flipToggle"><span class="switch-track"></span></label></div>
       </div>
-
+      <div class="panel">
+        <div class="panel-head"><div><div class="section-kicker">TRAINING</div><h3>Adaptive practice</h3><p class="panel-sub">Prioritize weak squares while preserving variety. Random mode stays unchanged when this is off.</p></div></div>
+        <div class="setting-row switch-row"><label for="adaptiveToggle">Adaptive Training <span class="setting-hint">Uses your answer history</span></label><label class="switch"><input type="checkbox" id="adaptiveToggle"><span class="switch-track"></span></label></div>
+      </div>
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">DATA</div><h3>Backup & restore</h3></div></div>
         <div class="setting-row"><button class="primary-button full" id="exportBtn">Export data</button></div>
@@ -450,7 +618,7 @@
   <footer class="footer">
     <div class="footer-brand"><span class="footer-knight">♞</span><span>CHESS VISION TRAINER</span></div>
     <span class="footer-center">BUILT FOR BETTER BOARD VISION.</span>
-    <span class="footer-version">v3.6</span>
+    <span class="footer-version">v3.8</span>
   </footer>
 </main>
 
@@ -460,7 +628,6 @@
     <span class="music-fab-ring"></span>
     <span class="music-fab-grip" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span>
   </button>
-
   <div class="music-panel hidden" id="musicPanel">
     <div class="music-head">
       <div class="music-title"><span class="music-dot"></span><span>RADIO</span></div>
@@ -469,34 +636,28 @@
         <button class="music-close" id="musicCloseBtn" aria-label="Close">×</button>
       </div>
     </div>
-
     <div class="music-tabs" role="tablist" aria-label="Music source">
       <button class="music-tab active" data-source="stream" role="tab" aria-selected="true">Stream</button>
       <button class="music-tab" data-source="local" role="tab" aria-selected="false">Local</button>
     </div>
-
     <div class="music-art">
       <div class="music-art-vinyl">♪</div>
       <div class="music-art-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     </div>
-
     <div class="music-now">
       <span class="music-now-label" id="musicNowLabel">NOW PLAYING</span>
       <span class="music-now-track" id="musicTrackName">Lofi Girl</span>
     </div>
-
     <div class="music-controls">
       <button class="music-ctrl" id="musicPrev" aria-label="Previous">⏮</button>
       <button class="music-ctrl music-play" id="musicPlay" aria-label="Play">▶</button>
       <button class="music-ctrl" id="musicNext" aria-label="Next">⏭</button>
     </div>
-
     <div class="music-volume">
       <span class="music-vol-icon">🔊</span>
       <input type="range" id="musicVolume" min="0" max="100" value="40" aria-label="Music volume">
       <span class="music-vol-val" id="musicVolVal">40%</span>
     </div>
-
     <div class="music-local-section hidden" id="musicLocalSection">
       <div class="music-local-head">
         <span>YOUR TRACKS · <span id="musicTrackCount">0</span></span>
@@ -505,10 +666,8 @@
       </div>
       <div class="music-track-list" id="musicTrackList"></div>
     </div>
-
     <div class="music-foot"><span id="musicFootText">♞ Train with chill beats</span><span class="music-drag-hint">✥ drag ♪</span></div>
   </div>
-
   <div class="yt-hidden" id="ytPlayerHidden"></div>
   <audio id="localAudio" class="yt-hidden" preload="metadata"></audio>
 </div>
@@ -520,8 +679,8 @@
     <h2>Welcome to Chess Vision Trainer</h2>
     <p>Master board vision, coordinates, knight geometry, and blindfold visualization in a distraction-free environment.</p>
     <div class="onboarding-features">
-      <div><span>◎</span><strong>7 training modes</strong></div>
-      <div><span>⇅</span><strong>White / Black / Mixed / Both / Auto</strong></div>
+      <div><span>◎</span><strong>8 training modes</strong></div>
+      <div><span>🧠</span><strong>Mind Palace rebuild game</strong></div>
       <div><span>♞</span><strong>Daily goals & achievements</strong></div>
     </div>
     <button class="primary-button" id="onboardingStart">Begin training <span class="button-arrow">→</span></button>
