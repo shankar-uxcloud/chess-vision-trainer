@@ -2188,3 +2188,50 @@ body[data-view="training"] .right-column * {
         width: 96vw !important;
     }
 }
+
+/* ============================================================
+   FIX: TRAINING CONTENT GOING BEHIND TOPBAR
+   ============================================================ */
+
+body[data-view="training"] .topbar {
+    position: relative !important;
+    z-index: 100 !important;
+}
+
+body[data-view="training"] .view-training {
+    position: relative !important;
+    z-index: 1 !important;
+
+    /* IMPORTANT: give training content clear space below header */
+    margin-top: 0 !important;
+    padding-top: 24px !important;
+
+    overflow: visible !important;
+}
+
+body[data-view="training"] .training-layout {
+    position: relative !important;
+    z-index: 1 !important;
+
+    margin-top: 0 !important;
+}
+
+/* Keep gameplay completely below the header */
+body[data-view="training"] .gameplay-stage,
+body[data-view="training"] .training-panel,
+body[data-view="training"] .right-column {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Target and board must never be hidden behind header */
+body[data-view="training"] .target-panel,
+body[data-view="training"] .training-board-panel {
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+/* Make sure the training page itself does not clip the board */
+body[data-view="training"] .main-content {
+    overflow: visible !important;
+}
