@@ -1675,3 +1675,516 @@ body[data-view="training"] .training-board-panel .board-section {
         overflow-y: auto;
     }
 }
+/* ============================================================
+   CHESS VISION TRAINER — DEFINITIVE TRAINING LAYOUT FIX
+   ============================================================ */
+
+/* Page */
+body[data-view="training"] {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body[data-view="training"] .view-training {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+
+/* ============================================================
+   MAIN 3-COLUMN TRAINING LAYOUT
+
+   LEFT       CENTER              RIGHT
+   controls   target + board      mission
+   ============================================================ */
+
+body[data-view="training"] .training-layout {
+    display: grid !important;
+
+    grid-template-columns:
+        300px
+        minmax(0, 1fr)
+        220px !important;
+
+    gap: 20px !important;
+
+    align-items: start !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+
+/* ============================================================
+   LEFT PANEL
+   ============================================================ */
+
+body[data-view="training"] .training-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   MODE BUTTONS
+
+   2 COLUMNS — NOT 4
+   ============================================================ */
+
+body[data-view="training"] .mode-selector {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 8px !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 16px 0 !important;
+}
+
+
+/* Individual mode button */
+
+body[data-view="training"] .mode-selector .mode-btn {
+    display: flex !important;
+
+    align-items: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+
+    padding: 11px 9px !important;
+
+    gap: 8px !important;
+
+    overflow: hidden !important;
+}
+
+
+/* Icon */
+
+body[data-view="training"] .mode-selector .mode-btn-icon {
+    flex: 0 0 22px !important;
+
+    width: 22px !important;
+
+    font-size: 19px !important;
+
+    text-align: center !important;
+}
+
+
+/* Text */
+
+body[data-view="training"] .mode-selector .mode-btn-text {
+    display: grid !important;
+
+    min-width: 0 !important;
+
+    width: 100% !important;
+
+    overflow: hidden !important;
+}
+
+
+/* Button title */
+
+body[data-view="training"] .mode-selector .mode-btn-text strong {
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    font-size: 13px !important;
+
+    line-height: 1.25 !important;
+
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+
+    text-overflow: ellipsis !important;
+}
+
+
+/* Button subtitle */
+
+body[data-view="training"] .mode-selector .mode-btn-text small {
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    font-size: 10px !important;
+
+    line-height: 1.3 !important;
+
+    white-space: normal !important;
+
+    overflow: hidden !important;
+}
+
+
+/* ============================================================
+   CENTER GAMEPLAY AREA
+   ============================================================ */
+
+body[data-view="training"] .gameplay-stage {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+
+    display: grid !important;
+
+    /*
+       TARGET          BOARD
+       230px           remaining space
+    */
+    grid-template-columns:
+        230px
+        minmax(0, 1fr) !important;
+
+    gap: 20px !important;
+
+    align-items: center !important;
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   C5 TARGET CARD
+   ============================================================ */
+
+body[data-view="training"] .gameplay-stage .target-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+
+    width: 100% !important;
+
+    max-width: 230px !important;
+
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+}
+
+
+/* Target contents cannot escape */
+
+body[data-view="training"] .gameplay-stage .target-panel * {
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   CHESSBOARD
+   ============================================================ */
+
+body[data-view="training"] .gameplay-stage .training-board-panel {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    padding: 0 !important;
+
+    overflow: visible !important;
+
+    box-sizing: border-box !important;
+}
+
+
+body[data-view="training"] .training-board-panel .board-stage {
+    display: flex !important;
+
+    justify-content: center !important;
+
+    align-items: center !important;
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+}
+
+
+body[data-view="training"] .training-board-panel .board-section {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    padding: 10px 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+body[data-view="training"] .training-board-panel .board-wrapper {
+    width: min(100%, 620px) !important;
+
+    max-width: 100% !important;
+
+    margin: 0 auto !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+body[data-view="training"] .training-board-panel .chessboard {
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    margin: 0 auto !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   RIGHT COLUMN
+   ============================================================ */
+
+body[data-view="training"] .right-column {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr) !important;
+
+    gap: 16px !important;
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    align-content: start !important;
+}
+
+
+/* ============================================================
+   IMPORTANT: STOP CONTENT FROM FORCING COLUMNS WIDER
+   ============================================================ */
+
+body[data-view="training"] .training-panel *,
+body[data-view="training"] .gameplay-stage *,
+body[data-view="training"] .right-column * {
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   LARGE DESKTOP
+   ============================================================ */
+
+@media (min-width: 1400px) {
+
+    body[data-view="training"] .training-layout {
+        grid-template-columns:
+            310px
+            minmax(0, 1fr)
+            230px !important;
+
+        gap: 22px !important;
+    }
+
+    body[data-view="training"] .gameplay-stage {
+        grid-template-columns:
+            240px
+            minmax(0, 1fr) !important;
+
+        gap: 22px !important;
+    }
+
+    body[data-view="training"] .training-board-panel .board-wrapper {
+        width: min(100%, 640px) !important;
+    }
+}
+
+
+/* ============================================================
+   LAPTOP
+   ============================================================ */
+
+@media (max-width: 1399px) and (min-width: 1051px) {
+
+    body[data-view="training"] .training-layout {
+        grid-template-columns:
+            280px
+            minmax(0, 1fr)
+            200px !important;
+
+        gap: 16px !important;
+    }
+
+    body[data-view="training"] .gameplay-stage {
+        grid-template-columns:
+            210px
+            minmax(0, 1fr) !important;
+
+        gap: 14px !important;
+    }
+
+    body[data-view="training"] .mode-selector {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    body[data-view="training"] .training-board-panel .board-wrapper {
+        width: min(100%, 540px) !important;
+    }
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (max-width: 1050px) {
+
+    body[data-view="training"] .training-layout {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 16px !important;
+    }
+
+    body[data-view="training"] .training-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+
+    body[data-view="training"] .gameplay-stage {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+
+        grid-template-columns:
+            220px
+            minmax(0, 1fr) !important;
+
+        gap: 16px !important;
+    }
+
+    body[data-view="training"] .right-column {
+        grid-column: 1 !important;
+        grid-row: 3 !important;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 720px) {
+
+    body[data-view="training"] .training-layout {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 14px !important;
+    }
+
+    body[data-view="training"] .training-panel {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+    }
+
+    /* Two mode buttons per row */
+
+    body[data-view="training"] .mode-selector {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+
+        gap: 7px !important;
+    }
+
+    /* Target above board */
+
+    body[data-view="training"] .gameplay-stage {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 12px !important;
+    }
+
+    body[data-view="training"] .gameplay-stage .target-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+
+        max-width: 100% !important;
+    }
+
+    body[data-view="training"] .gameplay-stage .training-board-panel {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    body[data-view="training"] .right-column {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+    }
+
+    body[data-view="training"] .training-board-panel .board-wrapper {
+        width: min(94vw, 560px) !important;
+
+        max-width: 100% !important;
+    }
+}
+
+
+/* ============================================================
+   VERY SMALL PHONE
+   ============================================================ */
+
+@media (max-width: 440px) {
+
+    body[data-view="training"] .mode-selector {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+    }
+
+    body[data-view="training"] .training-board-panel .board-wrapper {
+        width: 96vw !important;
+    }
+}
