@@ -2235,3 +2235,348 @@ body[data-view="training"] .training-board-panel {
 body[data-view="training"] .main-content {
     overflow: visible !important;
 }
+
+
+/* =========================================================
+   CHESS VISION TRAINER — TRAINING SCREEN FINAL FIX
+   Fix target card + board spacing + clipping
+   ========================================================= */
+
+/* ---------- MAIN TRAINING GRID ---------- */
+
+.training-layout {
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) 210px !important;
+    gap: 20px !important;
+    align-items: start !important;
+    width: 100% !important;
+}
+
+/* Left control panel */
+.training-layout > .training-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    display: block !important;
+}
+
+/* Gameplay area containing target + board */
+.training-layout > .gameplay-stage {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+
+    display: grid !important;
+
+    /* TARGET CARD | BOARD */
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+
+    gap: 20px !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    align-items: center !important;
+    align-self: start !important;
+}
+
+/* ---------- TARGET CARD ---------- */
+
+.training-layout .gameplay-stage > .target-panel,
+.training-layout .gameplay-stage > .mp-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    /*
+       IMPORTANT:
+       Remove the old tiny fixed height.
+    */
+    height: auto !important;
+    min-height: 220px !important;
+
+    margin: 0 !important;
+    padding: 24px 20px !important;
+
+    overflow: visible !important;
+
+    box-sizing: border-box !important;
+
+    align-self: center !important;
+}
+
+/* Make target text fit properly */
+.training-layout .gameplay-stage .target-panel .target-coordinate {
+    line-height: 1 !important;
+    margin: 8px 0 !important;
+}
+
+.training-layout .gameplay-stage .target-panel .target-hint {
+    display: block !important;
+    max-width: 100% !important;
+    line-height: 1.4 !important;
+    margin: 8px 0 0 !important;
+    overflow: visible !important;
+}
+
+.training-layout .gameplay-stage .target-panel .target-feedback {
+    max-width: 100% !important;
+    overflow: visible !important;
+}
+
+/* ---------- BOARD PANEL ---------- */
+
+.training-layout .gameplay-stage > .training-board-panel {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    overflow: visible !important;
+
+    box-sizing: border-box !important;
+
+    align-self: start !important;
+}
+
+/* Board heading */
+.training-layout .gameplay-stage .training-board-panel .board-panel-head {
+    margin-bottom: 8px !important;
+}
+
+/* Board stage */
+.training-layout .gameplay-stage .training-board-panel .board-stage {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+/* Board section */
+.training-layout .gameplay-stage .training-board-panel .board-section {
+    width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 8px 0 !important;
+}
+
+/* Board wrapper */
+.training-layout .gameplay-stage .training-board-panel .board-wrapper {
+    width: min(100%, 520px) !important;
+    max-width: 100% !important;
+
+    margin: 0 auto !important;
+    padding: 0 !important;
+}
+
+/* Chessboard */
+.training-layout .gameplay-stage .training-board-panel .chessboard {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 auto !important;
+}
+
+/* ---------- RIGHT MISSION COLUMN ---------- */
+
+.training-layout > .right-column {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+
+    gap: 18px !important;
+
+    align-content: start !important;
+}
+
+/* ---------- REMOVE BAD OLD DESKTOP HEIGHT ---------- */
+
+body[data-view="training"] .target-panel {
+    height: auto !important;
+}
+
+body[data-view="training"] .gameplay-stage .target-panel {
+    min-height: 220px !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* ---------- LARGE DESKTOP ---------- */
+
+@media (min-width: 1301px) {
+
+    .training-layout {
+        grid-template-columns:
+            280px
+            minmax(0, 1fr)
+            210px !important;
+
+        gap: 20px !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-template-columns:
+            280px
+            minmax(0, 1fr) !important;
+
+        gap: 20px !important;
+    }
+
+    .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+        width: min(100%, 520px) !important;
+    }
+}
+
+/* ---------- LAPTOP ---------- */
+
+@media (max-width: 1300px) and (min-width: 1051px) {
+
+    .training-layout {
+        grid-template-columns:
+            250px
+            minmax(0, 1fr)
+            190px !important;
+
+        gap: 14px !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-template-columns:
+            240px
+            minmax(0, 1fr) !important;
+
+        gap: 14px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel {
+        min-height: 200px !important;
+        padding: 20px 16px !important;
+    }
+
+    .training-layout .gameplay-stage .training-board-panel {
+        padding: 14px !important;
+    }
+
+    .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+        width: min(100%, 480px) !important;
+    }
+}
+
+/* ---------- TABLET ---------- */
+
+@media (max-width: 1050px) {
+
+    .training-layout {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 16px !important;
+    }
+
+    .training-layout > .training-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 14px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel,
+    .training-layout .gameplay-stage > .mp-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+
+        width: 100% !important;
+        min-height: 180px !important;
+    }
+
+    .training-layout .gameplay-stage > .training-board-panel {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    .training-layout > .right-column {
+        grid-column: 1 !important;
+        grid-row: 3 !important;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 720px) {
+
+    .training-layout {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 14px !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 12px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel,
+    .training-layout .gameplay-stage > .mp-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+
+        min-height: 170px !important;
+
+        padding: 20px 16px !important;
+    }
+
+    .training-layout .gameplay-stage > .training-board-panel {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+        width: min(92vw, 560px) !important;
+        max-width: 100% !important;
+    }
+
+    .training-layout > .right-column {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+    }
+}
+
+/* ---------- VERY SMALL PHONE ---------- */
+
+@media (max-width: 440px) {
+
+    .training-layout .gameplay-stage > .target-panel {
+        min-height: 150px !important;
+        padding: 16px 12px !important;
+    }
+
+    .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+        width: 96vw !important;
+    }
+}
