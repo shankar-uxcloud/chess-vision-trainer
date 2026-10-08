@@ -114,6 +114,20 @@
       <div class="stat-card"><div class="stat-head"><span>SESSIONS</span><span class="stat-icon violet">◷</span></div><div class="stat-value" id="statSessions">0</div><div class="stat-foot"><span>Completed</span><span class="stat-tag">TOTAL</span></div></div>
     </div>
 
+    <div class="panel coach-card">
+      <div class="coach-card-icon">🧠</div>
+      <div class="coach-card-copy">
+        <div class="section-kicker">ADAPTIVE VISION COACH</div>
+        <h3>Practice what needs attention</h3>
+        <p id="coachCardSummary">Complete 10+ coordinate answers to unlock personalized coaching.</p>
+      </div>
+      <div class="coach-card-stats">
+        <span><small>VISION RATING</small><strong id="coachRating">1000</strong></span>
+        <span><small>WEAKEST SQUARE</small><strong id="coachWeakest">—</strong></span>
+      </div>
+      <button class="primary-button" data-action="adaptive-train" type="button">Train my weaknesses <span class="button-arrow">→</span></button>
+    </div>
+
     <div class="section-head">
       <div><div class="section-kicker">QUICK START</div><h2>Training modes</h2></div>
       <button class="text-button" data-nav="training">All modes →</button>
@@ -281,6 +295,16 @@
             <button class="perspective-btn" data-perspective="auto" type="button"><span class="perspective-icon">◐</span><span>Auto</span></button>
           </div>
         </div>
+        <div class="flip-training-bar" id="flipTrainingBar">
+          <div>
+            <span class="perspective-label">FLIP BOARD</span>
+            <span class="flip-training-hint" id="flipTrainingHint">Repeat each target from the opposite view.</span>
+          </div>
+          <div class="flip-training-options">
+            <button class="perspective-btn" id="flipTrainingOff" type="button" aria-pressed="true">OFF</button>
+            <button class="perspective-btn" id="flipTrainingOn" type="button" aria-pressed="false">ON</button>
+          </div>
+        </div>
 
         <div class="mp-difficulty-bar hidden" id="mpDifficultyBar">
           <span class="perspective-label">DIFFICULTY</span>
@@ -402,48 +426,83 @@
         <div class="progress-header"><span>SESSION PROGRESS</span><strong id="progressText">0%</strong></div>
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 
-        <div class="board-section">
-          <div class="board-wrapper" id="boardWrapper">
-            <div class="board-coord-row" id="topCoordinates"></div>
-            <div class="board-middle">
-              <div class="board-coord-col" id="leftCoordinates"></div>
-              <div class="chessboard" id="chessboard" role="grid" aria-label="Chessboard"></div>
-              <div class="board-coord-col" id="rightCoordinates"></div>
+      </div>
+
+      <div class="gameplay-stage" id="gameplayStage"></div>
+
+      <div class="results-panel hidden" id="resultsPanel">
+        <div class="results-head">
+          <div>
+            <div class="section-kicker">SESSION COMPLETE</div>
+            <h2 id="resultTitle">Well played!</h2>
+            <p id="resultDescription">Every session makes a difference.</p>
+          </div>
+          <div class="result-trophy">♛</div>
+        </div>
+        <div class="new-record hidden" id="newRecord">✦ NEW PERSONAL RECORD</div>
+        <div class="results-grid">
+          <div class="result-stat"><span id="resultPrimaryLabel">CORRECT</span><strong id="resultCorrect">0</strong></div>
+          <div class="result-stat"><span>ACCURACY</span><strong id="resultAccuracy">0%</strong></div>
+          <div class="result-stat"><span>BEST STREAK</span><strong id="resultStreak">0</strong></div>
+          <div class="result-stat"><span>XP EARNED</span><strong id="resultXp">+0</strong></div>
+        </div>
+        <div class="results-dashboard">
+          <div class="result-detail-card">
+            <div class="section-kicker">SESSION SUMMARY</div>
+            <div class="result-detail-list">
+              <span>Correct <strong id="resultSummaryCorrect">0</strong></span>
+              <span>Accuracy <strong id="resultSummaryAccuracy">0%</strong></span>
+              <span>Best streak <strong id="resultSummaryStreak">0</strong></span>
+              <span>XP earned <strong id="resultSummaryXp">+0</strong></span>
             </div>
-            <div class="board-coord-row" id="bottomCoordinates"></div>
+          </div>
+          <div class="result-detail-card">
+            <div class="section-kicker">PERFORMANCE</div>
+            <div class="result-detail-list">
+              <span>Average reaction <strong id="resultAvgReaction">—</strong></span>
+              <span>Total questions <strong id="resultTotalQuestions">0</strong></span>
+              <span>Incorrect answers <strong id="resultMistakes">0</strong></span>
+              <span>Vision rating <strong id="resultRating">—</strong></span>
+            </div>
+            <div class="result-perspective-performance hidden" id="resultPerspectivePerformance"></div>
           </div>
         </div>
+        <div class="result-focus" id="resultFocus">Keep training to build your vision profile.</div>
+        <div class="results-actions">
+          <button class="ghost-button" data-nav="dashboard">Back to dashboard</button>
+          <button class="primary-button" id="resultRestart">Train again <span class="button-arrow">→</span></button>
+        </div>
+        <div class="daily-result-actions hidden" id="dailyResultActions">
+          <button class="ghost-button" id="dailyShareBtn" type="button">Share result</button>
+          <button class="primary-button" id="dailyReplayBtn" type="button">Replay as practice <span class="button-arrow">→</span></button>
+        </div>
+      </div>
 
+      <div class="panel training-board-panel">
+        <div class="board-panel-head">
+          <div>
+            <div class="section-kicker">BOARD</div>
+            <p class="board-panel-sub">Select the matching square</p>
+          </div>
+          <span class="status-pill"><span class="status-dot"></span>LIVE BOARD</span>
+        </div>
+        <div class="board-stage">
+          <div class="board-section">
+            <div class="board-wrapper" id="boardWrapper">
+              <div class="board-coord-row" id="topCoordinates"></div>
+              <div class="board-middle">
+                <div class="board-coord-col" id="leftCoordinates"></div>
+                <div class="chessboard" id="chessboard" role="grid" aria-label="Chessboard"></div>
+                <div class="board-coord-col" id="rightCoordinates"></div>
+              </div>
+              <div class="board-coord-row" id="bottomCoordinates"></div>
+            </div>
+          </div>
+        </div>
         <div class="board-legend">
           <span><i class="legend-dot legend-green"></i> Correct</span>
           <span><i class="legend-dot legend-red"></i> Incorrect</span>
           <span class="board-shortcut"><kbd>R</kbd> restart · <kbd>Space</kbd> pause · <kbd>F</kbd> fullscreen · <kbd>M</kbd> music</span>
-        </div>
-
-        <div class="results-panel hidden" id="resultsPanel">
-          <div class="results-head">
-            <div>
-              <div class="section-kicker">SESSION COMPLETE</div>
-              <h2 id="resultTitle">Well played!</h2>
-              <p id="resultDescription">Every session makes a difference.</p>
-            </div>
-            <div class="result-trophy">♛</div>
-          </div>
-          <div class="new-record hidden" id="newRecord">✦ NEW PERSONAL RECORD</div>
-          <div class="results-grid">
-            <div class="result-stat"><span id="resultPrimaryLabel">CORRECT</span><strong id="resultCorrect">0</strong></div>
-            <div class="result-stat"><span>ACCURACY</span><strong id="resultAccuracy">0%</strong></div>
-            <div class="result-stat"><span>BEST STREAK</span><strong id="resultStreak">0</strong></div>
-            <div class="result-stat"><span>XP EARNED</span><strong id="resultXp">+0</strong></div>
-          </div>
-          <div class="results-actions">
-            <button class="ghost-button" data-nav="dashboard">Back to dashboard</button>
-            <button class="primary-button" id="resultRestart">Train again <span class="button-arrow">→</span></button>
-          </div>
-          <div class="daily-result-actions hidden" id="dailyResultActions">
-            <button class="ghost-button" id="dailyShareBtn" type="button">Share result</button>
-            <button class="primary-button" id="dailyReplayBtn" type="button">Replay as practice <span class="button-arrow">→</span></button>
-          </div>
         </div>
       </div>
 
@@ -511,6 +570,15 @@
     <div class="panel rating-intro">
       <div><div class="section-kicker">VISION RATING</div><h3>A local measure of your board-vision progress</h3><p class="panel-sub">This is not an official chess Elo rating. It reflects accuracy, reaction time, difficulty, consistency, and recent performance in Chess Vision Trainer.</p></div>
       <div class="rating-large"><strong id="visionRatingLarge">1000</strong><span id="visionRatingChange">+0 this week</span></div>
+    </div>
+    <div class="panel flip-analytics-panel">
+      <div class="panel-head"><div><div class="section-kicker">FLIP BOARD</div><h3>Perspective performance</h3><p class="panel-sub">Separate White and Black recognition when both views have been trained.</p></div></div>
+      <div class="flip-analytics-grid">
+        <div><span>FLIP CHALLENGES</span><strong id="anFlipChallenges">0</strong></div>
+        <div><span>FLIP SUCCESS</span><strong id="anFlipSuccess">—</strong></div>
+        <div><span>WHITE AVG</span><strong id="anFlipWhiteReaction">—</strong></div>
+        <div><span>BLACK AVG</span><strong id="anFlipBlackReaction">—</strong></div>
+      </div>
     </div>
     <div class="charts-grid">
       <div class="panel chart-panel"><div class="panel-head"><div><div class="section-kicker">TREND</div><h3>Correct answers over time</h3></div></div><div class="chart" id="chartCorrect"></div></div>
@@ -600,11 +668,12 @@
         <div class="setting-row switch-row"><label for="labelsToggle">Show square labels</label><label class="switch"><input type="checkbox" id="labelsToggle"><span class="switch-track"></span></label></div>
         <div class="setting-row switch-row"><label for="coordsToggle">Show board coordinates</label><label class="switch"><input type="checkbox" id="coordsToggle" checked><span class="switch-track"></span></label></div>
         <div class="setting-row switch-row"><label for="piecesToggle">Show pieces</label><label class="switch"><input type="checkbox" id="piecesToggle"><span class="switch-track"></span></label></div>
-        <div class="setting-row switch-row"><label for="flipToggle">Flip board <span class="setting-hint">Synced with Board View</span></label><label class="switch"><input type="checkbox" id="flipToggle"><span class="switch-track"></span></label></div>
+        <div class="setting-row switch-row"><label for="flipToggle">Board orientation <span class="setting-hint">Manual display view</span></label><label class="switch"><input type="checkbox" id="flipToggle"><span class="switch-track"></span></label></div>
       </div>
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">TRAINING</div><h3>Adaptive practice</h3><p class="panel-sub">Prioritize weak squares while preserving variety. Random mode stays unchanged when this is off.</p></div></div>
         <div class="setting-row switch-row"><label for="adaptiveToggle">Adaptive Training <span class="setting-hint">Uses your answer history</span></label><label class="switch"><input type="checkbox" id="adaptiveToggle"><span class="switch-track"></span></label></div>
+        <div class="setting-row"><label for="adaptiveIntensity">Adaptive intensity</label><select id="adaptiveIntensity"><option value="balanced">Balanced</option><option value="focus">Weakness focus</option><option value="aggressive">Aggressive</option></select></div>
       </div>
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">DATA</div><h3>Backup & restore</h3></div></div>
