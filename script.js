@@ -130,7 +130,7 @@ const squareBag = {
     },
     shuffle() {
         for (let i = this.pool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+ const j = Math.floor(Math.random() * (i + 1));
             const t = this.pool[i]; this.pool[i] = this.pool[j]; this.pool[j] = t;
         }
         function correctFlip(sq) {
@@ -2554,60 +2554,142 @@ function finishSession() {
     if (game.mode === "mindpalace") { endMindPalaceSession(); return; }
     if (game.dailyActive) { finishDailyChallenge(); return; }
 
-    game.running = false; game.paused = false; game.completed = true;
-    clearInterval(game.timer); clearTimeout(game.feedbackTimer); game.timer = null;
+    game.running = false;
+    game.paused = false;
+    game.completed = true;
+
+    clearInterval(game.timer);
+    clearTimeout(game.feedbackTimer);
+    game.timer = null;
+
     $("sessionStateText").textContent = "COMPLETE";
     $("topStatus").textContent = "SESSION COMPLETE";
     $("startBtnText").textContent = "Train again";
-    $("pauseBtn").disabled = true; $("pauseBtn").textContent = "Pause";
+
+    $("pauseBtn").disabled = true;
+    $("pauseBtn").textContent = "Pause";
+
     $("pauseOverlay").classList.add("hidden");
+
     enableBoard(false);
-    $("targetPanel").classList.remove("correct","wrong");
-    $("targetHint").textContent = "Session complete! Review your results below.";
+
+    /* FIX: hide the temporary target card after session completion */
+    $("targetPanel").classList.add("hidden");
+    $("targetPanel").classList.remove("correct", "wrong");
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden");
     $("dualIndicator").classList.add("hidden");
+
     clearHighlights();
 
     stats.totalSessions++;
+
     const prevBest = stats.personalBest || 0;
     const newRecord = game.correct > prevBest;
-    stats.personalBest = Math.max(prevBest, game.correct);
-    stats.bestStreak = Math.max(stats.bestStreak || 0, game.bestStreak);
+
+    stats.personalBest = Math.max(
+        prevBest,
+        game.correct
+    );
+
+    stats.bestStreak = Math.max(
+        stats.bestStreak || 0,
+        game.bestStreak
+    );
+
     const acc = accuracy();
-    if (acc === 100 && game.correct >= 15) stats.flawless = (stats.flawless || 0) + 1;
-    stats.totalTime = (stats.totalTime || 0) + game.duration;
-    stats.totalQuestions = (stats.totalQuestions || 0) + game.correct + game.mistakes;
+
+    if (acc === 100 && game.correct >= 15) {
+        stats.flawless = (stats.flawless || 0) + 1;
+    }
+
+    stats.totalTime =
+        (stats.totalTime || 0) + game.duration;
+
+    stats.totalQuestions =
+        (stats.totalQuestions || 0) +
+        game.correct +
+        game.mistakes;
 
     let gained = game.correct * 4;
+
     if (game.bestStreak >= 10) gained += 30;
     if (game.bestStreak >= 20) gained += 40;
     if (game.bestStreak >= 30) gained += 60;
-    if (acc === 100 && game.correct >= 15) gained += 60;
-    if (newRecord && game.correct > 0) gained += 25;
-    if (isDualMode()) gained += Math.round(gained * 0.15);
-    if (isAutoMode()) gained += Math.round(gained * 0.10);
+
+    if (acc === 100 && game.correct >= 15) {
+        gained += 60;
+    }
+
+    if (newRecord && game.correct > 0) {
+        gained += 25;
+    }
+
+    if (isDualMode()) {
+        gained += Math.round(gained * 0.15);
+    }
+
+    if (isAutoMode()) {
+        gained += Math.round(gained * 0.10);
+    }
+
     addXp(gained);
 
-    const avgRt = game.reactionTimes.length ? Math.round(game.reactionTimes.reduce((a,b)=>a+b,0)/game.reactionTimes.length) : 0;
+    const avgRt = game.reactionTimes.length
+        ? Math.round(
+            game.reactionTimes.reduce(
+                (a, b) => a + b,
+                0
+            ) / game.reactionTimes.length
+        )
+        : 0;
+
     const result = {
-        correct: game.correct, mistakes: game.mistakes, accuracy: acc,
-        bestStreak: game.bestStreak, duration: game.duration, mode: game.mode,
-        perspective: game.perspective, xp: gained, avgReaction: avgRt,
+        correct: game.correct,
+        mistakes: game.mistakes,
+        accuracy: acc,
+        bestStreak: game.bestStreak,
+        duration: game.duration,
+        mode: game.mode,
+        perspective: game.perspective,
+        xp: gained,
+        avgReaction: avgRt,
         date: new Date().toISOString()
     };
+
     const ratingUpdate = updateVisionRating();
+
     result.rating = visionRating.current;
     result.ratingDelta = ratingUpdate.delta;
     result.ratingPerformance = ratingUpdate.performance;
-    history.unshift(result); history = history.slice(0, 50);
-    save(KEYS.stats, stats); save(KEYS.history, history);
-    updateDashboard(); renderHistory(); renderAnalytics(); updateLevelUI();
-    checkAchievements(); showResults(newRecord, gained);
+
+    history.unshift(result);
+    history = history.slice(0, 50);
+
+    save(KEYS.stats, stats);
+    save(KEYS.history, history);
+
+    updateDashboard();
+    renderHistory();
+    renderAnalytics();
+    updateLevelUI();
+
+    checkAchievements();
+
+    showResults(newRecord, gained);
+
     playSound("finish");
-    if (newRecord && game.correct > 0) fireConfetti(140);
-    else if (game.correct >= 20) fireConfetti(80);
-    $("resultsPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    if (newRecord && game.correct > 0) {
+        fireConfetti(140);
+    } else if (game.correct >= 20) {
+        fireConfetti(80);
+    }
+
+    $("resultsPanel").scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+    });
 }
 function finishDailyChallenge() {
     if (!game.running) return;
