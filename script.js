@@ -14,8 +14,8 @@ const KEYS = {
     boardSize: "cvt-boardsize-v3", achievements: "cvt-achievements-v3",
     daily: "cvt-daily-v3", xp: "cvt-xp-v3", onboarded: "cvt-onboarded-v3",
     preloaderSeen: "cvt-preloader-v1", answerRecords: "cvt-answer-records-v1",
-    adaptive: "cvt-adaptive-v1", rating: "cvt-vision-rating-v1",
-    dailyChallenge: "cvt-daily-challenge-v1"
+    adaptive: "cvt-adaptive-v1", adaptiveIntensity: "cvt-adaptive-intensity-v1", rating: "cvt-vision-rating-v1",
+    dailyChallenge: "cvt-daily-challenge-v1", flipBoardTraining: "cvt-flip-board-training-v1"
 };
 const MUSIC_KEYS = {
     volume: "cvt-music-vol-v3", track: "cvt-music-track-v3", open: "cvt-music-open-v3",
@@ -132,6 +132,37 @@ const squareBag = {
         for (let i = this.pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             const t = this.pool[i]; this.pool[i] = this.pool[j]; this.pool[j] = t;
+        }
+        function correctFlip(sq) {
+            if (game.flipStep === 0) {
+                game.flipStep = 1;
+                recordAnswer(game.target, true, Date.now() - game.questionStartTime);
+                sq.classList.add("last-correct");
+                $("targetPanel").classList.add("correct");
+                $("targetFeedback").textContent = "✓ " + game.flipStartSide.toUpperCase() + " SIDE · NOW FIND IT FROM " + (game.flipStartSide === "white" ? "BLACK" : "WHITE");
+                $("targetFeedback").style.color = "var(--green)";
+                $("targetHint").textContent = "Board is flipping — click " + game.target + " again.";
+                playSound("correct");
+                setTimeout(() => {
+                    setBoardFlip(game.flipStartSide === "white");
+                    playSound("flip"); applyTargetSide(true); updateFlipIndicator();
+                }, 300);
+                clearTimeout(game.feedbackTimer);
+                game.feedbackTimer = setTimeout(() => { if (game.running) { $("targetPanel").classList.remove("correct"); clearHighlights(); } }, 700);
+                return;
+            }
+            game.flipStep = 0;
+            onCorrectBase(); clearHighlights();
+            sq.classList.add("last-correct");
+            $("targetPanel").classList.add("correct");
+            $("targetFeedback").textContent = "✓ FLIP COMPLETE";
+            $("targetFeedback").style.color = "var(--green)";
+            $("targetHint").textContent = "Next target coming...";
+            clearTimeout(game.feedbackTimer);
+            game.feedbackTimer = setTimeout(() => {
+                if (!game.running) return;
+                $("targetPanel").classList.remove("correct"); genTarget();
+            }, 500);
         }
     },
     next(exclude) {
@@ -287,6 +318,11 @@ function renderMPPosition(position) {
         el.textContent = mpGlyph(pk);
         el.setAttribute("aria-hidden", "true");
         sqEl.appendChild(el);
+    });
+    $("adaptiveIntensity").addEventListener("change", e => {
+        adaptiveIntensity = e.target.value;
+        save(KEYS.adaptiveIntensity, adaptiveIntensity);
+        toast("Adaptive intensity: " + e.target.options[e.target.selectedIndex].text + ".");
     });
 }
 
@@ -956,6 +992,9 @@ if (!Array.isArray(history)) history = [];
 let answerRecords = load(KEYS.answerRecords, []);
 if (!Array.isArray(answerRecords)) answerRecords = [];
 let adaptiveEnabled = load(KEYS.adaptive, false) === true;
+let flipBoardTraining = load(KEYS.flipBoardTraining, false) === true;
+let adaptiveIntensity = ["balanced", "focus", "aggressive"].includes(load(KEYS.adaptiveIntensity, "balanced"))
+    ? load(KEYS.adaptiveIntensity, "balanced") : "balanced";
 let visionRating = load(KEYS.rating, null);
 if (!visionRating || typeof visionRating !== "object") visionRating = { current: 1000, history: [] };
 visionRating.current = Number.isFinite(Number(visionRating.current)) ? Math.round(Number(visionRating.current)) : 1000;
@@ -973,13 +1012,13 @@ dailyStateFor(dailyDateKey());
 
 const game = {
     mode: "square", perspective: "white", autoSide: null,
-    dualActive: false, dualStep: 0, dualTarget: null,
+    dualActive: false, dualStep: 0, dualTarget: null, flipStep: 0, flipStartSide: "white",
     piecesEnabled: false, pieces: {},
     running: false, paused: false, completed: false,
     duration: 60, timeLeft: 60,
     correct: 0, mistakes: 0, streak: 0, bestStreak: 0,
     target: null, knightSource: null, knightRemaining: [], knightFound: [],
-    questionIndex: 0, questionStartTime: 0, questionAttempts: 0, reactionTimes: [], adaptiveRecentSquares: [],
+    questionIndex: 0, questionStartTime: 0, questionAttempts: 0, reactionTimes: [], adaptiveRecentSquares: [], sessionId: null,
     timer: null, feedbackTimer: null, toastTimer: null, countdownTimer: null,
     sound: true, volume: 0.6, ticks: true, lastTick: -1,
     dailyActive: false, dailyPractice: false, dailySequence: [], dailyStart: 0
@@ -1479,11 +1518,14 @@ async function setupMusic() {
 /* Board */
 function buildCoords() {
     ["topCoordinates","bottomCoordinates","leftCoordinates","rightCoordinates"].forEach(id => { const el = $(id); if (el) el.innerHTML = ""; });
-    FILES.forEach(f => ["topCoordinates","bottomCoordinates"].forEach(id => {
+    const flip = document.body.dataset.flip === "true";
+    const files = flip ? FILES.slice().reverse() : FILES;
+    const ranks = flip ? RANKS.slice().reverse() : RANKS;
+    files.forEach(f => ["topCoordinates","bottomCoordinates"].forEach(id => {
         const el = $(id); if (!el) return;
         const s = document.createElement("span"); s.textContent = f; el.appendChild(s);
     }));
-    RANKS.forEach(r => ["leftCoordinates","rightCoordinates"].forEach(id => {
+    ranks.forEach(r => ["leftCoordinates","rightCoordinates"].forEach(id => {
         const el = $(id); if (!el) return;
         const s = document.createElement("span"); s.textContent = r; el.appendChild(s);
     }));
@@ -1491,12 +1533,15 @@ function buildCoords() {
 function buildBoard() {
     const b = $("chessboard"); if (!b) return;
     b.innerHTML = "";
+    const flip = document.body.dataset.flip === "true";
+    const files = flip ? FILES.slice().reverse() : FILES;
+    const ranks = flip ? RANKS.slice().reverse() : RANKS;
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            const file = FILES[col], rank = RANKS[row], coord = file + rank;
+            const file = files[col], rank = ranks[row], coord = file + rank;
             const sq = document.createElement("button");
             sq.type = "button";
-            sq.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
+            sq.className = "square " + (isLightSquare(coord) ? "light" : "dark");
             sq.dataset.square = coord;
             sq.setAttribute("role", "gridcell");
             sq.setAttribute("aria-label", "Square " + coord);
@@ -1598,7 +1643,28 @@ function adaptiveTarget(exclude) {
     const candidates = squares.filter(square => square !== exclude && !cooldown.has(square));
     const pool = candidates.length >= 12 ? candidates : squares.filter(square => square !== exclude);
     const now = Date.now();
-    const weighted = pool.map(square => {
+    const intensity = { balanced: 1, focus: 1.45, aggressive: 2.1 }[adaptiveIntensity] || 1;
+    const buckets = { weak: [], medium: [], strong: [] };
+    pool.forEach(square => {
+        const metric = metrics[square];
+        if (!metric.total) buckets.medium.push(square);
+        else {
+            const accuracy = metric.correct / metric.total;
+            const bucket = metric.total >= 5 && accuracy < .7 ? "weak" : accuracy >= .85 ? "strong" : "medium";
+            buckets[bucket].push(square);
+        }
+    });
+    const distributions = {
+        balanced: [0.6, 0.25],
+        focus: [0.75, 0.2],
+        aggressive: [0.85, 0.12]
+    };
+    const distribution = distributions[adaptiveIntensity] || distributions.balanced;
+    const roll = Math.random();
+    const preferred = roll < distribution[0] ? "weak" : roll < distribution[0] + distribution[1] ? "medium" : "strong";
+    const selectedPool = buckets[preferred].length ? buckets[preferred]
+        : (buckets.weak.length ? buckets.weak : buckets.medium.length ? buckets.medium : pool);
+    const weighted = selectedPool.map(square => {
         const metric = metrics[square];
         const accuracy = metric.total ? metric.correct / metric.total : 0.5;
         const recent = metric.recent.slice(-5);
@@ -1606,7 +1672,10 @@ function adaptiveTarget(exclude) {
         const recentFailures = recent.filter(record => !record.correct).length;
         const ageHours = recent.length ? Math.max(0, (now - Date.parse(recent[recent.length - 1].timestamp)) / 3600000) : Infinity;
         const recencyBoost = Number.isFinite(ageHours) ? Math.max(0, 1 - ageHours / 72) : 0;
-        let weight = 1 + (1 - accuracy) * 5 + Math.min(2, recentFailures * 0.45);
+        const confidence = Math.min(1, metric.total / 10);
+        let weight = 1 + (1 - accuracy) * (5 * intensity) * (.35 + confidence);
+        if (metric.total < 5) weight = 1 + (weight - 1) * .3;
+        weight += Math.min(2, recentFailures * 0.45) * intensity;
         if (recentMastery) weight *= Math.max(0.45, 1 - recencyBoost * 0.45);
         if (metric.total === 0) weight = 1.35;
         return { square, weight };
@@ -1637,12 +1706,30 @@ function setPerspective(p) {
         else applyFlipForQuestion(true);
     }
     applyTargetSide(false);
-    const ft = $("flipToggle");
-    if (ft) {
-        if (p === "white") { ft.checked = false; ft.disabled = false; }
-        else if (p === "black") { ft.checked = true; ft.disabled = false; }
-        else ft.disabled = true;
-    }
+    updateFlipTrainingUI();
+}
+function isFlipChallenge() {
+    return flipBoardTraining && game.mode !== "mindpalace" && game.mode !== "daily" &&
+        ["square", "blindfold"].includes(game.mode) && game.perspective !== "both";
+}
+function updateFlipTrainingUI() {
+    const bar = $("flipTrainingBar"), on = $("flipTrainingOn"), off = $("flipTrainingOff"), hint = $("flipTrainingHint");
+    if (!bar || !on || !off) return;
+    const disabled = game.perspective === "both" || game.mode === "mindpalace" || game.mode === "daily";
+    bar.classList.toggle("disabled", disabled);
+    on.disabled = disabled; off.disabled = disabled;
+    on.classList.toggle("active", flipBoardTraining && !disabled);
+    off.classList.toggle("active", !flipBoardTraining || disabled);
+    on.setAttribute("aria-pressed", flipBoardTraining && !disabled ? "true" : "false");
+    off.setAttribute("aria-pressed", !flipBoardTraining || disabled ? "true" : "false");
+    if (hint) hint.textContent = disabled && game.perspective === "both"
+        ? "Both mode already uses both perspectives." : "Repeat each target from the opposite view.";
+}
+function setFlipBoardTraining(enabled) {
+    flipBoardTraining = !!enabled;
+    save(KEYS.flipBoardTraining, flipBoardTraining);
+    updateFlipTrainingUI();
+    if (!game.running) toast(flipBoardTraining ? "Flip Board training on." : "Flip Board training off.");
 }
 function applyFlipForQuestion(force) {
     let flip;
@@ -1651,16 +1738,48 @@ function applyFlipForQuestion(force) {
     else if (game.perspective === "mixed") flip = Math.random() < 0.5;
     else flip = false;
     const current = document.body.dataset.flip === "true";
-    if (force || flip !== current) {
-        document.body.dataset.flip = flip ? "true" : "false";
-        save(KEYS.flip, flip);
+    if (force || flip !== current) setBoardFlip(flip);
+}
+function setBoardFlip(flip) {
+    const next = !!flip;
+    const changed = document.body.dataset.flip !== String(next);
+    document.body.dataset.flip = next ? "true" : "false";
+    save(KEYS.flip, next);
+    if (changed && $("chessboard")) {
+        buildCoords();
+        buildBoard();
+        const wrapper = $("boardWrapper");
+        if (wrapper) {
+            wrapper.classList.remove("board-perspective-flip");
+            void wrapper.offsetWidth;
+            wrapper.classList.add("board-perspective-flip");
+            setTimeout(() => wrapper.classList.remove("board-perspective-flip"), 450);
+        }
+        enableBoard(game.running && game.mode !== "coordinate" && game.mode !== "reverse" && game.mode !== "color");
     }
 }
-function setBoardFlip(flip) { document.body.dataset.flip = flip ? "true" : "false"; save(KEYS.flip, flip); }
 function isDualMode() { return game.perspective === "both"; }
 function isAutoMode() { return game.perspective === "auto"; }
-function pickAutoSide() { if (!isAutoMode()) { game.autoSide = null; return; } game.autoSide = game.autoSide === "white" ? "black" : "white"; }
+function pickAutoSide() {
+    if (!isAutoMode()) { game.autoSide = null; return; }
+    const recent = answerRecords.filter(r => r.perspectiveSide === "white" || r.perspectiveSide === "black").slice(-24);
+    const totals = { white: { correct: 0, count: 0 }, black: { correct: 0, count: 0 } };
+    recent.forEach(r => {
+        totals[r.perspectiveSide].count++;
+        if (r.correct) totals[r.perspectiveSide].correct++;
+    });
+    if (totals.white.count >= 3 && totals.black.count >= 3) {
+        const whiteAccuracy = totals.white.correct / totals.white.count;
+        const blackAccuracy = totals.black.correct / totals.black.count;
+        if (Math.abs(whiteAccuracy - blackAccuracy) >= 0.12) {
+            game.autoSide = whiteAccuracy < blackAccuracy ? "white" : "black";
+            return;
+        }
+    }
+    game.autoSide = game.autoSide === "white" ? "black" : "white";
+}
 function getCurrentSide() {
+    if (isFlipChallenge()) return game.flipStep === 0 ? game.flipStartSide : (game.flipStartSide === "white" ? "black" : "white");
     switch (game.perspective) {
         case "white": return "white";
         case "black": return "black";
@@ -1694,14 +1813,26 @@ function updateDualIndicator() {
     el.classList.toggle("step-2", step === 2);
     el.innerHTML = '<span class="dual-dot"></span><span class="dual-text">' + step + ' / 2 · ' + (step === 1 ? "WHITE VIEW" : "BLACK VIEW") + '</span>';
 }
+function updateFlipIndicator() {
+    const el = $("dualIndicator"); if (!el) return;
+    if (!isFlipChallenge() || !game.running) return;
+    el.classList.remove("hidden");
+    el.classList.toggle("step-2", game.flipStep === 1);
+    el.innerHTML = '<span class="dual-dot"></span><span class="dual-text">' +
+        (game.flipStep + 1) + ' / 2 · ' + (getCurrentSide() === "white" ? "WHITE VIEW" : "BLACK VIEW") + '</span>';
+}
 
 /* Targets */
 function genTarget() {
     game.questionAttempts = 0;
-    game.dualStep = 0; game.dualTarget = null;
-    if (isDualMode() || isAutoMode()) setBoardFlip(false);
-    else applyFlipForQuestion(false);
+    game.dualStep = 0; game.dualTarget = null; game.flipStep = 0;
     pickAutoSide();
+    if (isFlipChallenge()) {
+        game.flipStartSide = game.perspective === "mixed" ? (Math.random() < 0.5 ? "white" : "black")
+            : game.perspective === "auto" ? (game.autoSide || "white") : game.perspective;
+        setBoardFlip(game.flipStartSide === "black");
+    } else if (isDualMode() || isAutoMode()) setBoardFlip(false);
+    else applyFlipForQuestion(false);
     game.questionStartTime = Date.now();
     const m = game.mode;
     if (m === "square" || m === "blindfold") genSquareTarget();
@@ -1711,6 +1842,7 @@ function genTarget() {
     else if (m === "color") genColorTarget();
     else genSquareTarget();
     applyTargetSide(false);
+    updateFlipIndicator();
     updateDualIndicator();
 }
 function updateQuestionNumber() { const el = $("targetNumber"); if (el) el.textContent = "QUESTION " + String(game.questionIndex).padStart(2,"0"); }
@@ -1791,7 +1923,7 @@ function genColorTarget() {
 }
 function resetTarget() {
     game.target = null; game.knightSource = null; game.knightRemaining = []; game.knightFound = [];
-    game.questionIndex = 0; game.dualStep = 0; game.dualTarget = null;
+    game.questionIndex = 0; game.dualStep = 0; game.dualTarget = null; game.flipStep = 0;
     $("targetCoordinate").classList.add("muted");
     $("targetCoordinate").textContent = "—";
     $("targetCoordinate").classList.remove("side-swap");
@@ -1830,9 +1962,14 @@ function recordAnswer(targetSquare, correct, reactionTime) {
     if (!targetSquare || !FILES.includes(targetSquare[0]) || !RANKS.includes(Number(targetSquare[1]))) return;
     answerRecords.push({
         targetSquare,
+        square: targetSquare,
         correct: !!correct,
         reactionTime: Math.max(0, Math.round(reactionTime)),
         mode: game.mode,
+        perspectiveSide: getCurrentSide(),
+        flipChallenge: isFlipChallenge(),
+        questionType: game.mode === "color" ? "color" : game.mode === "knight" ? "knight-jump" : "coordinate",
+        sessionId: game.sessionId || "legacy",
         timestamp: new Date().toISOString(),
         difficulty: answerDifficulty(),
         attempt: ++game.questionAttempts
@@ -1849,7 +1986,11 @@ function handleSquare(coord, sq) {
     if (!game.running || game.paused || !game.target) return;
     if (sq && sq.getAttribute("aria-disabled") === "true") return;
     if (game.mode === "square" || game.mode === "blindfold" || game.mode === "daily") {
-        if (coord === game.target) { if (isDualMode()) correctDual(sq); else correctFind(sq); }
+        if (coord === game.target) {
+            if (isDualMode()) correctDual(sq);
+            else if (isFlipChallenge()) correctFlip(sq);
+            else correctFind(sq);
+        }
         else wrongSquare(sq);
     } else if (game.mode === "knight") {
         if (coord === game.knightSource || game.knightFound.includes(coord)) return;
@@ -2096,6 +2237,13 @@ function updateDashboard() {
     set("statBest",     stats.personalBest || 0);
     set("statSessions", stats.totalSessions || 0);
     set("sidebarBest",  stats.personalBest || 0);
+    const intelligence = calculateIntelligence();
+    const coachSummary = $("coachCardSummary"), coachWeakest = $("coachWeakest"), coachRating = $("coachRating");
+    if (coachRating) coachRating.textContent = Math.round(visionRating.current || 1000);
+    if (coachWeakest) coachWeakest.textContent = intelligence.weakest.length ? intelligence.weakest[0].square : "—";
+    if (coachSummary) coachSummary.textContent = intelligence.records.length < 10
+        ? "Complete " + Math.max(0, 10 - intelligence.records.length) + " more answer" + (intelligence.records.length === 9 ? "" : "s") + " to unlock personalized coaching."
+        : "Your current focus: " + (intelligence.weakest.length ? intelligence.weakest.slice(0, 3).map(item => item.square).join(", ") : "keep building your profile") + ".";
 }
 function levelInfo(x) { const level = Math.floor(x/250) + 1; const into = x - (level-1)*250; return { level, into, toNext:250-into, progress: into/250 }; }
 function levelTitle(l) {
@@ -2223,7 +2371,7 @@ function resetSession() {
     game.correct = 0; game.mistakes = 0; game.streak = 0; game.bestStreak = 0;
     game.lastTick = -1; game.reactionTimes = []; game.questionIndex = 0;
     game.adaptiveRecentSquares = [];
-    game.dualStep = 0; game.dualTarget = null; game.autoSide = null;
+    game.dualStep = 0; game.dualTarget = null; game.flipStep = 0; game.flipStartSide = "white"; game.autoSide = null;
     game.dailyActive = false; game.dailyPractice = false; game.dailySequence = []; game.dailyStart = 0;
 
     $("sessionStateText").textContent = "READY";
@@ -2295,7 +2443,7 @@ function startSession() {
 function beginPlay() {
     game.duration = Number($("durationSelect").value) || 60;
     game.timeLeft = game.duration;
-    game.running = true; game.paused = false;
+    game.running = true; game.paused = false; game.sessionId = "session-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
     $("sessionStateText").textContent = "LIVE";
     $("topStatus").textContent = "TRAINING LIVE";
     $("startBtnText").textContent = "End session";
@@ -2353,6 +2501,7 @@ function startDailySession(practice) {
         }
 function beginDailyPlay() {
             game.running = true;
+            game.sessionId = "daily-" + dailyDateKey() + "-" + Date.now().toString(36);
             game.paused = false;
             game.dailyStart = Date.now();
             $("sessionStateText").textContent = game.dailyPractice ? "PRACTICE" : "OFFICIAL";
@@ -2560,6 +2709,34 @@ function showResults(newRecord, gained) {
     $("resultAccuracy").textContent = accuracy() + "%";
     $("resultStreak").textContent = game.bestStreak;
     $("resultXp").textContent = "+" + gained;
+    $("resultSummaryCorrect").textContent = game.correct;
+    $("resultSummaryAccuracy").textContent = accuracy() + "%";
+    $("resultSummaryStreak").textContent = game.bestStreak;
+    $("resultSummaryXp").textContent = "+" + gained;
+    $("resultAvgReaction").textContent = game.reactionTimes.length
+        ? (game.reactionTimes.reduce((a, b) => a + b, 0) / game.reactionTimes.length / 1000).toFixed(2) + "s" : "—";
+    $("resultTotalQuestions").textContent = game.correct + game.mistakes;
+    $("resultMistakes").textContent = game.mistakes;
+    $("resultRating").textContent = visionRating.current;
+    const sessionAnswers = answerRecords.filter(r => r.sessionId === game.sessionId && (r.perspectiveSide === "white" || r.perspectiveSide === "black"));
+    const perspectives = ["white", "black"].map(side => {
+        const rows = sessionAnswers.filter(r => r.perspectiveSide === side);
+        return rows.length ? { side, correct: rows.filter(r => r.correct).length, total: rows.length,
+            reaction: rows.reduce((sum, r) => sum + Number(r.reactionTime || 0), 0) / rows.length } : null;
+    }).filter(Boolean);
+    const perspectiveEl = $("resultPerspectivePerformance");
+    if (perspectives.length > 1) {
+        perspectiveEl.classList.remove("hidden");
+        perspectiveEl.innerHTML = '<div class="section-kicker">PERSPECTIVE PERFORMANCE</div>' +
+            perspectives.map(p => `<div class="result-perspective-row"><span>${p.side === "white" ? "♔ WHITE" : "♚ BLACK"}</span><strong>${p.correct}/${p.total} · ${Math.round(p.correct / p.total * 100)}%</strong><small>${(p.reaction / 1000).toFixed(2)}s avg</small></div>`).join("");
+    } else perspectiveEl.classList.add("hidden");
+    const focus = $("resultFocus");
+    if (perspectives.length > 1) {
+        const weakest = perspectives.slice().sort((a, b) => a.correct / a.total - b.correct / b.total)[0];
+        const strongest = perspectives.slice().sort((a, b) => a.correct / a.total - b.correct / b.total)[1];
+        focus.textContent = weakest.correct / weakest.total < strongest.correct / strongest.total
+            ? `${weakest.side === "white" ? "White" : "Black"} perspective is currently weaker.` : "Your perspective performance is balanced.";
+    } else focus.textContent = "Keep training to build your vision profile.";
     if (game.correct >= 30) { $("resultTitle").textContent = "Outstanding vision!"; $("resultDescription").textContent = "Elite performance. Keep challenging yourself."; }
     else if (game.correct >= 20) { $("resultTitle").textContent = "Excellent session!"; $("resultDescription").textContent = "Your recognition speed is sharpening fast."; }
     else if (game.correct >= 10) { $("resultTitle").textContent = "Good progress!"; $("resultDescription").textContent = "You are building reliable board vision."; }
@@ -2580,6 +2757,7 @@ const VIEW_TITLES = {
 function setView(name) {
     if (!VIEW_TITLES[name]) name = "dashboard";
     document.body.dataset.view = name;
+    document.body.style.overflowY = name === "training" ? "auto" : "";
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.dataset.view === name));
     document.querySelectorAll(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.nav === name));
     $("breadcrumbParent").textContent = VIEW_TITLES[name][0];
@@ -2604,6 +2782,17 @@ function setupNav() {
     });
     document.querySelectorAll("[data-action='quick-train']").forEach(el => {
         el.addEventListener("click", () => { setView("training"); setTimeout(() => startSession(), 320); });
+    });
+    document.querySelectorAll("[data-action='adaptive-train']").forEach(el => {
+        el.addEventListener("click", () => {
+            if (calculateIntelligence().records.length < 10) {
+                setView("analytics");
+                toast("Complete 10 answers to unlock adaptive coaching.");
+                return;
+            }
+            adaptiveEnabled = true; save(KEYS.adaptive, true); updateAdaptiveUI();
+            setMode("square"); setView("training"); setTimeout(() => startSession(), 320);
+        });
     });
     $("dailyChallengeBtn").addEventListener("click", () => {
         const official = !dailyOfficialAttempt();
@@ -2650,8 +2839,17 @@ function setMode(mode) {
         $("targetPanel").classList.remove("hidden");
         $("mpPanel").classList.add("hidden");
     }
+    updateFlipTrainingUI();
     renderMission();
     resetSession();
+}
+function mountGameplayStage() {
+    const stage = $("gameplayStage");
+    const target = $("targetPanel");
+    const mp = $("mpPanel");
+    const board = document.querySelector(".training-board-panel");
+    if (!stage || !target || !mp || !board) return;
+    stage.append(target, mp, board);
 }
 function renderMission() {
     const steps = MISSION_STEPS[game.mode];
@@ -2716,6 +2914,7 @@ function updateAdaptiveUI() {
     if (toggle) toggle.checked = adaptiveEnabled;
     const status = $("adaptiveStatus");
     if (status) status.classList.toggle("hidden", !adaptiveEnabled || game.mode === "mindpalace");
+    const intensity = $("adaptiveIntensity"); if (intensity) intensity.value = adaptiveIntensity;
 }
 function renderAnalytics() {
     const total = stats.totalCorrect || 0;
@@ -2728,6 +2927,19 @@ function renderAnalytics() {
     $("anReaction").textContent = avgRt > 0 ? (avgRt/1000).toFixed(2) + "s" : "—";
     const totalMin = Math.round((stats.totalTime || 0)/60);
     $("anTime").textContent = totalMin >= 60 ? Math.floor(totalMin/60) + "h " + (totalMin%60) + "m" : totalMin + "m";
+    const flipRecords = answerRecords.filter(r => r.flipChallenge === true && (r.perspectiveSide === "white" || r.perspectiveSide === "black"));
+    const flipSessions = [...new Set(flipRecords.map(r => r.sessionId))];
+    const completeFlipSessions = flipSessions.filter(id => {
+        const rows = flipRecords.filter(r => r.sessionId === id);
+        return rows.some(r => r.perspectiveSide === "white") && rows.some(r => r.perspectiveSide === "black");
+    });
+    $("anFlipChallenges").textContent = completeFlipSessions.length;
+    $("anFlipSuccess").textContent = completeFlipSessions.length ? Math.round(completeFlipSessions.length / Math.max(1, flipSessions.length) * 100) + "%" : "—";
+    ["white", "black"].forEach(side => {
+        const rows = flipRecords.filter(r => r.perspectiveSide === side && r.correct && Number(r.reactionTime) > 0);
+        const el = side === "white" ? $("anFlipWhiteReaction") : $("anFlipBlackReaction");
+        el.textContent = rows.length ? (rows.reduce((sum, r) => sum + Number(r.reactionTime), 0) / rows.length / 1000).toFixed(2) + "s" : "—";
+    });
     renderChartBars("chartCorrect", history.slice(0,12).reverse().map(h => h.correct));
     renderChartBars("chartAccuracy", history.slice(0,12).reverse().map(h => h.accuracy), 100);
     const modeCounts = {};
@@ -2745,14 +2957,15 @@ function calculateIntelligence() {
     );
     const aggregate = rows => {
         const total = rows.length, correct = rows.filter(r => r.correct).length;
-        return { total, correct, accuracy: total ? Math.round(correct / total * 100) : null };
+        const reactions = rows.map(r => Number(r.reactionTime)).filter(rt => rt > 0 && rt < 30000);
+        return { total, correct, incorrect: total - correct, accuracy: total ? Math.round(correct / total * 100) : null,
+            averageReaction: reactions.length ? Math.round(reactions.reduce((sum, rt) => sum + rt, 0) / reactions.length) : null };
     };
     const byKey = (rows, keyFn) => {
         const groups = {};
         rows.forEach(r => { const key = keyFn(r); (groups[key] ||= []).push(r); });
         return Object.fromEntries(Object.entries(groups).map(([key, values]) => [key, {
-            ...aggregate(values),
-            averageReaction: values.length ? Math.round(values.reduce((sum, r) => sum + (Number(r.reactionTime) || 0), 0) / values.length) : null
+            ...aggregate(values)
         }]));
     };
     const recent = records.slice(-20);
@@ -2760,10 +2973,20 @@ function calculateIntelligence() {
     const files = byKey(records, r => r.targetSquare[0]);
     const ranks = byKey(records, r => r.targetSquare[1]);
     const colors = byKey(records, r => isLightSquare(r.targetSquare) ? "light" : "dark");
-    const ranked = Object.entries(squares).filter(([, v]) => v.total >= 2)
-        .map(([square, value]) => ({ square, ...value }))
-        .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total);
-    return { records, recent: aggregate(recent), longTerm: aggregate(records), squares, files, ranks, colors, weakest: ranked.slice(0, 5), strongest: ranked.slice(-5).reverse() };
+    const allReaction = records.map(r => Number(r.reactionTime)).filter(rt => rt > 0 && rt < 30000);
+    const typicalReaction = allReaction.length ? allReaction.reduce((sum, rt) => sum + rt, 0) / allReaction.length : 2000;
+    const ranked = Object.entries(squares).filter(([, v]) => v.total >= 5)
+        .map(([square, value]) => {
+            const recentRows = records.filter(r => r.targetSquare === square).slice(-5);
+            const recentAccuracy = recentRows.length ? recentRows.filter(r => r.correct).length / recentRows.length : value.accuracy / 100;
+            const speedRisk = value.averageReaction === null ? .5 : clamp((value.averageReaction / typicalReaction - .65) / 1.1, 0, 1);
+            const confidence = Math.min(1, value.total / 10);
+            const weaknessScore = Math.round(clamp(((1 - value.accuracy / 100) * .55 + speedRisk * .2 + (1 - recentAccuracy) * .25) * confidence * 100, 0, 100));
+            const status = weaknessScore >= 70 ? "critical" : weaknessScore >= 45 ? "weak" : weaknessScore >= 25 ? "developing" : "strong";
+            return { square, ...value, recentAccuracy: Math.round(recentAccuracy * 100), weaknessScore, status };
+        }).sort((a, b) => b.weaknessScore - a.weaknessScore || a.accuracy - b.accuracy);
+    return { records, recent: aggregate(recent), longTerm: aggregate(records), squares, files, ranks, colors,
+        weakest: ranked.slice(0, 5), strongest: ranked.slice().sort((a, b) => a.weaknessScore - b.weaknessScore).slice(0, 5) };
 }
 function renderIntelligence() {
     const heatmap = $("weaknessHeatmap"), weakest = $("weakestSquares"), strongest = $("strongestSquares");
@@ -2789,10 +3012,13 @@ function renderIntelligence() {
     for (const rank of RANKS) for (const file of FILES) {
         const square = file + rank, value = data.squares[square], cell = document.createElement("div");
         const accuracyValue = value ? value.accuracy : null;
-        cell.className = "heatmap-cell " + (accuracyValue === null ? "no-data" : accuracyValue < 60 ? "weak" : accuracyValue < 80 ? "mid" : "strong");
+        const ranked = data.weakest.find(item => item.square === square) || data.strongest.find(item => item.square === square);
+        const status = ranked ? ranked.status : null;
+        cell.className = "heatmap-cell " + (accuracyValue === null ? "no-data" : status || (accuracyValue < 60 ? "weak" : accuracyValue < 80 ? "developing" : "strong"));
         cell.setAttribute("role", "gridcell");
-        cell.setAttribute("aria-label", square + (value ? ": " + accuracyValue + "% accuracy, " + value.total + " attempts" : ": no data"));
-        cell.title = value ? square + " · " + accuracyValue + "% · " + value.total + " attempts · avg " + (value.averageReaction / 1000).toFixed(2) + "s" : square + " · No data";
+        cell.setAttribute("tabindex", "0");
+        cell.setAttribute("aria-label", square + (value ? ": " + accuracyValue + "% accuracy, " + value.total + " attempts, " + (status || "unclassified") : ": no data"));
+        cell.title = value ? square + " · " + accuracyValue + "% · " + value.total + " attempts · avg " + (value.averageReaction ? (value.averageReaction / 1000).toFixed(2) + "s" : "—") + " · " + (status || "unclassified") : square + " · No data";
         cell.textContent = accuracyValue === null ? "·" : accuracyValue + "%";
         if (value) {
             const count = document.createElement("small");
@@ -2811,7 +3037,7 @@ function renderIntelligenceList(container, entries, emptyText) {
         const chip = document.createElement("span");
         chip.className = "intelligence-chip";
         chip.innerHTML = entry.square.toUpperCase() + " <strong>" + entry.accuracy + "%</strong>";
-        chip.title = entry.total + " attempts · average reaction " + (entry.averageReaction / 1000).toFixed(2) + "s";
+        chip.title = entry.total + " attempts · " + entry.status + " · average reaction " + (entry.averageReaction ? (entry.averageReaction / 1000).toFixed(2) + "s" : "—");
         container.appendChild(chip);
     });
 }
@@ -2936,7 +3162,7 @@ function exportData() {
             boardSize: Number($("boardSize").value),
             musicVolume: music.volume, musicTrack: music.streamIndex,
             musicSource: music.source, musicWidget: { x: drag.offsetX, y: drag.offsetY },
-            mpDifficulty: mindPalace.difficultyId, adaptive: adaptiveEnabled
+            mpDifficulty: mindPalace.difficultyId, adaptive: adaptiveEnabled, adaptiveIntensity
         }
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
@@ -2994,6 +3220,9 @@ function importData(file) {
                 if (s.musicWidget) { drag.offsetX = Number(s.musicWidget.x) || 0; drag.offsetY = Number(s.musicWidget.y) || 0; applyWidgetPos(); saveWidgetPos(); }
                 if (typeof s.mpDifficulty === "string") setMindPalaceDifficulty(s.mpDifficulty);
                 if (typeof s.adaptive === "boolean") { adaptiveEnabled = s.adaptive; save(KEYS.adaptive, adaptiveEnabled); }
+                if (["balanced", "focus", "aggressive"].includes(s.adaptiveIntensity)) {
+                    adaptiveIntensity = s.adaptiveIntensity; save(KEYS.adaptiveIntensity, adaptiveIntensity);
+                }
             }
             updateAdaptiveUI();             updateDashboard(); updateLevelUI(); updateDailyUI(); renderDailyChallenge(); renderAchievements();
             renderHistory(); renderAnalytics(); resetSession();
@@ -3057,6 +3286,7 @@ function setTip() { const day = Math.floor(Date.now() / (1000*60*60*24)); const 
 
 /* Init */
 function init() {
+    mountGameplayStage();
     buildCoords();
     buildBoard();
 
@@ -3103,6 +3333,8 @@ function init() {
         if (game.running) { $("durationSelect").value = game.duration; toast("Finish the current session first."); return; }
         resetSession();
     });
+    $("flipTrainingOff").addEventListener("click", () => setFlipBoardTraining(false));
+    $("flipTrainingOn").addEventListener("click", () => setFlipBoardTraining(true));
     document.querySelectorAll(".mode-btn").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
     document.querySelectorAll(".perspective-btn").forEach(b => {
         if (!b.dataset.perspective) return;
@@ -3114,6 +3346,7 @@ function init() {
         });
     });
     setPerspective(load(KEYS.perspective, "white"));
+    updateFlipTrainingUI();
     if (game.piecesEnabled) generatePieces();
 
     setupNav();
