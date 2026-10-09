@@ -2580,3 +2580,653 @@ body[data-view="training"] .gameplay-stage .target-panel {
         width: 96vw !important;
     }
 }
+
+
+
+
+/* =========================================================
+   CHESS VISION TRAINER — RESPONSIVE LAYOUT PATCH
+   Fix excess gaps, target card clipping and flip controls
+   ========================================================= */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.training-layout {
+  display: grid !important;
+  grid-template-columns:
+    minmax(260px, 0.9fr)
+    minmax(0, 2.2fr)
+    minmax(210px, 0.75fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-inline: 12px !important;
+}
+
+.training-layout > .training-panel,
+.training-layout > .right-column {
+  width: 100% !important;
+  min-width: 0 !important;
+  grid-row: 1 !important;
+}
+
+.training-layout > .training-panel {
+  grid-column: 1 !important;
+  padding: 18px !important;
+}
+
+.training-layout > .gameplay-stage {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns:
+    minmax(175px, 0.72fr)
+    minmax(0, 1.28fr) !important;
+  gap: 14px !important;
+  align-items: center !important;
+  align-self: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.training-layout .gameplay-stage > .target-panel,
+.training-layout .gameplay-stage > .mp-panel {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 220px !important;
+  max-height: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 22px 16px !important;
+  overflow: visible !important;
+  align-self: center !important;
+}
+
+.training-layout .target-coordinate {
+  line-height: 1.1 !important;
+  overflow-wrap: anywhere;
+}
+
+.training-layout .target-hint,
+.training-layout .target-feedback {
+  max-width: 100% !important;
+  overflow-wrap: anywhere;
+  line-height: 1.5 !important;
+}
+
+.training-layout .gameplay-stage > .training-board-panel {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  overflow: visible !important;
+  align-self: start !important;
+}
+
+.training-layout .training-board-panel .board-stage {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.training-layout .training-board-panel .board-section {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 8px 0 !important;
+}
+
+.training-layout .training-board-panel .board-wrapper {
+  width: min(100%, 460px) !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  padding: 0 !important;
+}
+
+.training-layout .training-board-panel .chessboard {
+  width: 100% !important;
+  max-width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  margin-inline: auto !important;
+}
+
+.training-layout > .right-column {
+  grid-column: 3 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-content: start !important;
+  gap: 14px !important;
+}
+
+.training-layout .right-column > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Flip-board card: prevent the controls from leaving the box */
+.training-layout .training-panel .flip-board,
+.training-layout .training-panel .flip-board-panel,
+.training-layout .training-panel .flip-board-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.training-layout .training-panel .flip-board button,
+.training-layout .training-panel .flip-board-panel button,
+.training-layout .training-panel .flip-board-card button {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.training-layout .training-panel button,
+.training-layout .training-panel select,
+.training-layout .training-panel input {
+  max-width: 100%;
+}
+
+/* Medium desktop / laptop */
+@media (max-width: 1250px) and (min-width: 901px) {
+  .training-layout {
+    grid-template-columns:
+      minmax(235px, 0.85fr)
+      minmax(0, 2fr)
+      minmax(185px, 0.7fr) !important;
+    gap: 12px !important;
+    padding-inline: 6px !important;
+  }
+
+  .training-layout > .gameplay-stage {
+    grid-template-columns:
+      minmax(145px, 0.7fr)
+      minmax(0, 1.3fr) !important;
+    gap: 10px !important;
+  }
+
+  .training-layout .gameplay-stage > .target-panel,
+  .training-layout .gameplay-stage > .mp-panel {
+    padding: 18px 12px !important;
+    min-height: 190px !important;
+  }
+
+  .training-layout .training-board-panel {
+    padding: 8px !important;
+  }
+}
+
+/* Tablet: stack the workspace in a natural order */
+@media (max-width: 900px) {
+  .training-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    padding-inline: 8px !important;
+  }
+
+  .training-layout > .training-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .training-layout > .gameplay-stage {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .training-layout .gameplay-stage > .target-panel,
+  .training-layout .gameplay-stage > .mp-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-height: 170px !important;
+  }
+
+  .training-layout .gameplay-stage > .training-board-panel {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .training-layout > .right-column {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .training-layout {
+    gap: 12px !important;
+    padding-inline: 4px !important;
+  }
+
+  .training-layout > .training-panel {
+    padding: 14px !important;
+  }
+
+  .training-layout .gameplay-stage > .target-panel,
+  .training-layout .gameplay-stage > .mp-panel {
+    min-height: 150px !important;
+    padding: 16px 12px !important;
+  }
+
+  .training-layout .training-board-panel {
+    padding: 8px !important;
+  }
+
+  .training-layout .training-board-panel .board-wrapper {
+    width: min(100%, 92vw) !important;
+  }
+
+  .training-layout > .right-column {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+
+
+/* =========================================================
+   CHESS VISION TRAINER — FINAL DIRECT FIX
+   Fixes: empty space, board alignment, clipped target,
+   and flip-board ON/OFF buttons escaping their container.
+   ========================================================= */
+
+/* Prevent horizontal overflow */
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.training-layout,
+.training-layout * {
+    box-sizing: border-box;
+}
+
+/* Balanced three-column training workspace */
+.training-layout {
+    display: grid !important;
+    grid-template-columns:
+        minmax(250px, 290px)
+        minmax(0, 1fr)
+        minmax(205px, 225px) !important;
+    gap: 16px !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 0 24px !important;
+}
+
+/* Left settings panel */
+.training-layout > .training-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 16px !important;
+    overflow: visible !important;
+}
+
+/* Center area: target card beside chessboard */
+.training-layout > .gameplay-stage {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: grid !important;
+    grid-template-columns:
+        minmax(165px, 0.72fr)
+        minmax(0, 1.28fr) !important;
+    gap: 14px !important;
+    align-items: center !important;
+    align-self: start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Target and Mind Palace cards: never crop their contents */
+.training-layout .gameplay-stage > .target-panel,
+.training-layout .gameplay-stage > .mp-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 210px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 20px 14px !important;
+    overflow: visible !important;
+    align-self: center !important;
+    overflow-wrap: anywhere;
+}
+
+.training-layout .gameplay-stage .target-coordinate {
+    max-width: 100% !important;
+    line-height: 1.1 !important;
+    overflow-wrap: anywhere;
+}
+
+.training-layout .gameplay-stage .target-hint,
+.training-layout .gameplay-stage .target-feedback {
+    max-width: 100% !important;
+    line-height: 1.45 !important;
+    overflow-wrap: anywhere;
+}
+
+/* Chessboard panel */
+.training-layout .gameplay-stage > .training-board-panel {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    overflow: visible !important;
+    align-self: start !important;
+}
+
+.training-layout .training-board-panel .board-panel-head {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.training-layout .training-board-panel .board-stage {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.training-layout .training-board-panel .board-section {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 0 !important;
+}
+
+.training-layout .training-board-panel .board-wrapper {
+    width: min(100%, 460px) !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+}
+
+.training-layout .training-board-panel .board-middle {
+    grid-template-columns: 22px minmax(0, 1fr) 22px !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+}
+
+.training-layout .training-board-panel .chessboard {
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    margin: 0 auto !important;
+}
+
+/* Right mission / information column */
+.training-layout > .right-column {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+}
+
+.training-layout .right-column > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+/* =========================================================
+   FLIP BOARD — FIX ON/OFF BUTTONS INSIDE THEIR CONTAINER
+   Uses the actual .flip-training-bar classes in this project.
+   ========================================================= */
+
+.training-layout .flip-training-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px !important;
+    margin: 10px 0 14px !important;
+    overflow: hidden !important;
+}
+
+.training-layout .flip-training-bar > div:first-child {
+    flex: 1 1 135px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere;
+}
+
+.training-layout .flip-training-hint {
+    display: block !important;
+    max-width: 100% !important;
+    line-height: 1.45 !important;
+    overflow-wrap: anywhere;
+}
+
+.training-layout .flip-training-options {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    flex: 0 1 112px !important;
+    width: 112px !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+}
+
+.training-layout .flip-training-options button,
+.training-layout .flip-training-options .btn {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 36px !important;
+    padding: 7px 8px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+
+/* Keep all controls inside the left panel */
+.training-layout .training-panel button,
+.training-layout .training-panel select,
+.training-layout .training-panel input {
+    max-width: 100%;
+}
+
+.training-layout .training-panel .mode-selector,
+.training-layout .training-panel .mode-grid,
+.training-layout .training-panel .choice-grid {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.training-layout .training-panel .mode-selector,
+.training-layout .training-panel .mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* =========================================================
+   LAPTOPS
+   ========================================================= */
+
+@media (max-width: 1250px) and (min-width: 901px) {
+    .training-layout {
+        grid-template-columns:
+            minmax(225px, 260px)
+            minmax(0, 1fr)
+            minmax(180px, 205px) !important;
+        gap: 12px !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-template-columns:
+            minmax(140px, 0.7fr)
+            minmax(0, 1.3fr) !important;
+        gap: 10px !important;
+    }
+
+    .training-layout > .training-panel {
+        padding: 12px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel,
+    .training-layout .gameplay-stage > .mp-panel {
+        padding: 16px 10px !important;
+        min-height: 180px !important;
+    }
+
+    .training-layout .gameplay-stage > .training-board-panel {
+        padding: 8px !important;
+    }
+
+    .training-layout .flip-training-bar {
+        gap: 8px !important;
+        padding: 9px !important;
+    }
+
+    .training-layout .flip-training-bar > div:first-child {
+        flex-basis: 115px !important;
+    }
+
+    .training-layout .flip-training-options {
+        flex-basis: 100px !important;
+        width: 100px !important;
+    }
+}
+
+/* =========================================================
+   TABLETS — STACK PANELS WITHOUT OVERFLOW
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .training-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 14px !important;
+        padding: 8px 0 20px !important;
+    }
+
+    .training-layout > .training-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+
+    .training-layout > .gameplay-stage {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 12px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel,
+    .training-layout .gameplay-stage > .mp-panel {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        min-height: 155px !important;
+    }
+
+    .training-layout .gameplay-stage > .training-board-panel {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    .training-layout > .right-column {
+        grid-column: 1 !important;
+        grid-row: 3 !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .training-layout .training-board-panel .board-wrapper {
+        width: min(100%, 520px) !important;
+    }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 560px) {
+    .training-layout {
+        gap: 12px !important;
+        padding-inline: 0 !important;
+    }
+
+    .training-layout > .training-panel {
+        padding: 12px !important;
+    }
+
+    .training-layout .gameplay-stage > .target-panel,
+    .training-layout .gameplay-stage > .mp-panel {
+        min-height: 140px !important;
+        padding: 15px 12px !important;
+    }
+
+    .training-layout .gameplay-stage > .training-board-panel {
+        padding: 8px !important;
+    }
+
+    .training-layout .training-board-panel .board-wrapper {
+        width: min(100%, 92vw) !important;
+    }
+
+    .training-layout > .right-column {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .training-layout .flip-training-bar {
+        align-items: stretch !important;
+    }
+
+    .training-layout .flip-training-bar > div:first-child {
+        flex-basis: 100% !important;
+    }
+
+    .training-layout .flip-training-options {
+        flex: 0 0 112px !important;
+        width: 112px !important;
+        margin-left: 0 !important;
+    }
+}
