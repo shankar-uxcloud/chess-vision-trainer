@@ -3629,3 +3629,55 @@ body[data-theme="dark"] .brand-icon {
     transition: none !important;
   }
 }
+
+
+/* ===== AURA ANIMATION FIX ===== */
+/* Re-enable the cinematic animations after earlier motion rules. */
+
+body[data-theme="dark"] {
+  animation: auraAtmosphere 14s ease-in-out infinite alternate !important;
+  animation-duration: 14s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .hero-art::before {
+  animation: auraBoard3D 9s ease-in-out infinite !important;
+  animation-duration: 9s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .hero-knight {
+  animation: auraKnightFloat 3.5s ease-in-out infinite !important;
+  animation-duration: 3.5s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .hero-orbit {
+  animation: auraOrbitPulse 4s ease-in-out infinite alternate !important;
+  animation-duration: 4s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .orbit-two {
+  animation: auraOrbitPulse 4s ease-in-out infinite alternate !important;
+  animation-delay: -2s !important;
+}
+
+body[data-theme="dark"] .brand-icon {
+  animation: auraLogoGlow 3s ease-in-out infinite alternate !important;
+  animation-duration: 3s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .primary-button::after {
+  animation: auraButtonSweep 5s ease-in-out infinite !important;
+  animation-duration: 5s !important;
+  animation-iteration-count: infinite !important;
+}
+
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .mode-card,
+body[data-theme="dark"] .mp-stat-card,
+body[data-theme="dark"] .mp-difficulty-card {
+  transition: transform .35s ease, box-shadow .35s ease !important;
+}
