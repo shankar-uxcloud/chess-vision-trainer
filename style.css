@@ -3230,3 +3230,139 @@ body {
         margin-left: 0 !important;
     }
 }
+
+
+/* ===== CHESS VISION TRAINER: AURA MODE ===== */
+
+body[data-theme="dark"] {
+  --bg: #070b16;
+  --sidebar: #090f1e;
+  --surface: #0d1628;
+  --surface-2: #111f36;
+  --surface-3: #1a2b47;
+  --border: #233b60;
+  --border-hover: #4d83d4;
+  --text: #edf5ff;
+  --text-2: #a9c1e4;
+  --muted: #7188aa;
+  --accent: #65a8ff;
+  --accent-2: #3879ef;
+  --accent-soft: rgba(72, 139, 255, .15);
+  --blue: #65a8ff;
+}
+
+body[data-theme="dark"] {
+  background-image:
+    radial-gradient(ellipse at 78% 7%, rgba(42,100,214,.13), transparent 34%),
+    radial-gradient(ellipse at 18% 48%, rgba(58,76,190,.08), transparent 38%);
+}
+
+body[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #0b1426, #080d18);
+  box-shadow: 12px 0 45px rgba(0,0,0,.16);
+}
+
+body[data-theme="dark"] .brand-icon {
+  background: linear-gradient(135deg, #83c5ff, #456cff 58%, #8b5cf6);
+  color: #071020;
+  box-shadow: 0 0 28px rgba(75,133,255,.3);
+}
+
+body[data-theme="dark"] .nav-link.active {
+  background: linear-gradient(100deg, rgba(64,125,245,.18), rgba(93,91,230,.08));
+  border-color: rgba(101,168,255,.28);
+  box-shadow: inset 3px 0 #65a8ff;
+}
+
+body[data-theme="dark"] .topbar {
+  background: rgba(7,11,22,.88);
+  backdrop-filter: blur(18px);
+}
+
+body[data-theme="dark"] .hero h1 span {
+  background: linear-gradient(100deg, #9bd8ff, #639dff 42%, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(76,133,255,.18));
+}
+
+body[data-theme="dark"] .hero-art {
+  perspective: 900px;
+  transform-style: preserve-3d;
+}
+
+body[data-theme="dark"] .hero-art::before {
+  content: "";
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%,-50%) rotateX(59deg) rotateZ(-36deg);
+  border: 2px solid rgba(125,184,255,.75);
+  border-radius: 9px;
+  background:
+    repeating-conic-gradient(#8eb8ef 0% 25%, #203d70 0% 50%) 0 0 / 25% 25%;
+  box-shadow: 0 0 38px rgba(67,131,255,.24),
+              0 34px 55px rgba(0,0,0,.4);
+  animation: auraBoardFloat 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+body[data-theme="dark"] .hero-art::after {
+  content: "";
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  top: 48%;
+  left: 50%;
+  border: 1px solid rgba(99,153,255,.22);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 55px rgba(59,113,245,.13);
+  pointer-events: none;
+}
+
+body[data-theme="dark"] .hero-knight {
+  z-index: 2;
+  color: #d9ecff;
+  text-shadow: 0 0 14px rgba(103,173,255,.8),
+               0 0 42px rgba(73,111,255,.55);
+  background: radial-gradient(circle, rgba(67,126,255,.24), transparent 72%);
+}
+
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .mode-card {
+  background-image: linear-gradient(135deg, rgba(90,142,230,.045), transparent 55%);
+  box-shadow: 0 12px 34px rgba(0,0,0,.14);
+}
+
+body[data-theme="dark"] .chessboard {
+  border-color: #4773b4;
+  box-shadow: 0 0 0 1px rgba(119,175,255,.2),
+              0 0 30px rgba(53,115,237,.14),
+              0 22px 60px rgba(0,0,0,.42);
+}
+
+body[data-theme="dark"] .square[aria-disabled="false"]:hover {
+  box-shadow: inset 0 0 0 3px rgba(145,199,255,.95),
+              0 0 20px rgba(76,142,255,.22);
+}
+
+body[data-theme="dark"] .square.target-highlight {
+  box-shadow: inset 0 0 0 4px #8fc5ff,
+              0 0 22px rgba(89,157,255,.35);
+}
+
+@keyframes auraBoardFloat {
+  0%, 100% { margin-top: 0; filter: brightness(.94); }
+  50% { margin-top: -9px; filter: brightness(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="dark"] .hero-art::before {
+    animation: none !important;
+  }
+}
