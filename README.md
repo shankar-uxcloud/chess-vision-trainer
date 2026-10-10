@@ -1,40 +1,60 @@
 # ♟️ Chess Vision Trainer
 
-A web-based chess training application designed to improve board visualization, concentration, and pattern recognition through an interactive chess interface.
+### Train your chess vision. Sharpen your focus. Think ahead.
 
-🔗 **Live Demo:** https://shankar-uxcloud.github.io/chess-vision-trainer/
+Chess Vision Trainer is a web application designed to help chess players practice board visualization, improve concentration, and build stronger pattern-recognition skills.
 
-## ✨ Features
+<p align="center">
+  <a href="https://shankar-uxcloud.github.io/chess-vision-trainer/">
+    <strong>🚀 Launch Live Demo</strong>
+  </a>
+</p>
 
-- ♟️ Interactive chess training interface
-- 🎯 Focus-oriented learning experience
-- 🧠 Designed to support chess board visualization
-- 💻 Clean and responsive web interface
-- 🌐 Runs directly in a modern web browser
+---
 
-## 🛠️ Tech Stack
+## 📌 Project Overview
 
-- HTML5
-- CSS3
-- JavaScript
-- GitHub Pages
+Visualizing chess positions without moving the pieces is an important skill for chess players. This project aims to provide an accessible, browser-based environment for practicing chess visualization and focused training.
+
+## ✨ Key Features
+
+- ♟️ **Chess-focused interface** — designed around chess training.
+- 🎯 **Focus-oriented experience** — encourages attentive practice.
+- 🧠 **Visualization practice** — supports exercises aimed at improving board awareness.
+- 💻 **Browser-based application** — no backend setup required for basic use.
+- 🌐 **Easy access** — launch the hosted version or run it locally.
+
+## 🛠️ Built With
+
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-222222?style=flat-square&logo=githubpages)
 
 ## 🚀 Getting Started
 
-### Run Locally
+### Prerequisites
 
-1. Clone this repository:
+- A modern web browser
+- Git (optional, for cloning the repository)
 
-   ```bash
-   git clone https://github.com/shankar-uxcloud/chess-vision-trainer.git
-   ```
+### Installation
 
-2. Open the project folder.
-3. Open `index.html` in your browser.
+Clone the repository:
 
-Alternatively, use the Live Server extension in Visual Studio Code.
+```bash
+git clone https://github.com/shankar-uxcloud/chess-vision-trainer.git
+```
 
-## 📂 Project Structure
+Navigate into the project:
+
+```bash
+cd chess-vision-trainer
+```
+
+Open `index.html` in your browser, or launch the folder using Visual Studio Code with Live Server.
+
+## 📁 Project Structure
 
 ```text
 chess-vision-trainer/
@@ -44,28 +64,46 @@ chess-vision-trainer/
 └── README.md
 ```
 
-## 🎯 Project Goal
+## 🗺️ Roadmap
 
-The goal of Chess Vision Trainer is to create an accessible, distraction-free environment for practicing chess visualization and strengthening board awareness.
+Potential future enhancements:
 
-## 🔮 Future Improvements
+- [ ] Timed chess visualization challenges
+- [ ] Multiple difficulty levels
+- [ ] Daily practice challenges
+- [ ] Training statistics and progress tracking
+- [ ] Keyboard accessibility improvements
+- [ ] Mobile usability enhancements
 
-- Timed visualization challenges
-- Daily training streaks
-- Difficulty levels
-- Progress tracking
-- Additional chess exercises
+## 🤝 Contributing
 
-## 🤝 Contributions
+Contributions and constructive feedback are welcome!
 
-Suggestions, bug reports, and improvements are welcome. Feel free to fork the repository and submit a pull request.
+1. Fork this repository.
+2. Create a feature branch.
+3. Implement your improvement.
+4. Test your changes.
+5. Submit a pull request with a clear description.
+
+## 💡 Ideas for Contributions
+
+- Improve responsive layouts.
+- Fix bugs and edge cases.
+- Enhance accessibility.
+- Optimize JavaScript and CSS.
+- Improve documentation.
 
 ## 👨‍💻 Author
 
 **P SHANKAR**
 
-GitHub: https://github.com/shankar-uxcloud
+- GitHub: [@shankar-uxcloud](https://github.com/shankar-uxcloud)
+- Project: [Chess Vision Trainer](https://github.com/shankar-uxcloud/chess-vision-trainer)
+- Live Demo: [Open Application](https://shankar-uxcloud.github.io/chess-vision-trainer/)
 
 ---
 
-⭐ If you find this project interesting, consider starring the repository!
+If you find this project interesting, consider giving it a ⭐ on GitHub.
+
+*Built to make chess visualization practice more accessible.*
+
