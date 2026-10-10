@@ -3366,3 +3366,84 @@ body[data-theme="dark"] .square.target-highlight {
     animation: none !important;
   }
 }
+
+
+/* ===== AURA MODE: STRONG VISUAL OVERRIDE ===== */
+
+body[data-theme="dark"] {
+  background-color: #050816 !important;
+  background-image:
+    radial-gradient(ellipse at 75% 5%, rgba(0, 110, 255, 0.24), transparent 42%),
+    radial-gradient(ellipse at 25% 70%, rgba(80, 40, 220, 0.12), transparent 45%) !important;
+  color: #edf5ff !important;
+}
+
+body[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #0b1530, #050816) !important;
+  border-right: 1px solid #244b91 !important;
+}
+
+body[data-theme="dark"] .topbar {
+  background: rgba(5, 8, 22, 0.96) !important;
+  border-bottom: 1px solid #244b91 !important;
+}
+
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .mode-card,
+body[data-theme="dark"] .mp-stat-card,
+body[data-theme="dark"] .mp-difficulty-card {
+  background: linear-gradient(145deg, #111e39, #091226) !important;
+  border: 1px solid #294b83 !important;
+  box-shadow: 0 8px 32px rgba(0, 80, 255, 0.12) !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease !important;
+}
+
+body[data-theme="dark"] .mode-card:hover,
+body[data-theme="dark"] .mp-difficulty-card:hover {
+  border-color: #65a8ff !important;
+  box-shadow: 0 0 26px rgba(65, 135, 255, 0.3) !important;
+  transform: translateY(-3px) !important;
+}
+
+body[data-theme="dark"] .hero h1 span {
+  background: linear-gradient(100deg, #8be9ff, #548cff, #bd9aff) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+body[data-theme="dark"] .hero-art {
+  border-radius: 24px;
+  background: radial-gradient(circle, rgba(38, 91, 190, 0.2), transparent 70%) !important;
+}
+
+body[data-theme="dark"] .brand-icon,
+body[data-theme="dark"] .primary-button {
+  background: linear-gradient(120deg, #3988ff, #7656ed) !important;
+  box-shadow: 0 0 22px rgba(67, 119, 255, 0.25) !important;
+}
+
+body[data-theme="dark"] .nav-link.active {
+  background: linear-gradient(100deg, #16366c, #171d48) !important;
+  border-color: #477fd8 !important;
+  box-shadow: inset 3px 0 #75b7ff, 0 0 18px rgba(53, 117, 255, 0.12) !important;
+}
+
+body[data-theme="dark"] .chessboard {
+  border: 2px solid #568de5 !important;
+  box-shadow: 0 0 0 1px rgba(110, 170, 255, 0.25),
+              0 0 32px rgba(45, 115, 255, 0.28),
+              0 20px 55px rgba(0, 0, 0, 0.45) !important;
+}
+
+body[data-theme="dark"] .section-kicker,
+body[data-theme="dark"] .eyebrow {
+  color: #7db8ff !important;
+}
+
+body[data-theme="dark"] .icon-button:hover,
+body[data-theme="dark"] .ghost-button:hover {
+  border-color: #65a8ff !important;
+  box-shadow: 0 0 18px rgba(65, 135, 255, 0.2) !important;
+}
