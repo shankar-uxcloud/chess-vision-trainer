@@ -1,14 +1,18 @@
 # ♟️ Chess Vision Trainer
 
-### Train your chess vision. Sharpen your focus. Think ahead.
+<div align="center">
+  <img src="chess-vision-trainer-animated.gif" alt="Animated 3D-style Chess Vision Trainer chessboard" width="700">
+
+  <h3>Train your chess vision. Sharpen your focus. Think ahead.</h3>
+
+  <p>
+    <a href="https://shankar-uxcloud.github.io/chess-vision-trainer/">
+      🚀 <strong>Launch Live Demo</strong>
+    </a>
+  </p>
+</div>
 
 Chess Vision Trainer is a web application designed to help chess players practice board visualization, improve concentration, and build stronger pattern-recognition skills.
-
-<p align="center">
-  <a href="https://shankar-uxcloud.github.io/chess-vision-trainer/">
-    <strong>🚀 Launch Live Demo</strong>
-  </a>
-</p>
 
 ---
 
@@ -58,9 +62,11 @@ Open `index.html` in your browser, or launch the folder using Visual Studio Code
 
 ```text
 chess-vision-trainer/
+├── assets/
 ├── index.html
 ├── style.css
 ├── script.js
+├── chess-vision-trainer-animated.gif
 └── README.md
 ```
 
@@ -103,7 +109,10 @@ Contributions and constructive feedback are welcome!
 
 ---
 
-If you find this project interesting, consider giving it a ⭐ on GitHub.
+<div align="center">
+
+⭐ If you find this project interesting, consider starring the repository!
 
 *Built to make chess visualization practice more accessible.*
 
+</div>
