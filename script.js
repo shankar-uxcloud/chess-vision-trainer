@@ -1054,7 +1054,7 @@ function runPreloader() {
         document.body.classList.remove("preloading");
         document.documentElement.style.overflow = "";
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
-        setTimeout(() => { el.style.display = "none"; el.setAttribute("aria-hidden", "true"); }, 700);
+        setTimeout(() => {   el.style.display = "none";   el.setAttribute("aria-hidden", "true");   window.dispatchEvent(new Event("cvt:preloader-finished")); }, 400);
     }
     el.addEventListener("click", () => {
         if (done) return; timers.forEach(clearTimeout);
