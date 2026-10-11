@@ -1074,9 +1074,9 @@ function runPreloader() {
             sq.appendChild(piece);
         }, 140 + i * 200));
     });
-    const piecesDone = 140 + PIECE_LAYOUT.length * 200 + 300;
+    const piecesDone = 60 + PIECE_LAYOUT.length * 80 + 150;
     timers.push(setTimeout(() => { if (!done) { if (line) line.classList.add("show"); if (sub) sub.classList.add("show"); } }, piecesDone));
-    timers.push(setTimeout(() => { if (!done) { if (line) line.classList.add("flash"); if (sub) sub.classList.add("flash"); } }, piecesDone + 500));
+    timers.push(setTimeout(() => { if (!done) { if (line) line.classList.add("flash"); if (sub) sub.classList.add("flash"); } }, piecesDone + 250));;
     timers.push(setTimeout(() => {
         if (done) return;
         if (line) line.classList.remove("flash"); if (sub) sub.classList.remove("flash");
@@ -1087,7 +1087,7 @@ function runPreloader() {
             if (percentEl) percentEl.textContent = String(n);
             if (barFill) barFill.style.width = n + "%";
             if (n < 100) timers.push(setTimeout(step, 14 + Math.pow(n/100, 3) * 48));
-            else timers.push(setTimeout(finish, 2000));
+            else timers.push(setTimeout(finish, 400));
         }
         step();
     }, piecesDone + 500 + 1650));
