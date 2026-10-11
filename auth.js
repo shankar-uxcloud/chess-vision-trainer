@@ -207,6 +207,7 @@ const CVT_SUPABASE_KEY =
     switchMode("signin");
   }
 
+
   // Open login from the dashboard top bar.
   $("dashboardAuthButton")?.addEventListener("click", () => {
     screen.hidden = false;
@@ -214,9 +215,7 @@ const CVT_SUPABASE_KEY =
     switchMode("signin");
   });
 
-
-    switchMode("signin");
-  }
+  // Switch to signup.
 
   // Switch to signup.
   $("showSignup")?.addEventListener("click", () => {
