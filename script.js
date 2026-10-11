@@ -1048,6 +1048,7 @@ function runPreloader() {
     const grid = $("preloaderGrid");
     const line = $("preloaderLine");
     const sub = $("preloaderSub");
+    const quoteEl = $("preloaderQuote");
     const barFill = $("preloaderBarFill");
     const percentEl = $("preloaderPercent");
     const label = el.querySelector(".preloader-label");
@@ -1100,6 +1101,40 @@ function runPreloader() {
     let fallbackTimer = null;
     let value = 0;
     let startTime = 0;
+    let completionTimer = null;
+    let fadeTimer = null;
+    let currentQuoteIndex = -1;
+    const completionPauseMs = 2000;
+    const philosophyQuotes = [
+        "Every move is a decision. Every decision shapes the game.",
+        "The beauty of chess lies in the power of a single move.",
+        "Think deeply. Move confidently.",
+        "Patience is a weapon on the chessboard.",
+        "A strong player learns from every position.",
+        "Do not fear mistakes; learn to recognize them.",
+        "In chess, every square tells a story.",
+        "Plan your move. Understand your position.",
+        "The best move begins with a clear mind.",
+        "Every master was once a beginner.",
+        "Control the board. Trust your calculation.",
+        "Sometimes the strongest move is patience.",
+        "See the whole board, not just the next move.",
+        "Discipline turns good ideas into great play.",
+        "A calm mind finds the clearest path."
+    ];
+    const finalQuote = "The next move is yours. Make it with purpose.";
+
+    function showQuote(index, immediate = false) {
+        if (!quoteEl || index === currentQuoteIndex) return;
+        currentQuoteIndex = index;
+        quoteEl.classList.add("is-changing");
+        const reveal = () => {
+            quoteEl.textContent = philosophyQuotes[index];
+            quoteEl.classList.remove("is-changing");
+        };
+        if (immediate || reducedMotion) reveal();
+        else window.setTimeout(reveal, 180);
+    }
 
     function revealPieces(progress) {
         pieceNodes.forEach((piece) => {
@@ -1125,15 +1160,25 @@ function runPreloader() {
         if (line) line.textContent = "Your board is ready.";
         if (sub) sub.textContent = "EVERY SQUARE A DECISION · EVERY MOVE A MEMORY";
         if (hint) hint.textContent = "WELCOME TO CHESS VISION TRAINER";
-        el.classList.add("done");
-        document.body.classList.remove("preloading");
-        document.documentElement.style.overflow = "";
+        if (quoteEl) {
+            quoteEl.classList.remove("is-changing");
+            quoteEl.textContent = finalQuote;
+            quoteEl.classList.add("is-final");
+        }
+        el.classList.add("ready-hold");
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
-        window.setTimeout(() => {
-            el.style.display = "none";
-            el.setAttribute("aria-hidden", "true");
-            window.dispatchEvent(new Event("cvt:preloader-finished"));
-        }, reducedMotion ? 80 : 650);
+
+        // Hold the completed 100% state for two seconds before fading away.
+        completionTimer = window.setTimeout(() => {
+            el.classList.add("done");
+            fadeTimer = window.setTimeout(() => {
+                el.style.display = "none";
+                el.setAttribute("aria-hidden", "true");
+                document.body.classList.remove("preloading");
+                document.documentElement.style.overflow = "";
+                window.dispatchEvent(new Event("cvt:preloader-finished"));
+            }, reducedMotion ? 40 : 650);
+        }, reducedMotion ? 1000 : completionPauseMs);
     }
 
     function step() {
@@ -1150,6 +1195,8 @@ function runPreloader() {
                 value >= 31 ? "PLACING BLACK PAWNS" :
                 value >= 11 ? "ARRANGING BLACK PIECES" : "INITIALIZING CHESS VISION";
         }
+        const quoteIndex = Math.min(philosophyQuotes.length - 1, Math.floor((value - 1) / 7));
+        showQuote(quoteIndex);
         if (value === 25 && line) line.textContent = "Every piece has its place.";
         if (value === 50 && line) line.textContent = "Build your board vision.";
         if (value === 75 && line) line.textContent = "Your starting position is taking shape.";
@@ -1164,6 +1211,7 @@ function runPreloader() {
         value = 1;
         if (percentEl) percentEl.textContent = "1";
         if (barFill) barFill.style.width = "1%";
+        showQuote(0, true);
         revealPieces(1);
         if (label) label.textContent = "INITIALIZING CHESS VISION";
         if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
