@@ -4309,3 +4309,212 @@ body[data-theme="neon"] .mp-stat-card:hover {
     transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background-color .18s ease;
   }
 }
+
+
+/* =========================================================
+   NEON MODE — FULL VISUAL OVERRIDE
+   Cyan + electric violet + deep midnight palette.
+   Scoped only to data-theme="neon"; other themes are untouched.
+   ========================================================= */
+body[data-theme="neon"] {
+  --bg: #070611 !important;
+  --sidebar: #0b091a !important;
+  --surface: #100d23 !important;
+  --surface-2: #17122f !important;
+  --surface-3: #211a42 !important;
+  --border: #34275c !important;
+  --border-strong: #59408b !important;
+  --text: #f8f5ff !important;
+  --text-muted: #d0c8ec !important;
+  --text-dim: #a49ac9 !important;
+  --accent: #53f5ff !important;
+  --accent-2: #bd72ff !important;
+  --accent-soft: rgba(83, 245, 255, .13) !important;
+  --theme-border: rgba(125, 99, 255, .38) !important;
+  --theme-shadow: 0 16px 48px rgba(0, 0, 0, .42) !important;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(112, 55, 255, .12), transparent 34%),
+    radial-gradient(ellipse at 92% 12%, rgba(0, 220, 255, .08), transparent 30%),
+    var(--bg) !important;
+  color: var(--text) !important;
+}
+body[data-theme="neon"] #app,
+body[data-theme="neon"] .app,
+body[data-theme="neon"] main,
+body[data-theme="neon"] .main-content,
+body[data-theme="neon"] .content,
+body[data-theme="neon"] .workspace {
+  background-color: transparent;
+  color: var(--text);
+}
+body[data-theme="neon"] :is(.sidebar, aside, .topbar, .top-bar, header, .settings-panel, .settings-section) {
+  background-color: rgba(11, 9, 26, .94);
+  border-color: rgba(125, 99, 255, .28);
+}
+body[data-theme="neon"] :is(.panel, .card, .stat-card, .mode-card, .mp-stat-card, .mp-difficulty-card, .settings-card, .feature-card, .training-card, .result-card, .auth-card, .modal-content, .dialog, .dropdown-menu) {
+  color: var(--text);
+  background-color: rgba(16, 13, 35, .94);
+  background-image: linear-gradient(140deg, rgba(83, 245, 255, .045), transparent 38%, rgba(189, 114, 255, .055));
+  border: 1px solid rgba(125, 99, 255, .30);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .26), inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+body[data-theme="neon"] :is(.panel, .card, .stat-card, .mode-card, .mp-stat-card, .mp-difficulty-card, .feature-card, .training-card) {
+  border-radius: 16px;
+}
+body[data-theme="neon"] :is(.panel, .card, .stat-card, .mode-card, .mp-stat-card, .mp-difficulty-card, .feature-card, .training-card):hover {
+  border-color: rgba(83, 245, 255, .58);
+  box-shadow: 0 0 0 1px rgba(83, 245, 255, .08), 0 16px 42px rgba(0, 0, 0, .35), 0 0 24px rgba(83, 245, 255, .045);
+}
+body[data-theme="neon"] :is(h1, h2, h3, h4, .section-title, .panel-title) {
+  color: #faf7ff;
+  letter-spacing: -.025em;
+}
+body[data-theme="neon"] .hero h1 span,
+body[data-theme="neon"] :is(.brand-name, .logo-text, .accent-text, .highlight, .stat-value, .mp-stat-value) {
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(83, 245, 255, .18);
+}
+body[data-theme="neon"] :is(p, small, .muted, .subtitle, .description, .helper-text, .field-hint, label) {
+  color: var(--text-muted);
+}
+body[data-theme="neon"] :is(a, .text-link, .auth-text-button) {
+  color: #70f7ff;
+  text-decoration-color: rgba(112, 247, 255, .38);
+}
+body[data-theme="neon"] :is(a, .text-link, .auth-text-button):hover {
+  color: #d6a6ff;
+}
+body[data-theme="neon"] :is(button, .button, .btn, .primary-button, .btn-primary, button.primary, .dashboard-auth-button, .auth-submit, .auth-account-pill button) {
+  border-color: rgba(83, 245, 255, .55) !important;
+  background: linear-gradient(110deg, #54f5ff 0%, #8a9dff 52%, #c17aff 100%) !important;
+  color: #080615 !important;
+  font-weight: 800;
+  text-shadow: none;
+  box-shadow: 0 5px 22px rgba(83, 245, 255, .12);
+  transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+body[data-theme="neon"] :is(button, .button, .btn, .primary-button, .btn-primary, button.primary, .dashboard-auth-button, .auth-submit, .auth-account-pill button):hover {
+  filter: brightness(1.08) saturate(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 26px rgba(83, 245, 255, .20), 0 0 18px rgba(189, 114, 255, .12);
+}
+body[data-theme="neon"] :is(.secondary-button, .btn-secondary, .ghost-button, button.secondary, .auth-guest, .tab-button, .nav-item, .icon-button) {
+  background: rgba(26, 20, 53, .9) !important;
+  color: #e9e3ff !important;
+  border: 1px solid rgba(142, 116, 219, .42) !important;
+  box-shadow: none;
+}
+body[data-theme="neon"] :is(.secondary-button, .btn-secondary, .ghost-button, button.secondary, .auth-guest, .tab-button, .nav-item, .icon-button):hover,
+body[data-theme="neon"] :is(.nav-item, .tab-button).active,
+body[data-theme="neon"] :is(.nav-item, .tab-button)[aria-current="page"] {
+  color: #69f7ff !important;
+  background: rgba(83, 245, 255, .09) !important;
+  border-color: rgba(83, 245, 255, .55) !important;
+}
+body[data-theme="neon"] :is(input, select, textarea, .form-control, .search-input) {
+  color: #f8f5ff !important;
+  background: #100d24 !important;
+  border: 1px solid #493777 !important;
+  border-radius: 10px;
+  caret-color: #53f5ff;
+}
+body[data-theme="neon"] :is(input, select, textarea, .form-control, .search-input):hover {
+  border-color: #6e58a8 !important;
+}
+body[data-theme="neon"] :is(input, select, textarea, .form-control, .search-input):focus {
+  outline: none !important;
+  border-color: #53f5ff !important;
+  box-shadow: 0 0 0 3px rgba(83, 245, 255, .13), 0 0 18px rgba(83, 245, 255, .07) !important;
+}
+body[data-theme="neon"] :is(input, textarea)::placeholder {
+  color: #9288b8 !important;
+  opacity: 1;
+}
+body[data-theme="neon"] select option {
+  color: #f8f5ff;
+  background: #100d24;
+}
+body[data-theme="neon"] :is(hr, .divider, .separator) {
+  border-color: rgba(142, 116, 219, .25);
+  background-color: rgba(142, 116, 219, .25);
+}
+body[data-theme="neon"] :is(.badge, .chip, .tag, .pill, .status-badge) {
+  color: #8bfaff;
+  background: rgba(83, 245, 255, .09);
+  border: 1px solid rgba(83, 245, 255, .24);
+}
+body[data-theme="neon"] :is(.progress, .progress-track, .meter, .xp-track) {
+  background: #211a42;
+  border-color: rgba(142, 116, 219, .25);
+}
+body[data-theme="neon"] :is(.progress-bar, .progress-fill, .meter-fill, .xp-fill) {
+  background: linear-gradient(90deg, #53f5ff, #8e83ff 58%, #c17aff);
+  box-shadow: 0 0 12px rgba(83, 245, 255, .20);
+}
+body[data-theme="neon"] :is(.chessboard, .board, .chess-board) {
+  border: 2px solid rgba(83, 245, 255, .42);
+  box-shadow: 0 0 0 1px rgba(189, 114, 255, .12), 0 14px 40px rgba(0, 0, 0, .38), 0 0 26px rgba(83, 245, 255, .08);
+}
+body[data-theme="neon"] .square[aria-disabled="false"]:hover {
+  box-shadow: inset 0 0 0 3px rgba(83, 245, 255, .78), inset 0 0 20px rgba(83, 245, 255, .18);
+}
+body[data-theme="neon"] :is(.auth-screen, .modal, .modal-backdrop, .overlay) {
+  background: rgba(4, 3, 12, .86);
+  backdrop-filter: blur(14px);
+}
+body[data-theme="neon"] .auth-card {
+  border: 1px solid rgba(83, 245, 255, .32);
+  background: radial-gradient(ellipse at top right, rgba(189, 114, 255, .12), transparent 45%), #100d23;
+  box-shadow: 0 0 0 1px rgba(83, 245, 255, .05), 0 24px 80px rgba(0, 0, 0, .55), 0 0 38px rgba(83, 245, 255, .06);
+}
+body[data-theme="neon"] .auth-form input:focus {
+  outline: none;
+  border-color: #53f5ff;
+  box-shadow: 0 0 0 3px rgba(83, 245, 255, .13);
+}
+body[data-theme="neon"] .auth-message {
+  color: #ffe9a8;
+  background: rgba(78, 55, 16, .28);
+  border-color: rgba(255, 202, 100, .35);
+}
+body[data-theme="neon"] .auth-message[data-type="error"] {
+  color: #ffbec9;
+  background: rgba(85, 20, 43, .28);
+  border-color: rgba(255, 112, 151, .38);
+}
+body[data-theme="neon"] .auth-account-pill {
+  background: rgba(16, 13, 35, .95);
+  color: #f8f5ff;
+  border-color: rgba(83, 245, 255, .32);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+}
+body[data-theme="neon"] :is(table, th, td, .table-wrap) {
+  border-color: rgba(142, 116, 219, .25);
+}
+body[data-theme="neon"] th {
+  color: #70f7ff;
+  background: rgba(83, 245, 255, .055);
+}
+body[data-theme="neon"] tr:hover td {
+  background: rgba(189, 114, 255, .045);
+}
+body[data-theme="neon"] :is(.tooltip, [role="tooltip"]) {
+  color: #f8f5ff;
+  background: #211a42;
+  border: 1px solid rgba(83, 245, 255, .28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .32);
+}
+body[data-theme="neon"] :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #53f5ff;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="neon"] *,
+  body[data-theme="neon"] *::before,
+  body[data-theme="neon"] *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
