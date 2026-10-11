@@ -1026,7 +1026,7 @@ const game = {
 
 let audioContext = null;
 
-/* Premium 8x8 chess preloader */
+/* Premium sequential chess preloader */
 const PRELOADER_PIECES = [
     ["♜","♞","♝","♛","♚","♝","♞","♜"],
     ["♟","♟","♟","♟","♟","♟","♟","♟"],
@@ -1037,11 +1037,14 @@ const PRELOADER_PIECES = [
     ["♙","♙","♙","♙","♙","♙","♙","♙"],
     ["♖","♘","♗","♕","♔","♗","♘","♖"]
 ];
+
 function runPreloader() {
     const el = $("preloader");
-    if (!el) return;
+    if (!el || el.dataset.initialized === "true") return;
+    el.dataset.initialized = "true";
     document.body.classList.add("preloading");
     document.documentElement.style.overflow = "hidden";
+
     const grid = $("preloaderGrid");
     const line = $("preloaderLine");
     const sub = $("preloaderSub");
@@ -1053,26 +1056,33 @@ function runPreloader() {
 
     grid.innerHTML = "";
     const pieceNodes = [];
+    const files = "abcdefgh";
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = reducedMotion ? 1400 : 6800;
+
     for (let r = 0; r < 8; r++) {
         for (let col = 0; col < 8; col++) {
             const sq = document.createElement("div");
             sq.className = "preloader-square " + ((r + col) % 2 === 0 ? "light" : "dark");
-            sq.dataset.square = "abcdefgh"[col] + (8 - r);
+            sq.dataset.square = files[col] + (8 - r);
             const glyph = PRELOADER_PIECES[r][col];
             if (glyph) {
                 const piece = document.createElement("span");
-                const isBlack = r < 2;
-                piece.className = "preloader-piece " + (isBlack ? "black" : "white");
+                const groupStart = r === 0 ? 11 : r === 1 ? 31 : r === 6 ? 46 : 61;
+                const groupSpan = r === 0 ? 19 : r === 1 ? 14 : r === 6 ? 14 : 19;
+                const arrival = groupStart + Math.round((col / 7) * groupSpan);
+                piece.className = "preloader-piece " + (r < 2 ? "black" : "white");
                 piece.textContent = glyph;
                 piece.setAttribute("aria-hidden", "true");
-                piece.style.setProperty("--piece-index", String(r * 8 + col));
+                piece.dataset.arriveAt = String(arrival);
+                piece.style.setProperty("--piece-index", String(pieceNodes.length));
                 sq.appendChild(piece);
                 pieceNodes.push(piece);
             }
             if (r === 7) {
                 const coord = document.createElement("span");
                 coord.className = "preloader-coordinate file-coordinate";
-                coord.textContent = "abcdefgh"[col];
+                coord.textContent = files[col];
                 sq.appendChild(coord);
             }
             if (col === 0) {
@@ -1087,80 +1097,89 @@ function runPreloader() {
 
     let done = false;
     let progressTimer = null;
-    let started = false;
-    const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 5200;
+    let fallbackTimer = null;
+    let value = 0;
+    let startTime = 0;
+
+    function revealPieces(progress) {
+        pieceNodes.forEach((piece) => {
+            if (!piece.classList.contains("arrived") && Number(piece.dataset.arriveAt) <= progress) {
+                piece.classList.add("arrived");
+                const square = piece.parentElement;
+                square.classList.add("piece-landing");
+                if (!reducedMotion) window.setTimeout(() => square.classList.remove("piece-landing"), 360);
+                else square.classList.remove("piece-landing");
+            }
+        });
+    }
 
     function finish() {
         if (done) return;
         done = true;
         if (progressTimer) clearTimeout(progressTimer);
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        revealPieces(100);
         if (percentEl) percentEl.textContent = "100";
         if (barFill) barFill.style.width = "100%";
         if (label) label.textContent = "READY TO PLAY";
         if (line) line.textContent = "Your board is ready.";
         if (sub) sub.textContent = "EVERY SQUARE A DECISION · EVERY MOVE A MEMORY";
+        if (hint) hint.textContent = "WELCOME TO CHESS VISION TRAINER";
         el.classList.add("done");
         document.body.classList.remove("preloading");
         document.documentElement.style.overflow = "";
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
-        setTimeout(() => {
+        window.setTimeout(() => {
             el.style.display = "none";
             el.setAttribute("aria-hidden", "true");
             window.dispatchEvent(new Event("cvt:preloader-finished"));
-        }, 650);
+        }, reducedMotion ? 80 : 650);
+    }
+
+    function step() {
+        if (done) return;
+        value = Math.min(100, value + 1);
+        if (percentEl) percentEl.textContent = String(value);
+        if (barFill) barFill.style.width = value + "%";
+        revealPieces(value);
+        if (label) {
+            label.textContent = value >= 96 ? "FINALIZING YOUR BOARD" :
+                value >= 81 ? "PREPARING YOUR TRAINING SPACE" :
+                value >= 61 ? "ARRANGING WHITE PIECES" :
+                value >= 46 ? "PLACING WHITE PAWNS" :
+                value >= 31 ? "PLACING BLACK PAWNS" :
+                value >= 11 ? "ARRANGING BLACK PIECES" : "INITIALIZING CHESS VISION";
+        }
+        if (value === 25 && line) line.textContent = "Every piece has its place.";
+        if (value === 50 && line) line.textContent = "Build your board vision.";
+        if (value === 75 && line) line.textContent = "Your starting position is taking shape.";
+        if (value >= 100) { finish(); return; }
+        const nextAt = startTime + (value * duration / 100);
+        progressTimer = window.setTimeout(step, Math.max(12, nextAt - performance.now()));
     }
 
     function startProgress() {
-        if (started || done) return;
-        started = true;
-        let value = 1;
-        const startTime = performance.now();
-        if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
-        function step() {
-            if (done) return;
-            value += 1;
-            if (percentEl) percentEl.textContent = String(value);
-            if (barFill) barFill.style.width = value + "%";
-            if (label) {
-                label.textContent = value >= 100 ? "READY TO PLAY" :
-                    value >= 75 ? "FINALIZING YOUR BOARD" :
-                    value >= 50 ? "PREPARING TRAINING MODES" :
-                    value >= 25 ? "SETTING THE PIECES" : "INITIALIZING CHESS VISION";
-            }
-            if (value >= 100) {
-                finish();
-                return;
-            }
-            const nextAt = startTime + ((value + 1) / 100) * duration;
-            progressTimer = setTimeout(step, Math.max(8, nextAt - performance.now()));
-        }
+        if (done || startTime) return;
+        startTime = performance.now();
+        value = 1;
         if (percentEl) percentEl.textContent = "1";
         if (barFill) barFill.style.width = "1%";
+        revealPieces(1);
         if (label) label.textContent = "INITIALIZING CHESS VISION";
-        progressTimer = setTimeout(step, duration / 100);
+        if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
+        progressTimer = window.setTimeout(step, duration / 100);
     }
 
-    // Stagger the 32 pieces into their standard squares, then run the exact counter.
-    pieceNodes.forEach((piece, i) => {
-        piece.style.animationDelay = (i * 13) + "ms";
-    });
     const ready = () => {
-        const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        const fontsReady = document.fonts?.ready || Promise.resolve();
         Promise.resolve(fontsReady).catch(() => {}).then(() => {
-            setTimeout(startProgress, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 550);
+            window.setTimeout(startProgress, reducedMotion ? 0 : 250);
         });
     };
     if (document.readyState === "complete") ready();
     else window.addEventListener("load", ready, { once: true });
 
-    // Defensive timeout: never leave the page covered forever if a browser resource hangs.
-    setTimeout(() => {
-        if (!done) {
-            if (percentEl) percentEl.textContent = "100";
-            if (barFill) barFill.style.width = "100%";
-            finish();
-        }
-    }, duration + 12000);
+    fallbackTimer = window.setTimeout(() => { if (!done) finish(); }, duration + 15000);
 }
 
 /* Sound */
