@@ -3421,162 +3421,101 @@ body[data-theme="dark"] .mp-difficulty-card:hover {
 
 
 
-/* ===== UNIVERSAL FLOATING — DAYLIGHT, NEON, HEAVY DARK ===== */
-
-body[data-theme="light"] .hero-knight,
-body[data-theme="neon"] .hero-knight,
-body[data-theme="heavy"] .hero-knight {
-  animation: universalKnightFloat 3s ease-in-out infinite !important;
-  transform-origin: center;
-  will-change: transform;
-}
-
-body[data-theme="light"] .hero-orbit.orbit-two,
-body[data-theme="neon"] .hero-orbit.orbit-two,
-body[data-theme="heavy"] .hero-orbit.orbit-two {
-  animation: universalOrbitSpin 12s linear infinite !important;
-  transform-origin: center;
-  will-change: transform;
-}
-
-@keyframes universalKnightFloat {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) rotateY(-8deg) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -20px, 0) rotateY(12deg) scale(1.06);
-  }
-}
-
-@keyframes universalOrbitSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body[data-theme="light"] .hero-knight,
-  body[data-theme="neon"] .hero-knight,
-  body[data-theme="heavy"] .hero-knight,
-  body[data-theme="light"] .hero-orbit.orbit-two,
-  body[data-theme="neon"] .hero-orbit.orbit-two,
-  body[data-theme="heavy"] .hero-orbit.orbit-two {
-    animation: none !important;
-    will-change: auto;
-  }
-}
-
-
-/* =========================================
-   CHESS VISION TRAINER — GLOWING KNIGHT
-   Premium floating 3D effect for every theme
-   ========================================= */
+/* ==========================================
+   CHESS VISION TRAINER — CRYSTAL KNIGHT
+   Sharp silhouette + elegant golden aura
+   ========================================== */
 
 .hero-art {
   display: grid !important;
   place-items: center !important;
   position: relative !important;
-  isolation: isolate;
-  min-width: 240px;
-  min-height: 240px;
+  isolation: isolate !important;
+  width: 240px !important;
+  height: 240px !important;
   overflow: visible !important;
 }
 
-/* Floating knight */
+/* Keep the knight sharp and clearly recognizable */
 .hero-knight {
   position: relative !important;
   z-index: 3 !important;
   display: grid !important;
   place-items: center !important;
   width: 130px !important;
-  height: 150px !important;
-  border-radius: 50% !important;
+  height: 145px !important;
 
   color: var(--accent) !important;
-  background:
-    radial-gradient(
-      ellipse at center,
-      var(--accent-soft) 0%,
-      transparent 72%
-    ) !important;
-
-  font-size: 108px !important;
+  background: transparent !important;
+  font-size: 100px !important;
   line-height: 1 !important;
 
-  -webkit-text-stroke: 1px currentColor;
+  /* Remove the excessive blur */
+  filter: none !important;
+  -webkit-text-stroke: 0.7px currentColor;
+
+  /* Crisp golden edge, not a blurry blob */
   text-shadow:
-    0 0 5px currentColor,
-    0 0 12px var(--accent),
-    0 0 25px var(--accent),
-    0 0 45px var(--accent),
-    0 0 70px var(--accent-soft);
+    0 0 2px currentColor,
+    0 0 7px var(--accent),
+    0 0 15px var(--accent-soft) !important;
 
-  filter:
-    drop-shadow(0 0 8px var(--accent))
-    drop-shadow(0 0 18px var(--accent-soft));
-
-  transform-origin: center;
-  animation:
-    knightGlowFloat 3.2s ease-in-out infinite !important;
-
-  will-change: transform, filter;
+  animation: crystalKnightFloat 3.5s ease-in-out infinite !important;
+  will-change: transform;
 }
 
-/* Extra aura surrounding the knight */
+/* Soft glow BEHIND the knight */
 .hero-knight::before {
   content: "";
   position: absolute;
-  inset: 12%;
   z-index: -1;
-  border-radius: 50%;
+  width: 115px;
+  height: 115px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
   background: var(--accent);
-  opacity: 0.18;
-  filter: blur(28px);
-  animation: knightAuraPulse 2.4s ease-in-out infinite;
+  border-radius: 50%;
+  opacity: 0.22;
+  filter: blur(30px);
+
+  animation: crystalAura 3s ease-in-out infinite;
   pointer-events: none;
 }
 
-/* Keep orbit rings visible around the glowing knight */
+/* Smooth floating motion */
+@keyframes crystalKnightFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg) scale(1);
+  }
+  50% {
+    transform: translateY(-11px) rotate(2deg) scale(1.04);
+  }
+}
+
+/* Subtle aura pulse */
+@keyframes crystalAura {
+  0%, 100% {
+    opacity: 0.15;
+    scale: 0.85;
+  }
+  50% {
+    opacity: 0.32;
+    scale: 1.1;
+  }
+}
+
+/* Keep the surrounding rings elegant */
 .hero-orbit {
-  z-index: 1;
   pointer-events: none;
 }
 
 .hero-orbit.orbit-two {
-  animation: rotateOrbit 18s linear infinite !important;
+  animation: rotateOrbit 24s linear infinite !important;
 }
 
-/* Floating motion with a gentle 3D tilt */
-@keyframes knightGlowFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(-3deg) scale(1);
-    filter:
-      drop-shadow(0 0 8px var(--accent))
-      drop-shadow(0 0 18px var(--accent-soft));
-  }
-
-  50% {
-    transform: translateY(-15px) rotate(3deg) scale(1.07);
-    filter:
-      drop-shadow(0 0 12px var(--accent))
-      drop-shadow(0 0 26px var(--accent))
-      drop-shadow(0 0 42px var(--accent-soft));
-  }
-}
-
-/* Pulsing light behind the knight */
-@keyframes knightAuraPulse {
-  0%, 100% {
-    opacity: 0.12;
-    transform: scale(0.85);
-  }
-
-  50% {
-    opacity: 0.35;
-    transform: scale(1.25);
-  }
-}
-
-/* Accessibility */
+/* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .hero-knight,
   .hero-knight::before,
