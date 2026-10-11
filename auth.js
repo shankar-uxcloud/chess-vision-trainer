@@ -16,6 +16,7 @@ const CVT_SUPABASE_KEY =
   const $ = (id) => document.getElementById(id);
 
   const screen = $("authScreen");
+  const guestWelcome = $("guestWelcome");
   const message = $("authMessage");
   const accountPill = $("authAccountPill");
   const accountLabel = $("authAccountLabel");
@@ -174,6 +175,7 @@ const CVT_SUPABASE_KEY =
   // Enter the chess trainer after authentication or as a guest.
   function enterApp(user = null) {
     screen.hidden = true;
+    if (guestWelcome) guestWelcome.hidden = true;
 
     if (accountPill) {
       accountPill.hidden = !user;
@@ -193,7 +195,28 @@ const CVT_SUPABASE_KEY =
   function enterGuestMode() {
     sessionStorage.setItem("cvt-guest-session", "true");
     enterApp(null);
+    if (guestWelcome) guestWelcome.hidden = false;
   }
+
+  // Guest landing actions: start in the app, try a quick training demo, or sign in.
+  $("guestStartJourney")?.addEventListener("click", () => {
+    if (guestWelcome) guestWelcome.hidden = true;
+    document.querySelector('[data-nav="dashboard"]')?.click();
+  });
+
+  $("guestSeeDemo")?.addEventListener("click", () => {
+    if (guestWelcome) guestWelcome.hidden = true;
+    const quickTrain = document.querySelector('[data-action="quick-train"]');
+    if (quickTrain) quickTrain.click();
+    else document.querySelector('[data-nav="training"]')?.click();
+  });
+
+  $("guestSignIn")?.addEventListener("click", () => {
+    if (guestWelcome) guestWelcome.hidden = true;
+    screen.hidden = false;
+    screen.style.visibility = "visible";
+    switchMode("signin");
+  });
 
   // Return to the login screen.
   function showLogin() {
