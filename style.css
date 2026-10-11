@@ -4141,3 +4141,171 @@ html body .hero-art .hero-knight {
   background: #ffca78 !important;
   color: #10131a !important;
 }
+
+
+/* =========================================================
+   CVT THEME POLISH — Light / Dark / Neon
+   Premium contrast, restrained glow, consistent surfaces.
+   ========================================================= */
+
+/* Shared interaction quality across every theme */
+:root {
+  color-scheme: dark;
+  --theme-border: rgba(148, 163, 184, .18);
+  --theme-shadow: 0 14px 38px rgba(0, 0, 0, .16);
+  --theme-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+body[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f6fb;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f7f9fc;
+  --surface-3: #edf2f8;
+  --border: #dce4ef;
+  --border-strong: #c4d0df;
+  --text: #182235;
+  --text-muted: #526176;
+  --text-dim: #718096;
+  --accent: #087f5b;
+  --accent-2: #066b4c;
+  --accent-soft: rgba(8, 127, 91, .10);
+  --theme-border: rgba(55, 75, 105, .16);
+  --theme-shadow: 0 12px 32px rgba(33, 52, 82, .08);
+}
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #080d16;
+  --sidebar: #0b1220;
+  --surface: #101a2b;
+  --surface-2: #142136;
+  --surface-3: #1a2a42;
+  --border: #26364d;
+  --border-strong: #344964;
+  --text: #edf4ff;
+  --text-muted: #b0bfd3;
+  --text-dim: #8497b2;
+  --accent: #53dda3;
+  --accent-2: #2acb8a;
+  --accent-soft: rgba(83, 221, 163, .12);
+  --theme-border: rgba(119, 157, 203, .18);
+  --theme-shadow: 0 18px 46px rgba(0, 0, 0, .24);
+}
+body[data-theme="neon"] {
+  color-scheme: dark;
+  --bg: #080713;
+  --sidebar: #0c0a1c;
+  --surface: #111027;
+  --surface-2: #171533;
+  --surface-3: #211d43;
+  --border: #35305f;
+  --border-strong: #4c4385;
+  --text: #f5f3ff;
+  --text-muted: #c2bddf;
+  --text-dim: #9991c5;
+  --accent: #54f4ff;
+  --accent-2: #b76bff;
+  --accent-soft: rgba(84, 244, 255, .11);
+  --theme-border: rgba(133, 110, 255, .28);
+  --theme-shadow: 0 16px 44px rgba(3, 2, 18, .38);
+}
+
+/* Make cards and controls feel intentionally layered, not flat or noisy. */
+body[data-theme="light"] .panel,
+body[data-theme="light"] .stat-card,
+body[data-theme="light"] .mode-card,
+body[data-theme="light"] .mp-stat-card,
+body[data-theme="light"] .mp-difficulty-card,
+body[data-theme="light"] .auth-card {
+  border-color: var(--theme-border);
+  box-shadow: var(--theme-shadow);
+}
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .mode-card,
+body[data-theme="dark"] .mp-stat-card,
+body[data-theme="dark"] .mp-difficulty-card,
+body[data-theme="dark"] .auth-card {
+  border-color: var(--theme-border);
+  box-shadow: var(--theme-shadow);
+}
+body[data-theme="neon"] .panel,
+body[data-theme="neon"] .stat-card,
+body[data-theme="neon"] .mode-card,
+body[data-theme="neon"] .mp-stat-card,
+body[data-theme="neon"] .mp-difficulty-card,
+body[data-theme="neon"] .auth-card {
+  border-color: var(--theme-border);
+  box-shadow: var(--theme-shadow);
+}
+body[data-theme="dark"] .primary-button,
+body[data-theme="dark"] button.primary,
+body[data-theme="dark"] .btn-primary {
+  box-shadow: 0 5px 18px rgba(83, 221, 163, .13);
+}
+body[data-theme="neon"] .primary-button,
+body[data-theme="neon"] button.primary,
+body[data-theme="neon"] .btn-primary {
+  box-shadow: 0 0 0 1px rgba(84, 244, 255, .22), 0 5px 22px rgba(84, 244, 255, .10);
+}
+body[data-theme="neon"] .brand-icon,
+body[data-theme="neon"] .hero h1 span {
+  text-shadow: 0 0 18px rgba(84, 244, 255, .20);
+}
+body[data-theme="neon"] .panel,
+body[data-theme="neon"] .stat-card,
+body[data-theme="neon"] .mode-card {
+  background-image: linear-gradient(145deg, rgba(84, 244, 255, .025), transparent 42%, rgba(183, 107, 255, .035));
+}
+body[data-theme="light"] input,
+body[data-theme="light"] select,
+body[data-theme="light"] textarea {
+  color: var(--text);
+  background-color: #fff;
+  border-color: #cbd6e4;
+}
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea,
+body[data-theme="neon"] input,
+body[data-theme="neon"] select,
+body[data-theme="neon"] textarea {
+  color: var(--text);
+  background-color: var(--surface-2);
+  border-color: var(--border-strong);
+}
+body[data-theme="light"] input::placeholder,
+body[data-theme="light"] textarea::placeholder {
+  color: #718096;
+  opacity: 1;
+}
+body[data-theme="dark"] :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+body[data-theme="neon"] :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+body[data-theme="light"] :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--theme-focus);
+}
+body[data-theme="dark"] .mode-card:hover,
+body[data-theme="dark"] .stat-card:hover,
+body[data-theme="dark"] .mp-stat-card:hover {
+  border-color: rgba(83, 221, 163, .42);
+}
+body[data-theme="neon"] .mode-card:hover,
+body[data-theme="neon"] .stat-card:hover,
+body[data-theme="neon"] .mp-stat-card:hover {
+  border-color: rgba(84, 244, 255, .55);
+  box-shadow: 0 0 0 1px rgba(84, 244, 255, .08), 0 14px 38px rgba(0, 0, 0, .25);
+}
+@media (prefers-reduced-motion: no-preference) {
+  body[data-theme="light"] .panel,
+  body[data-theme="light"] .stat-card,
+  body[data-theme="light"] .mode-card,
+  body[data-theme="dark"] .panel,
+  body[data-theme="dark"] .stat-card,
+  body[data-theme="dark"] .mode-card,
+  body[data-theme="neon"] .panel,
+  body[data-theme="neon"] .stat-card,
+  body[data-theme="neon"] .mode-card {
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background-color .18s ease;
+  }
+}
