@@ -13,6 +13,119 @@
 </head>
 <body data-theme="dark" data-board="emerald" data-view="dashboard" data-flip="false" data-perspective="white">
 
+
+
+
+
+
+
+<!-- CHESS VISION TRAINER LOGIN -->
+<section class="auth-screen" id="authScreen" hidden>
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">♞</div>
+      <div>
+        <div class="auth-brand-name">CHESS<span>VISION</span></div>
+        <div class="auth-brand-sub">TRAINER</div>
+      </div>
+    </div>
+
+    <p class="auth-eyebrow">YOUR NEXT MOVE STARTS HERE</p>
+    <h1 id="authTitle">Welcome back.</h1>
+    <p id="authDescription" class="auth-description">
+      Sign in to enter your training space.
+    </p>
+
+    <div id="authMessage" class="auth-message" role="status"
+         aria-live="polite" hidden></div>
+
+    <form id="signInForm" class="auth-form">
+      <label for="loginEmail">Email address</label>
+      <input id="loginEmail" type="email" autocomplete="email"
+             placeholder="you@example.com" required>
+
+      <label for="loginPassword">Password</label>
+      <div class="auth-password-wrap">
+        <input id="loginPassword" type="password"
+               autocomplete="current-password" required>
+        <button type="button" class="auth-show-password"
+                data-toggle-password="loginPassword">Show</button>
+      </div>
+
+      <button type="button" class="auth-text-button"
+              id="showForgot">Forgot password?</button>
+
+      <button type="submit" class="auth-submit" id="signInButton">
+        Sign in <span>→</span>
+      </button>
+
+      <p class="auth-switch">
+        New here?
+        <button type="button" class="auth-text-button"
+                id="showSignup">Create an account</button>
+      </p>
+    </form>
+
+    <form id="signUpForm" class="auth-form" hidden>
+      <label for="signupName">Display name</label>
+      <input id="signupName" type="text" autocomplete="name"
+             maxlength="60" required>
+
+      <label for="signupEmail">Email address</label>
+      <input id="signupEmail" type="email" autocomplete="email" required>
+
+      <label for="signupPassword">Create password</label>
+      <div class="auth-password-wrap">
+        <input id="signupPassword" type="password"
+               autocomplete="new-password" minlength="6" required>
+        <button type="button" class="auth-show-password"
+                data-toggle-password="signupPassword">Show</button>
+      </div>
+
+      <button type="submit" class="auth-submit" id="signUpButton">
+        Create account <span>→</span>
+      </button>
+
+      <p class="auth-switch">
+        Already registered?
+        <button type="button" class="auth-text-button"
+                id="showSignin">Sign in</button>
+      </p>
+    </form>
+
+    <form id="resetForm" class="auth-form" hidden>
+      <label for="resetEmail">Email address</label>
+      <input id="resetEmail" type="email" autocomplete="email" required>
+
+      <button type="submit" class="auth-submit">
+        Send reset link <span>→</span>
+      </button>
+
+      <p class="auth-switch">
+        <button type="button" class="auth-text-button"
+                id="backToSignin">Back to sign in</button>
+      </p>
+    </form>
+
+    <div class="auth-divider"><span>OR</span></div>
+
+    <button type="button" class="auth-guest" id="continueGuest">
+      Continue as guest <span>→</span>
+    </button>
+
+    <p class="auth-footer">Eight training modes. One stronger mind.</p>
+  </div>
+</section>
+
+<div class="auth-account-pill" id="authAccountPill" hidden>
+  <span id="authAccountLabel">Signed in</span>
+  <button type="button" id="authSignOut">Sign out</button>
+</div>
+
+
+  
+
+  
 <div class="preloader" id="preloader" aria-hidden="true">
   <div class="preloader-bg"></div>
   <div class="preloader-scanline"></div>
@@ -788,6 +901,9 @@
   <span id="toastMessage">Welcome!</span>
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./script.js"></script>
+<script src="./auth.js"></script>
 </body>
 </html>
