@@ -4518,3 +4518,134 @@ body[data-theme="neon"] :is(button, a, input, select, textarea, [tabindex]):focu
     scroll-behavior: auto !important;
   }
 }
+
+
+/* NEON MODE: vivid arcade palette inspired by the user's reference.
+   This is intentionally colorful: cyan, ultraviolet, hot pink, lime,
+   electric blue and amber appear as accents while text stays readable. */
+body[data-theme="neon"] {
+  --bg: #050510 !important;
+  --sidebar: #080817 !important;
+  --surface: #0c0c20 !important;
+  --surface-2: #12122b !important;
+  --surface-3: #1b1a3b !important;
+  --border: #292653 !important;
+  --border-strong: #5145a3 !important;
+  --text: #fbf8ff !important;
+  --text-muted: #d2cce9 !important;
+  --text-dim: #9f98c4 !important;
+  --accent: #00f5ff !important;
+  --accent-2: #b900ff !important;
+  --accent-soft: rgba(0, 245, 255, .14) !important;
+  background:
+    radial-gradient(ellipse at 5% 0%, rgba(167, 44, 255, .23), transparent 33%),
+    radial-gradient(ellipse at 100% 10%, rgba(0, 229, 255, .14), transparent 31%),
+    radial-gradient(ellipse at 55% 100%, rgba(255, 0, 170, .09), transparent 38%),
+    #050510 !important;
+  color: #fbf8ff !important;
+}
+body[data-theme="neon"] :is(.sidebar, aside, .topbar, .top-bar, header) {
+  background: linear-gradient(180deg, rgba(12, 10, 33, .98), rgba(7, 7, 21, .98)) !important;
+  border-color: rgba(139, 92, 246, .35) !important;
+}
+body[data-theme="neon"] :is(.panel, .card, .stat-card, .mode-card, .mp-stat-card, .mp-difficulty-card, .settings-card, .feature-card, .training-card, .result-card, .auth-card, .modal-content, .dialog) {
+  background:
+    linear-gradient(135deg, rgba(0, 245, 255, .055), transparent 38%),
+    linear-gradient(315deg, rgba(255, 0, 170, .045), transparent 42%),
+    rgba(11, 10, 30, .96) !important;
+  border-color: rgba(123, 94, 255, .42) !important;
+  box-shadow: 0 0 0 1px rgba(116, 77, 255, .06), 0 12px 36px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .035) !important;
+}
+body[data-theme="neon"] :is(.panel, .card, .stat-card, .mode-card, .mp-stat-card, .mp-difficulty-card, .feature-card, .training-card):hover {
+  border-color: rgba(0, 245, 255, .76) !important;
+  box-shadow: 0 0 0 1px rgba(0, 245, 255, .12), 0 0 24px rgba(0, 245, 255, .10), 0 14px 42px rgba(0, 0, 0, .42) !important;
+  transform: translateY(-2px);
+}
+body[data-theme="neon"] :is(h1, h2, h3, h4, .section-title, .panel-title) {
+  color: #fffaff !important;
+  text-shadow: 0 0 22px rgba(177, 89, 255, .14);
+}
+body[data-theme="neon"] :is(.brand-name, .logo-text, .accent-text, .highlight, .stat-value, .mp-stat-value, .hero h1 span) {
+  color: #00f5ff !important;
+  text-shadow: 0 0 8px rgba(0, 245, 255, .38), 0 0 24px rgba(0, 245, 255, .17) !important;
+}
+body[data-theme="neon"] :is(a, .text-link, .auth-text-button) {
+  color: #ff65df !important;
+}
+body[data-theme="neon"] :is(a, .text-link, .auth-text-button):hover {
+  color: #00f5ff !important;
+  text-shadow: 0 0 12px rgba(0, 245, 255, .38);
+}
+/* Main actions: ultraviolet-to-magenta gradient, with cyan glow. */
+body[data-theme="neon"] :is(.primary-button, .btn-primary, button.primary, .dashboard-auth-button, .auth-submit, .auth-account-pill button, .hero .button, .launch-button) {
+  background: linear-gradient(110deg, #7c3cff 0%, #c026ff 48%, #ff38bc 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 126, 255, .75) !important;
+  box-shadow: 0 0 10px rgba(192, 38, 255, .28), 0 0 25px rgba(124, 60, 255, .16) !important;
+}
+body[data-theme="neon"] :is(.primary-button, .btn-primary, button.primary, .dashboard-auth-button, .auth-submit, .auth-account-pill button, .hero .button, .launch-button):hover {
+  filter: brightness(1.16) saturate(1.18);
+  box-shadow: 0 0 14px rgba(255, 56, 188, .42), 0 0 30px rgba(0, 245, 255, .14) !important;
+}
+/* Secondary controls use glassy dark surfaces with bright outlines. */
+body[data-theme="neon"] :is(.secondary-button, .btn-secondary, .ghost-button, button.secondary, .auth-guest, .tab-button, .nav-item, .icon-button) {
+  color: #e8e4ff !important;
+  background: rgba(22, 18, 52, .96) !important;
+  border: 1px solid rgba(139, 92, 246, .5) !important;
+}
+body[data-theme="neon"] :is(.secondary-button, .btn-secondary, .ghost-button, button.secondary, .auth-guest, .tab-button, .nav-item, .icon-button):hover,
+body[data-theme="neon"] :is(.nav-item, .tab-button).active,
+body[data-theme="neon"] :is(.nav-item, .tab-button)[aria-current="page"] {
+  color: #00f5ff !important;
+  background: rgba(0, 245, 255, .09) !important;
+  border-color: #00f5ff !important;
+  box-shadow: inset 0 0 16px rgba(0, 245, 255, .055), 0 0 14px rgba(0, 245, 255, .10) !important;
+}
+/* Colorful chips and progress meters: cyan, lime, pink, amber. */
+body[data-theme="neon"] :is(.badge, .chip, .tag, .pill, .status-badge) {
+  color: #75fbff !important;
+  background: rgba(0, 245, 255, .10) !important;
+  border: 1px solid rgba(0, 245, 255, .32) !important;
+}
+body[data-theme="neon"] :is(.progress, .progress-track, .meter, .xp-track) {
+  background: #1c193b !important;
+  border-color: rgba(139, 92, 246, .32) !important;
+}
+body[data-theme="neon"] :is(.progress-bar, .progress-fill, .meter-fill, .xp-fill) {
+  background: linear-gradient(90deg, #00f5ff, #8b5cf6 48%, #ff38bc) !important;
+  box-shadow: 0 0 12px rgba(0, 245, 255, .26) !important;
+}
+body[data-theme="neon"] :is(input, select, textarea, .form-control, .search-input) {
+  background: rgba(13, 11, 32, .98) !important;
+  color: #fbf8ff !important;
+  border-color: #5145a3 !important;
+}
+body[data-theme="neon"] :is(input, select, textarea, .form-control, .search-input):focus {
+  border-color: #00f5ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 245, 255, .15), 0 0 18px rgba(0, 245, 255, .09) !important;
+}
+body[data-theme="neon"] :is(input, textarea)::placeholder { color: #9990bd !important; opacity: 1; }
+body[data-theme="neon"] select option { background: #100d27; color: #fbf8ff; }
+body[data-theme="neon"] :is(.chessboard, .board, .chess-board) {
+  border: 2px solid #8b5cf6 !important;
+  box-shadow: 0 0 0 1px rgba(0, 245, 255, .18), 0 0 24px rgba(139, 92, 246, .18), 0 18px 45px rgba(0, 0, 0, .40) !important;
+}
+body[data-theme="neon"] .square[aria-disabled="false"]:hover {
+  box-shadow: inset 0 0 0 3px #00f5ff, inset 0 0 22px rgba(0, 245, 255, .24) !important;
+}
+body[data-theme="neon"] .auth-card {
+  background: radial-gradient(ellipse at 100% 0%, rgba(192, 38, 255, .16), transparent 42%), #0b0a1e !important;
+  border-color: rgba(0, 245, 255, .4) !important;
+}
+body[data-theme="neon"] .auth-form input:focus {
+  border-color: #00f5ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 245, 255, .14) !important;
+}
+body[data-theme="neon"] :is(hr, .divider, .separator) {
+  border-color: rgba(139, 92, 246, .30) !important;
+  background-color: rgba(139, 92, 246, .30) !important;
+}
+body[data-theme="neon"] :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #00f5ff !important;
+  outline-offset: 3px;
+}
