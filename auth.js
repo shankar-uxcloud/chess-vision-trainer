@@ -494,12 +494,11 @@ window.addEventListener("cvt:preloader-finished", () => {
   }
 });
 
-  // Fallback in case the preloader event is missing.
-  window.setTimeout(() => {
-    if (!preloaderFinished && !screen.hidden) {
-      screen.style.visibility = "visible";
-    }
-  }, 15000);
+  // Preloader and login-screen coordination
+window.addEventListener("cvt:preloader-finished", () => {
+  const authScreen = document.getElementById("authScreen");
 
-  restoreSession();
-})();
+  if (authScreen && !authScreen.hidden) {
+    authScreen.style.visibility = "visible";
+  }
+});
