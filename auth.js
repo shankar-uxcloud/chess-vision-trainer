@@ -1,24 +1,19 @@
-
 "use strict";
 
 /* =====================================================
    CHESS VISION TRAINER — SUPABASE AUTHENTICATION
-   Login | Signup | Password reset | Guest | Sign out
+   Sign in | Sign up | Password reset | Guest | Sign out
    ===================================================== */
 
-/*
-  STEP 1:
-  Replace these two placeholders with your own Supabase
-  Project URL and publishable key.
+// Keep your own Supabase project URL and publishable key.
+const CVT_SUPABASE_URL =
+  "https://sugnutuorhddsxfqnlpe.supabase.co";
 
-  NEVER use a service_role or secret key here.
-*/
-
-const CVT_SUPABASE_URL = "https://sugnutuorhddsxfqnlpe.supabase.co/"; 
-const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
+const CVT_SUPABASE_KEY =
+  "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
 
 (() => {
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
   const screen = $("authScreen");
   const message = $("authMessage");
@@ -37,9 +32,9 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
   const configured =
     CVT_SUPABASE_URL.startsWith("https://") &&
     !CVT_SUPABASE_URL.includes("YOUR_PROJECT_ID") &&
-    CVT_SUPABASE_KEY.length > 20 &&
-    !CVT_SUPABASE_KEY.includes("YOUR_SUPABASE");
+    CVT_SUPABASE_KEY.startsWith("sb_publishable_");
 
+  // Initialize Supabase.
   if (configured && window.supabase?.createClient) {
     try {
       supabaseClient = window.supabase.createClient(
@@ -56,8 +51,13 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     } catch (error) {
       console.error("Supabase initialization failed:", error);
     }
+  } else {
+    console.error(
+      "Supabase is unavailable. Check the Supabase CDN script and configuration."
+    );
   }
 
+  // Display a message in the authentication screen.
   function showMessage(text, type = "info") {
     if (!message) return;
 
@@ -74,12 +74,17 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     delete message.dataset.type;
   }
 
+  // Switch between sign-in, signup and password-reset forms.
   function switchMode(mode) {
     clearMessage();
 
-    $("signInForm").hidden = mode !== "signin";
-    $("signUpForm").hidden = mode !== "signup";
-    $("resetForm").hidden = mode !== "reset";
+    const signInForm = $("signInForm");
+    const signUpForm = $("signUpForm");
+    const resetForm = $("resetForm");
+
+    if (signInForm) signInForm.hidden = mode !== "signin";
+    if (signUpForm) signUpForm.hidden = mode !== "signup";
+    if (resetForm) resetForm.hidden = mode !== "reset";
 
     const content = {
       signin: [
@@ -96,14 +101,19 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
       ]
     };
 
-    $("authTitle").textContent = content[mode][0];
-    $("authDescription").textContent = content[mode][1];
+    if (!content[mode]) return;
+
+    const title = $("authTitle");
+    const description = $("authDescription");
+
+    if (title) title.textContent = content[mode][0];
+    if (description) description.textContent = content[mode][1];
   }
 
   function requireSupabase() {
     if (!supabaseClient) {
       showMessage(
-        "Supabase is not configured. Check the Project URL, publishable key, and Supabase script in index.html.",
+        "Login is unavailable. Check the Supabase URL, publishable key and CDN script in index.html.",
         "error"
       );
       return false;
@@ -112,22 +122,31 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     return true;
   }
 
+  // Disable buttons while a request is running.
   function setBusy(button, busy, text = "Please wait…") {
     if (!button) return;
 
     if (busy) {
-      button.dataset.originalText = button.textContent;
+      if (!button.disabled) {
+        button.dataset.originalText = button.textContent;
+      }
+
       button.textContent = text;
       button.disabled = true;
     } else {
       button.textContent =
         button.dataset.originalText || button.textContent;
+
       button.disabled = false;
+      delete button.dataset.originalText;
     }
   }
 
+  // Convert common errors into understandable messages.
   function friendlyError(error) {
-    const text = String(error?.message || "Something went wrong.");
+    const text = String(
+      error?.message || "Something went wrong."
+    );
 
     if (/invalid login credentials/i.test(text)) {
       return "Incorrect email or password. Please try again.";
@@ -146,12 +165,13 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
 
     if (/failed to fetch|network/i.test(text)) {
-      return "Network error. Check your connection and Supabase configuration.";
+      return "Network error. Check your internet connection and Supabase configuration.";
     }
 
     return text;
   }
 
+  // Enter the chess trainer after authentication or as a guest.
   function enterApp(user = null) {
     screen.hidden = true;
 
@@ -168,13 +188,16 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
   }
 
+  // Guest mode works without creating an online account.
   function enterGuestMode() {
     sessionStorage.setItem("cvt-guest-session", "true");
     enterApp(null);
   }
 
+  // Return to the login screen.
   function showLogin() {
     screen.hidden = false;
+    screen.style.visibility = "visible";
 
     if (accountPill) {
       accountPill.hidden = true;
@@ -183,79 +206,94 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     switchMode("signin");
   }
 
-  // -----------------------------------------------
-  // Switch between sign in, signup and reset forms
-  // -----------------------------------------------
-
-  $("showSignup").addEventListener("click", () => {
+  // Switch to signup.
+  $("showSignup")?.addEventListener("click", () => {
     switchMode("signup");
   });
 
-  $("showSignin").addEventListener("click", () => {
+  // Switch back to sign-in.
+  $("showSignin")?.addEventListener("click", () => {
     switchMode("signin");
   });
 
-  $("showForgot").addEventListener("click", () => {
-    $("resetEmail").value = $("loginEmail").value.trim();
+  // Open password reset and reuse the entered email.
+  $("showForgot")?.addEventListener("click", () => {
+    const loginEmail = $("loginEmail");
+    const resetEmail = $("resetEmail");
+
+    if (loginEmail && resetEmail) {
+      resetEmail.value = loginEmail.value.trim();
+    }
+
     switchMode("reset");
   });
 
-  $("backToSignin").addEventListener("click", () => {
+  $("backToSignin")?.addEventListener("click", () => {
     switchMode("signin");
   });
 
-  // -----------------------------------------------
-  // Show / hide passwords
-  // -----------------------------------------------
+  // Show/hide password fields.
+  document
+    .querySelectorAll("[data-toggle-password]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = $(button.dataset.togglePassword);
 
-  document.querySelectorAll("[data-toggle-password]").forEach(button => {
-    button.addEventListener("click", () => {
-      const input = $(button.dataset.togglePassword);
+        if (!input) return;
 
-      if (!input) return;
+        const show = input.type === "password";
 
-      const show = input.type === "password";
-      input.type = show ? "text" : "password";
-      button.textContent = show ? "Hide" : "Show";
-      button.setAttribute(
-        "aria-label",
-        show ? "Hide password" : "Show password"
-      );
+        input.type = show ? "text" : "password";
+        button.textContent = show ? "Hide" : "Show";
+
+        button.setAttribute(
+          "aria-label",
+          show ? "Hide password" : "Show password"
+        );
+      });
     });
-  });
 
-  // -----------------------------------------------
-  // Continue as guest
-  // Guest mode does not create an online account
-  // -----------------------------------------------
-
-  $("continueGuest").addEventListener("click", () => {
+  // Continue as guest.
+  $("continueGuest")?.addEventListener("click", () => {
     enterGuestMode();
   });
 
-  // -----------------------------------------------
-  // Sign in
-  // -----------------------------------------------
-
-  $("signInForm").addEventListener("submit", async event => {
+  // SIGN IN.
+  $("signInForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearMessage();
 
     if (!requireSupabase()) return;
 
+    const email = $("loginEmail")?.value.trim();
+    const password = $("loginPassword")?.value;
     const button = $("signInButton");
+
+    if (!email || !password) {
+      showMessage("Enter your email and password.", "error");
+      return;
+    }
+
     setBusy(button, true, "Signing in…");
 
     try {
       const { data, error } =
         await supabaseClient.auth.signInWithPassword({
-          email: $("loginEmail").value.trim(),
-          password: $("loginPassword").value
+          email,
+          password
         });
 
       if (error) throw error;
 
-      enterApp(data.user);
+      if (data?.user) {
+        sessionStorage.removeItem("cvt-guest-session");
+        enterApp(data.user);
+      } else {
+        showMessage(
+          "Login could not be completed. Please try again.",
+          "error"
+        );
+      }
     } catch (error) {
       showMessage(friendlyError(error), "error");
     } finally {
@@ -263,28 +301,34 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
   });
 
-  // -----------------------------------------------
-  // Create account
-  // -----------------------------------------------
-
-  $("signUpForm").addEventListener("submit", async event => {
+  // CREATE ACCOUNT.
+  $("signUpForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearMessage();
 
     if (!requireSupabase()) return;
 
+    const email = $("signupEmail")?.value.trim();
+    const password = $("signupPassword")?.value;
+    const displayName = $("signupName")?.value.trim() || "";
     const button = $("signUpButton");
+
+    if (!email || !password) {
+      showMessage("Enter your email and password.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage(
+        "Your password must contain at least 6 characters.",
+        "error"
+      );
+      return;
+    }
+
     setBusy(button, true, "Creating account…");
 
     try {
-      const email = $("signupEmail").value.trim();
-      const password = $("signupPassword").value;
-      const displayName = $("signupName").value.trim();
-
-      if (password.length < 6) {
-        throw new Error("Your password must contain at least 6 characters.");
-      }
-
       const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
@@ -299,15 +343,17 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
 
       if (error) throw error;
 
-      if (data.session && data.user) {
+      if (data?.session && data?.user) {
+        sessionStorage.removeItem("cvt-guest-session");
         enterApp(data.user);
       } else {
-        // Switch first, then display the confirmation message.
         switchMode("signin");
-        $("loginEmail").value = email;
+
+        const loginEmail = $("loginEmail");
+        if (loginEmail) loginEmail.value = email;
 
         showMessage(
-          "Account created! Check your email for a confirmation link. After confirming, return here to sign in.",
+          "Account created! Check your email for a confirmation link. Confirm your email, then sign in.",
           "info"
         );
       }
@@ -318,24 +364,26 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
   });
 
-  // -----------------------------------------------
-  // Forgot password
-  // -----------------------------------------------
-
-  $("resetForm").addEventListener("submit", async event => {
+  // FORGOT PASSWORD.
+  $("resetForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearMessage();
 
     if (!requireSupabase()) return;
 
-    const button =
-      $("resetForm").querySelector('button[type="submit"]');
+    const email = $("resetEmail")?.value.trim();
+    const button = $("resetForm")?.querySelector(
+      'button[type="submit"]'
+    );
+
+    if (!email) {
+      showMessage("Enter your email address.", "error");
+      return;
+    }
 
     setBusy(button, true, "Sending link…");
 
     try {
-      const email = $("resetEmail").value.trim();
-
       const { error } =
         await supabaseClient.auth.resetPasswordForEmail(email, {
           redirectTo:
@@ -355,12 +403,10 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
   });
 
-  // -----------------------------------------------
-  // Sign out
-  // -----------------------------------------------
-
-  $("authSignOut").addEventListener("click", async () => {
+  // SIGN OUT.
+  $("authSignOut")?.addEventListener("click", async () => {
     if (!supabaseClient) {
+      sessionStorage.removeItem("cvt-guest-session");
       showLogin();
       return;
     }
@@ -383,10 +429,7 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
     }
   });
 
-  // -----------------------------------------------
-  // Restore login session on page load
-  // -----------------------------------------------
-
+  // RESTORE SESSION ON PAGE LOAD.
   async function restoreSession() {
     if (!supabaseClient) {
       if (sessionStorage.getItem("cvt-guest-session") === "true") {
@@ -396,7 +439,7 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
         switchMode("signin");
 
         showMessage(
-          "Add your Supabase Project URL and publishable key to auth.js to enable real login. Guest mode is available.",
+          "Supabase is unavailable. Check the project URL, publishable key and Supabase script in index.html. Guest mode is available.",
           "error"
         );
       }
@@ -404,31 +447,63 @@ const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
       return;
     }
 
-    const { data, error } = await supabaseClient.auth.getSession();
+    try {
+      const { data, error } =
+        await supabaseClient.auth.getSession();
 
-    if (error) {
+      if (error) throw error;
+
+      if (data?.session?.user) {
+        enterApp(data.session.user);
+      } else if (
+        sessionStorage.getItem("cvt-guest-session") === "true"
+      ) {
+        enterApp(null);
+      } else {
+        screen.hidden = false;
+        switchMode("signin");
+      }
+    } catch (error) {
       console.error("Could not restore Supabase session:", error);
-    }
 
-    if (data?.session?.user) {
-      enterApp(data.session.user);
-    } else if (
-      sessionStorage.getItem("cvt-guest-session") === "true"
-    ) {
-      enterApp(null);
-    } else {
       screen.hidden = false;
       switchMode("signin");
+
+      showMessage(
+        "Unable to restore your session. Please try signing in again.",
+        "error"
+      );
     }
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         enterApp(session.user);
       } else if (event === "SIGNED_OUT") {
+        sessionStorage.removeItem("cvt-guest-session");
         showLogin();
       }
     });
   }
+
+  // Wait for the chess loading animation before revealing login.
+  screen.style.visibility = "hidden";
+
+  let preloaderFinished = false;
+
+  window.addEventListener("cvt:preloader-finished", () => {
+    preloaderFinished = true;
+
+    if (!screen.hidden) {
+      screen.style.visibility = "visible";
+    }
+  });
+
+  // Fallback in case the preloader event is missing.
+  window.setTimeout(() => {
+    if (!preloaderFinished && !screen.hidden) {
+      screen.style.visibility = "visible";
+    }
+  }, 15000);
 
   restoreSession();
 })();
