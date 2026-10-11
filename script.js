@@ -1103,8 +1103,10 @@ function runPreloader() {
     let startTime = 0;
     let completionTimer = null;
     let fadeTimer = null;
+    let quoteTimer = null;
+    let quoteFadeTimer = null;
     let currentQuoteIndex = -1;
-    const completionPauseMs = 2000;
+    const completionPauseMs = 2000; // Configure between 1000 and 3000 ms.
     const philosophyQuotes = [
         "Every move is a decision. Every decision shapes the game.",
         "The beauty of chess lies in the power of a single move.",
@@ -1127,13 +1129,31 @@ function runPreloader() {
     function showQuote(index, immediate = false) {
         if (!quoteEl || index === currentQuoteIndex) return;
         currentQuoteIndex = index;
-        quoteEl.classList.add("is-changing");
-        const reveal = () => {
+        if (quoteFadeTimer) clearTimeout(quoteFadeTimer);
+        if (immediate || reducedMotion) {
             quoteEl.textContent = philosophyQuotes[index];
             quoteEl.classList.remove("is-changing");
+            return;
+        }
+        quoteEl.classList.add("is-changing");
+        quoteFadeTimer = window.setTimeout(() => {
+            quoteEl.textContent = philosophyQuotes[index];
+            quoteEl.classList.remove("is-changing");
+            quoteFadeTimer = null;
+        }, 220);
+    }
+
+    function startQuoteRotation() {
+        if (!quoteEl || quoteTimer || done) return;
+        showQuote(0, true);
+        let nextIndex = 1;
+        const rotate = () => {
+            if (done) return;
+            showQuote(nextIndex);
+            nextIndex = (nextIndex + 1) % philosophyQuotes.length;
+            quoteTimer = window.setTimeout(rotate, reducedMotion ? 6500 : 4800);
         };
-        if (immediate || reducedMotion) reveal();
-        else window.setTimeout(reveal, 180);
+        quoteTimer = window.setTimeout(rotate, reducedMotion ? 6500 : 4800);
     }
 
     function revealPieces(progress) {
@@ -1153,6 +1173,10 @@ function runPreloader() {
         done = true;
         if (progressTimer) clearTimeout(progressTimer);
         if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (quoteTimer) clearTimeout(quoteTimer);
+        if (quoteFadeTimer) clearTimeout(quoteFadeTimer);
+        quoteTimer = null;
+        quoteFadeTimer = null;
         revealPieces(100);
         if (percentEl) percentEl.textContent = "100";
         if (barFill) barFill.style.width = "100%";
@@ -1178,7 +1202,7 @@ function runPreloader() {
                 document.documentElement.style.overflow = "";
                 window.dispatchEvent(new Event("cvt:preloader-finished"));
             }, reducedMotion ? 40 : 650);
-        }, reducedMotion ? 1000 : completionPauseMs);
+        }, completionPauseMs);
     }
 
     function step() {
@@ -1195,8 +1219,6 @@ function runPreloader() {
                 value >= 31 ? "PLACING BLACK PAWNS" :
                 value >= 11 ? "ARRANGING BLACK PIECES" : "INITIALIZING CHESS VISION";
         }
-        const quoteIndex = Math.min(philosophyQuotes.length - 1, Math.floor((value - 1) / 7));
-        showQuote(quoteIndex);
         if (value === 25 && line) line.textContent = "Every piece has its place.";
         if (value === 50 && line) line.textContent = "Build your board vision.";
         if (value === 75 && line) line.textContent = "Your starting position is taking shape.";
@@ -1211,7 +1233,7 @@ function runPreloader() {
         value = 1;
         if (percentEl) percentEl.textContent = "1";
         if (barFill) barFill.style.width = "1%";
-        showQuote(0, true);
+        startQuoteRotation();
         revealPieces(1);
         if (label) label.textContent = "INITIALIZING CHESS VISION";
         if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
