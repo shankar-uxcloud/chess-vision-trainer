@@ -4649,3 +4649,88 @@ body[data-theme="neon"] :is(button, a, input, select, textarea, [tabindex]):focu
   outline: 2px solid #00f5ff !important;
   outline-offset: 3px;
 }
+
+
+/* NEON MODE COLOR BOOST — vivid dark palette with multiple electric accents */
+body[data-theme="neon"] {
+  --bg: #05040f !important;
+  --sidebar: #080719 !important;
+  --surface: #0d0b20 !important;
+  --surface-2: #15112d !important;
+  --surface-3: #21183f !important;
+  --border: #38265f !important;
+  --border-strong: #6242a3 !important;
+  --text: #fffaff !important;
+  --text-muted: #d6cbed !important;
+  --text-dim: #a89bc9 !important;
+  --accent: #00f5ff !important;
+  --accent-2: #bd5cff !important;
+  --accent-soft: rgba(0,245,255,.15) !important;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(165,55,255,.24), transparent 32%),
+    radial-gradient(ellipse at 96% 10%, rgba(0,245,255,.15), transparent 28%),
+    radial-gradient(ellipse at 55% 105%, rgba(255,35,190,.12), transparent 38%),
+    #05040f !important;
+}
+body[data-theme="neon"] :is(.panel,.card,.stat-card,.mode-card,.mp-stat-card,.mp-difficulty-card,.settings-card,.feature-card,.training-card,.result-card,.auth-card,.modal-content,.dialog) {
+  background:
+    linear-gradient(135deg, rgba(0,245,255,.065), transparent 34%),
+    linear-gradient(315deg, rgba(255,42,200,.055), transparent 43%),
+    linear-gradient(120deg, rgba(140,75,255,.055), transparent 62%),
+    rgba(10,8,27,.97) !important;
+  border-color: rgba(139,92,246,.48) !important;
+  box-shadow: 0 0 0 1px rgba(139,92,246,.08), 0 14px 40px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+body[data-theme="neon"] :is(.panel,.card,.stat-card,.mode-card,.mp-stat-card,.mp-difficulty-card,.feature-card,.training-card):hover {
+  border-color: #00f5ff !important;
+  box-shadow: 0 0 0 1px rgba(0,245,255,.17), 0 0 26px rgba(0,245,255,.12), 0 0 42px rgba(189,92,255,.08), 0 14px 40px rgba(0,0,0,.4) !important;
+}
+body[data-theme="neon"] :is(.brand-name,.logo-text,.accent-text,.highlight,.stat-value,.mp-stat-value,.hero h1 span) {
+  color: #00f5ff !important;
+  text-shadow: 0 0 8px rgba(0,245,255,.5), 0 0 22px rgba(0,245,255,.2) !important;
+}
+body[data-theme="neon"] :is(.nav-item.active,.nav-item[aria-current="page"],.tab-button.active) {
+  color: #fff !important;
+  background: linear-gradient(100deg, rgba(126,55,255,.28), rgba(0,245,255,.10)) !important;
+  border-color: rgba(0,245,255,.65) !important;
+  box-shadow: inset 3px 0 0 #00f5ff, 0 0 18px rgba(145,70,255,.13) !important;
+}
+body[data-theme="neon"] :is(.primary-button,.btn-primary,button.primary,.dashboard-auth-button,.auth-submit,.auth-account-pill button,.hero .button,.launch-button) {
+  background: linear-gradient(110deg,#6d28d9 0%,#a21caf 48%,#ec4899 100%) !important;
+  border-color: rgba(255,126,244,.82) !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(192,38,255,.3), 0 0 28px rgba(236,72,153,.13) !important;
+}
+body[data-theme="neon"] :is(.primary-button,.btn-primary,button.primary,.dashboard-auth-button,.auth-submit,.auth-account-pill button,.hero .button,.launch-button):hover {
+  filter: brightness(1.15) saturate(1.2);
+  box-shadow: 0 0 18px rgba(236,72,153,.38), 0 0 34px rgba(0,245,255,.16) !important;
+}
+body[data-theme="neon"] :is(.badge,.chip,.tag,.pill,.status-badge) {
+  color: #78fbff !important;
+  background: linear-gradient(110deg,rgba(0,245,255,.12),rgba(189,92,255,.12)) !important;
+  border-color: rgba(0,245,255,.36) !important;
+}
+body[data-theme="neon"] :is(.progress-bar,.progress-fill,.meter-fill,.xp-fill) {
+  background: linear-gradient(90deg,#00f5ff 0%,#8b5cf6 48%,#ff38bc 78%,#b6ff4a 100%) !important;
+  box-shadow: 0 0 14px rgba(0,245,255,.28) !important;
+}
+body[data-theme="neon"] :is(.chessboard,.board,.chess-board) {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 1px rgba(0,245,255,.24),0 0 26px rgba(168,85,247,.24),0 18px 45px rgba(0,0,0,.42) !important;
+}
+body[data-theme="neon"] .square[aria-disabled="false"]:hover {
+  box-shadow: inset 0 0 0 3px #00f5ff,inset 0 0 24px rgba(0,245,255,.28) !important;
+}
+body[data-theme="neon"] :is(input,select,textarea,.form-control,.search-input):focus {
+  border-color: #00f5ff !important;
+  box-shadow: 0 0 0 3px rgba(0,245,255,.16),0 0 22px rgba(0,245,255,.1) !important;
+}
+body[data-theme="neon"] :is(.secondary-button,.btn-secondary,.ghost-button,button.secondary,.auth-guest,.tab-button,.nav-item,.icon-button) {
+  background: linear-gradient(135deg,rgba(27,20,59,.98),rgba(17,15,43,.98)) !important;
+  border-color: rgba(168,85,247,.5) !important;
+}
+body[data-theme="neon"] .auth-card {
+  background: radial-gradient(ellipse at 100% 0%,rgba(189,92,255,.2),transparent 43%),radial-gradient(ellipse at 0% 100%,rgba(0,245,255,.08),transparent 42%),#0b091e !important;
+  border-color: rgba(0,245,255,.46) !important;
+  box-shadow: 0 0 0 1px rgba(0,245,255,.07),0 24px 80px rgba(0,0,0,.56),0 0 36px rgba(189,92,255,.11) !important;
+}
