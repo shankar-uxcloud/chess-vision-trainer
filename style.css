@@ -3421,37 +3421,46 @@ body[data-theme="dark"] .mp-difficulty-card:hover {
 
 
 
-/* ===== FLOATING KNIGHT IN EVERY THEME ===== */
+/* ===== UNIVERSAL FLOATING — DAYLIGHT, NEON, HEAVY DARK ===== */
 
-body .hero-knight {
-  animation: knightFloat 4s ease-in-out infinite !important;
+body[data-theme="light"] .hero-knight,
+body[data-theme="neon"] .hero-knight,
+body[data-theme="heavy"] .hero-knight {
+  animation: universalKnightFloat 3s ease-in-out infinite !important;
+  transform-origin: center;
   will-change: transform;
 }
 
-body .hero-orbit.orbit-two {
-  animation: rotateOrbit 40s linear infinite !important;
+body[data-theme="light"] .hero-orbit.orbit-two,
+body[data-theme="neon"] .hero-orbit.orbit-two,
+body[data-theme="heavy"] .hero-orbit.orbit-two {
+  animation: universalOrbitSpin 12s linear infinite !important;
+  transform-origin: center;
   will-change: transform;
 }
 
-/* Obsidian keeps its enhanced Aura animations */
-body[data-theme="dark"] .hero-knight {
-  animation: obsidianKnight 3.2s ease-in-out infinite !important;
+@keyframes universalKnightFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotateY(-8deg) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -20px, 0) rotateY(12deg) scale(1.06);
+  }
 }
 
-body[data-theme="dark"] .hero-orbit {
-  animation: obsidianOrbit 5s ease-in-out infinite alternate !important;
+@keyframes universalOrbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-body[data-theme="dark"] .hero-orbit.orbit-two {
-  animation-delay: -2.5s !important;
-}
-
-/* Respect reduced-motion accessibility settings */
 @media (prefers-reduced-motion: reduce) {
-  body .hero-knight,
-  body .hero-orbit {
+  body[data-theme="light"] .hero-knight,
+  body[data-theme="neon"] .hero-knight,
+  body[data-theme="heavy"] .hero-knight,
+  body[data-theme="light"] .hero-orbit.orbit-two,
+  body[data-theme="neon"] .hero-orbit.orbit-two,
+  body[data-theme="heavy"] .hero-orbit.orbit-two {
     animation: none !important;
     will-change: auto;
   }
 }
-
