@@ -1026,72 +1026,141 @@ const game = {
 
 let audioContext = null;
 
-/* Preloader */
-const PIECE_LAYOUT = [
-    { r:0, c:0, glyph:"♜", color:"black" }, { r:0, c:3, glyph:"♜", color:"black" },
-    { r:1, c:1, glyph:"♟", color:"black" }, { r:1, c:2, glyph:"♟", color:"black" },
-    { r:2, c:1, glyph:"♙", color:"white" }, { r:2, c:2, glyph:"♙", color:"white" },
-    { r:3, c:0, glyph:"♖", color:"white" }, { r:3, c:3, glyph:"♖", color:"white" }
+/* Premium 8x8 chess preloader */
+const PRELOADER_PIECES = [
+    ["♜","♞","♝","♛","♚","♝","♞","♜"],
+    ["♟","♟","♟","♟","♟","♟","♟","♟"],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["♙","♙","♙","♙","♙","♙","♙","♙"],
+    ["♖","♘","♗","♕","♔","♗","♘","♖"]
 ];
 function runPreloader() {
-    const el = $("preloader"); if (!el) return;
+    const el = $("preloader");
+    if (!el) return;
     document.body.classList.add("preloading");
     document.documentElement.style.overflow = "hidden";
-    const grid = $("preloaderGrid"), line = $("preloaderLine"), sub = $("preloaderSub");
-    const barFill = $("preloaderBarFill"), percentEl = $("preloaderPercent");
-    if (grid) {
-        grid.innerHTML = "";
-        for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const grid = $("preloaderGrid");
+    const line = $("preloaderLine");
+    const sub = $("preloaderSub");
+    const barFill = $("preloaderBarFill");
+    const percentEl = $("preloaderPercent");
+    const label = el.querySelector(".preloader-label");
+    const hint = el.querySelector(".preloader-hint");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+    const pieceNodes = [];
+    for (let r = 0; r < 8; r++) {
+        for (let col = 0; col < 8; col++) {
             const sq = document.createElement("div");
-            sq.className = "preloader-square " + ((r + c) % 2 === 0 ? "light" : "dark");
+            sq.className = "preloader-square " + ((r + col) % 2 === 0 ? "light" : "dark");
+            sq.dataset.square = "abcdefgh"[col] + (8 - r);
+            const glyph = PRELOADER_PIECES[r][col];
+            if (glyph) {
+                const piece = document.createElement("span");
+                const isBlack = r < 2;
+                piece.className = "preloader-piece " + (isBlack ? "black" : "white");
+                piece.textContent = glyph;
+                piece.setAttribute("aria-hidden", "true");
+                piece.style.setProperty("--piece-index", String(r * 8 + col));
+                sq.appendChild(piece);
+                pieceNodes.push(piece);
+            }
+            if (r === 7) {
+                const coord = document.createElement("span");
+                coord.className = "preloader-coordinate file-coordinate";
+                coord.textContent = "abcdefgh"[col];
+                sq.appendChild(coord);
+            }
+            if (col === 0) {
+                const coord = document.createElement("span");
+                coord.className = "preloader-coordinate rank-coordinate";
+                coord.textContent = String(8 - r);
+                sq.appendChild(coord);
+            }
             grid.appendChild(sq);
         }
     }
-    let done = false; const timers = [];
+
+    let done = false;
+    let progressTimer = null;
+    let started = false;
+    const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 5200;
+
     function finish() {
-        if (done) return; done = true; timers.forEach(clearTimeout);
+        if (done) return;
+        done = true;
+        if (progressTimer) clearTimeout(progressTimer);
+        if (percentEl) percentEl.textContent = "100";
+        if (barFill) barFill.style.width = "100%";
+        if (label) label.textContent = "READY TO PLAY";
+        if (line) line.textContent = "Your board is ready.";
+        if (sub) sub.textContent = "EVERY SQUARE A DECISION · EVERY MOVE A MEMORY";
         el.classList.add("done");
         document.body.classList.remove("preloading");
         document.documentElement.style.overflow = "";
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
-        setTimeout(() => {   el.style.display = "none";   el.setAttribute("aria-hidden", "true");   window.dispatchEvent(new Event("cvt:preloader-finished")); }, 400);
+        setTimeout(() => {
+            el.style.display = "none";
+            el.setAttribute("aria-hidden", "true");
+            window.dispatchEvent(new Event("cvt:preloader-finished"));
+        }, 650);
     }
-    el.addEventListener("click", () => {
-        if (done) return; timers.forEach(clearTimeout);
-        if (percentEl) percentEl.textContent = "100";
-        if (barFill) barFill.style.width = "100%";
-        if (line) line.classList.add("show");
-        if (sub) sub.classList.add("show");
-        setTimeout(finish, 350);
-    }, { once: true });
-    PIECE_LAYOUT.forEach((p, i) => {
-        timers.push(setTimeout(() => {
-            if (done || !grid) return;
-            const sq = grid.children[p.r * 4 + p.c]; if (!sq) return;
-            const piece = document.createElement("span");
-            piece.className = "preloader-piece " + p.color;
-            piece.textContent = p.glyph;
-            sq.appendChild(piece);
-        }, 140 + i * 200));
-    });
-    const piecesDone = 60 + PIECE_LAYOUT.length * 80 + 150;
-    timers.push(setTimeout(() => { if (!done) { if (line) line.classList.add("show"); if (sub) sub.classList.add("show"); } }, piecesDone));
-    timers.push(setTimeout(() => { if (!done) { if (line) line.classList.add("flash"); if (sub) sub.classList.add("flash"); } }, piecesDone + 250));;
-    timers.push(setTimeout(() => {
-        if (done) return;
-        if (line) line.classList.remove("flash"); if (sub) sub.classList.remove("flash");
-        let n = 0;
+
+    function startProgress() {
+        if (started || done) return;
+        started = true;
+        let value = 0;
+        const startTime = performance.now();
+        if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
         function step() {
             if (done) return;
-            n++; if (n > 100) n = 100;
-            if (percentEl) percentEl.textContent = String(n);
-            if (barFill) barFill.style.width = n + "%";
-            if (n < 100) timers.push(setTimeout(step, 14 + Math.pow(n/100, 3) * 48));
-            else timers.push(setTimeout(finish, 400));
+            value += 1;
+            if (percentEl) percentEl.textContent = String(value);
+            if (barFill) barFill.style.width = value + "%";
+            if (label) {
+                label.textContent = value >= 100 ? "READY TO PLAY" :
+                    value >= 75 ? "FINALIZING YOUR BOARD" :
+                    value >= 50 ? "PREPARING TRAINING MODES" :
+                    value >= 25 ? "SETTING THE PIECES" : "INITIALIZING CHESS VISION";
+            }
+            if (value >= 100) {
+                finish();
+                return;
+            }
+            const nextAt = startTime + ((value + 1) / 100) * duration;
+            progressTimer = setTimeout(step, Math.max(8, nextAt - performance.now()));
         }
-        step();
-    }, piecesDone + 500 + 1650));
-    timers.push(setTimeout(finish, 12000));
+        if (percentEl) percentEl.textContent = "1";
+        if (barFill) barFill.style.width = "1%";
+        if (label) label.textContent = "INITIALIZING CHESS VISION";
+        progressTimer = setTimeout(step, duration / 100);
+    }
+
+    // Stagger the 32 pieces into their standard squares, then run the exact counter.
+    pieceNodes.forEach((piece, i) => {
+        piece.style.animationDelay = (i * 13) + "ms";
+    });
+    const ready = () => {
+        const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        Promise.resolve(fontsReady).catch(() => {}).then(() => {
+            setTimeout(startProgress, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 550);
+        });
+    };
+    if (document.readyState === "complete") ready();
+    else window.addEventListener("load", ready, { once: true });
+
+    // Defensive timeout: never leave the page covered forever if a browser resource hangs.
+    setTimeout(() => {
+        if (!done) {
+            if (percentEl) percentEl.textContent = "100";
+            if (barFill) barFill.style.width = "100%";
+            finish();
+        }
+    }, duration + 12000);
 }
 
 /* Sound */
