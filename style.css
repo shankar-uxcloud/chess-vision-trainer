@@ -3511,3 +3511,40 @@ body[data-theme="dark"] .mp-difficulty-card:hover {
     animation: none !important;
   }
 }
+
+
+
+/* ===== FINAL OBSIDIAN KNIGHT OVERRIDE ===== */
+body[data-theme="dark"] .hero-art .hero-knight {
+  color: #fff2d6 !important;
+  background: transparent !important;
+  text-shadow: 0 0 1px #fff8e8 !important;
+  -webkit-text-stroke: 0.5px #fff8e8 !important;
+  filter: none !important;
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+  opacity: 1 !important;
+}
+
+body[data-theme="dark"] .hero-art .hero-knight::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 100px !important;
+  height: 100px !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 50% !important;
+  background: #ffad38 !important;
+  opacity: 0.24 !important;
+  filter: blur(24px) !important;
+  animation: sharpKnightAura 3s ease-in-out infinite !important;
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="dark"] .hero-art .hero-knight,
+  body[data-theme="dark"] .hero-art .hero-knight::before {
+    animation: none !important;
+  }
+}
