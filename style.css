@@ -4908,3 +4908,161 @@ body[data-theme="neon"] .auth-card {
   .guest-mini-stats strong {font-size:12px;}
   .guest-welcome-footer {font-size:8px;}
 }
+
+
+/* CINEMATIC PRELOADER V2 — complete 8x8 board, responsive and accessible */
+.preloader {
+  cursor:default;
+  background:
+    radial-gradient(ellipse at 50% 34%,rgba(0,245,180,.13),transparent 34%),
+    radial-gradient(ellipse at 15% 88%,rgba(139,92,246,.12),transparent 32%),
+    radial-gradient(ellipse at 92% 12%,rgba(34,211,238,.09),transparent 29%),
+    linear-gradient(145deg,#050b0b 0%,#080c16 55%,#070713 100%) !important;
+}
+.preloader::before {
+  content:"";
+  position:absolute;inset:0;pointer-events:none;opacity:.18;
+  background-image:linear-gradient(rgba(148,163,184,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.07) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:linear-gradient(to bottom,black,transparent 90%);
+}
+.preloader-bg {
+  background:radial-gradient(ellipse at center,rgba(16,185,129,.10),transparent 58%) !important;
+}
+.preloader-inner {
+  width:min(94vw,700px) !important;
+  gap:clamp(15px,2.2vh,25px) !important;
+  padding:clamp(18px,3vh,34px) 18px !important;
+}
+.preloader-brand {filter:drop-shadow(0 0 18px rgba(16,185,129,.16));}
+.preloader-brand-icon {
+  background:linear-gradient(135deg,#10b981,#22d3ee) !important;
+  color:#03110e !important;
+  box-shadow:0 0 24px rgba(16,185,129,.28),0 0 46px rgba(34,211,238,.10) !important;
+}
+.preloader-brand-text b {
+  color:#34e6a4 !important;
+}
+.preloader-grid {
+  position:relative;
+  grid-template-columns:repeat(8,minmax(0,1fr)) !important;
+  grid-template-rows:repeat(8,minmax(0,1fr)) !important;
+  width:min( min(68vw,440px), 52vh, 82vw) !important;
+  height:auto !important;
+  aspect-ratio:1/1;
+  gap:0 !important;
+  border:2px solid rgba(16,185,129,.7) !important;
+  border-radius:15px !important;
+  overflow:hidden !important;
+  background:#10251d !important;
+  box-shadow:0 0 0 1px rgba(34,211,238,.12),0 18px 60px rgba(0,0,0,.46),0 0 40px rgba(16,185,129,.16),0 0 70px rgba(139,92,246,.08),inset 0 0 28px rgba(16,185,129,.05) !important;
+  animation:preloaderBoardGlow 3.5s ease-in-out infinite !important;
+}
+.preloader-square {
+  position:relative;
+  min-width:0;min-height:0;
+  display:grid;place-items:center;
+  aspect-ratio:1/1;
+  overflow:hidden;
+}
+.preloader-square.light {background:#dce8d7 !important;}
+.preloader-square.dark {background:#315344 !important;}
+.preloader-square:nth-child(8n)::after {border-right:0;}
+.preloader-piece {
+  z-index:1;
+  font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif !important;
+  font-size:clamp(18px,4.3vw,43px) !important;
+  line-height:1 !important;
+  animation:preloaderPieceSettle .58s cubic-bezier(.2,.8,.2,1) both !important;
+  animation-delay:calc(var(--piece-index,0) * 12ms) !important;
+}
+.preloader-piece.white {
+  color:#fffdf5 !important;
+  -webkit-text-stroke:.65px rgba(15,23,42,.58);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.55)) drop-shadow(0 0 5px rgba(255,255,255,.15));
+}
+.preloader-piece.black {
+  color:#111923 !important;
+  -webkit-text-stroke:.35px rgba(255,255,255,.18);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));
+}
+.preloader-coordinate {
+  position:absolute;z-index:2;
+  font:600 clamp(7px,.85vw,10px) "DM Mono",monospace;
+  line-height:1;color:rgba(12,29,23,.7);
+  pointer-events:none;
+}
+.file-coordinate {right:3px;bottom:2px;}
+.rank-coordinate {left:3px;top:3px;}
+.preloader-copy {gap:10px !important;}
+.preloader-line {
+  color:#f1edff !important;
+  font-size:clamp(19px,3.2vw,30px) !important;
+  text-shadow:0 0 22px rgba(139,92,246,.22);
+}
+.preloader-sub {
+  color:#b4c9c3 !important;
+  font-size:clamp(9px,1.15vw,11px) !important;
+  letter-spacing:.19em !important;
+}
+.preloader-progress {width:min(100%,450px) !important;gap:11px !important;}
+.preloader-bar-track {
+  height:7px !important;
+  overflow:hidden;
+  background:rgba(148,163,184,.13) !important;
+  border:1px solid rgba(148,163,184,.14);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4);
+}
+.preloader-bar-fill {
+  background:linear-gradient(90deg,#10b981 0%,#34f5c5 42%,#22d3ee 75%,#a78bfa 100%) !important;
+  box-shadow:0 0 14px rgba(52,245,197,.5),0 0 26px rgba(34,211,238,.17) !important;
+  transition:width .06s linear !important;
+}
+.preloader-bar-fill::before {
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.65) 50%,transparent 65%);
+  background-size:220% 100%;animation:preloaderShimmer 1.5s linear infinite;
+}
+.preloader-label {color:#a7b7bd !important;letter-spacing:.2em !important;}
+.preloader-counter {color:#6ef7c5 !important;text-shadow:0 0 16px rgba(52,245,197,.28);}
+.preloader-counter #preloaderPercent {
+  font-size:clamp(22px,3vw,30px) !important;
+  font-weight:700 !important;
+  text-shadow:0 0 16px rgba(52,245,197,.42) !important;
+}
+.preloader-percent {color:#8b9ea5 !important;}
+.preloader-hint {
+  color:#677783 !important;
+  letter-spacing:.16em !important;
+  cursor:default;
+}
+.preloader.done {opacity:0;transform:scale(1.015);pointer-events:none;}
+@keyframes preloaderPieceSettle {
+  from {opacity:0;transform:translateY(-8px) scale(.78);}
+  to {opacity:1;transform:translateY(0) scale(1);}
+}
+@keyframes preloaderShimmer {
+  from {background-position:200% 0;}
+  to {background-position:-200% 0;}
+}
+@media (max-width:700px) {
+  .preloader-inner {gap:clamp(13px,2vh,20px) !important;padding:18px 14px !important;}
+  .preloader-grid {width:min(78vw,42vh,390px) !important;}
+  .preloader-copy {gap:7px !important;}
+  .preloader-line {font-size:clamp(18px,5vw,25px) !important;}
+  .preloader-sub {letter-spacing:.1em !important;line-height:1.6;}
+  .preloader-hint {font-size:8px !important;}
+}
+@media (max-height:650px) and (min-width:701px) {
+  .preloader-inner {grid-template-columns:1fr 1fr;grid-template-areas:"brand brand" "board copy" "board progress" "hint hint";width:min(96vw,1000px) !important;gap:18px 36px !important;}
+  .preloader-brand {grid-area:brand;}
+  .preloader-grid {grid-area:board;width:min(42vh,360px) !important;}
+  .preloader-copy {grid-area:copy;align-self:end;}
+  .preloader-progress {grid-area:progress;align-self:start;}
+  .preloader-hint {grid-area:hint;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .preloader-grid,.preloader-piece,.preloader-bar-fill::before {animation:none !important;}
+  .preloader-piece {opacity:1 !important;transform:none !important;}
+  .preloader-bar-fill {transition:none !important;}
+}
