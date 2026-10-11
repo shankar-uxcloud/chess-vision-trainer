@@ -3232,117 +3232,112 @@ body {
 }
 
 
-/* ===== CHESS VISION TRAINER: AURA MODE ===== */
+/* ===== OBSIDIAN AURA MODE ONLY ===== */
 
 body[data-theme="dark"] {
-  --bg: #070b16;
-  --sidebar: #090f1e;
-  --surface: #0d1628;
-  --surface-2: #111f36;
-  --surface-3: #1a2b47;
-  --border: #233b60;
-  --border-hover: #4d83d4;
+  --bg: #060914;
+  --sidebar: #090e1b;
+  --surface: #0c1425;
+  --surface-2: #111e34;
+  --surface-3: #1b2b48;
+  --border: #263b5d;
+  --border-hover: #659cff;
   --text: #edf5ff;
-  --text-2: #a9c1e4;
-  --muted: #7188aa;
-  --accent: #65a8ff;
-  --accent-2: #3879ef;
-  --accent-soft: rgba(72, 139, 255, .15);
-  --blue: #65a8ff;
-}
+  --text-2: #adc3e4;
+  --muted: #7d91b4;
+  --accent: #69b8ff;
+  --accent-2: #7168ff;
+  --accent-soft: rgba(91, 155, 255, .16);
 
-body[data-theme="dark"] {
+  background-color: #060914;
   background-image:
-    radial-gradient(ellipse at 78% 7%, rgba(42,100,214,.13), transparent 34%),
-    radial-gradient(ellipse at 18% 48%, rgba(58,76,190,.08), transparent 38%);
-}
-
-body[data-theme="dark"] .sidebar {
-  background: linear-gradient(180deg, #0b1426, #080d18);
-  box-shadow: 12px 0 45px rgba(0,0,0,.16);
-}
-
-body[data-theme="dark"] .brand-icon {
-  background: linear-gradient(135deg, #83c5ff, #456cff 58%, #8b5cf6);
-  color: #071020;
-  box-shadow: 0 0 28px rgba(75,133,255,.3);
-}
-
-body[data-theme="dark"] .nav-link.active {
-  background: linear-gradient(100deg, rgba(64,125,245,.18), rgba(93,91,230,.08));
-  border-color: rgba(101,168,255,.28);
-  box-shadow: inset 3px 0 #65a8ff;
-}
-
-body[data-theme="dark"] .topbar {
-  background: rgba(7,11,22,.88);
-  backdrop-filter: blur(18px);
-}
-
-body[data-theme="dark"] .hero h1 span {
-  background: linear-gradient(100deg, #9bd8ff, #639dff 42%, #a78bfa);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 22px rgba(76,133,255,.18));
+    radial-gradient(ellipse at 78% 7%, rgba(36,105,255,.19), transparent 36%),
+    radial-gradient(ellipse at 12% 56%, rgba(105,65,255,.09), transparent 40%);
 }
 
 body[data-theme="dark"] .hero-art {
-  perspective: 900px;
+  perspective: 1000px;
   transform-style: preserve-3d;
+  isolation: isolate;
 }
 
 body[data-theme="dark"] .hero-art::before {
   content: "";
   position: absolute;
-  width: 230px;
-  height: 230px;
+  z-index: 0;
+  width: 218px;
+  height: 218px;
   top: 48%;
   left: 50%;
-  transform: translate(-50%,-50%) rotateX(59deg) rotateZ(-36deg);
-  border: 2px solid rgba(125,184,255,.75);
-  border-radius: 9px;
+  border: 2px solid rgba(143,203,255,.82);
+  border-radius: 10px;
   background:
-    repeating-conic-gradient(#8eb8ef 0% 25%, #203d70 0% 50%) 0 0 / 25% 25%;
-  box-shadow: 0 0 38px rgba(67,131,255,.24),
-              0 34px 55px rgba(0,0,0,.4);
-  animation: auraBoardFloat 7s ease-in-out infinite;
+    repeating-conic-gradient(#83b6f0 0% 25%, #152b53 0% 50%)
+    0 0 / 25% 25%;
+  box-shadow:
+    0 0 22px rgba(86,157,255,.55),
+    0 0 55px rgba(68,104,255,.3),
+    0 28px 50px rgba(0,0,0,.48);
+  transform-origin: center;
   pointer-events: none;
+  animation: obsidianBoard 5s ease-in-out infinite !important;
+  will-change: transform, filter;
 }
 
 body[data-theme="dark"] .hero-art::after {
   content: "";
   position: absolute;
-  width: 250px;
-  height: 250px;
+  z-index: -1;
+  width: 246px;
+  height: 246px;
   top: 48%;
   left: 50%;
-  border: 1px solid rgba(99,153,255,.22);
+  border: 1px solid rgba(111,163,255,.4);
   border-radius: 50%;
-  transform: translate(-50%,-50%);
-  box-shadow: 0 0 55px rgba(59,113,245,.13);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 42px rgba(65,117,255,.24);
   pointer-events: none;
 }
 
 body[data-theme="dark"] .hero-knight {
+  position: relative;
   z-index: 2;
-  color: #d9ecff;
-  text-shadow: 0 0 14px rgba(103,173,255,.8),
-               0 0 42px rgba(73,111,255,.55);
-  background: radial-gradient(circle, rgba(67,126,255,.24), transparent 72%);
+  color: #e1f5ff;
+  background: radial-gradient(circle, rgba(78,143,255,.3), transparent 72%);
+  text-shadow: 0 0 12px #75caff, 0 0 30px #548cff,
+               0 0 55px rgba(113,87,255,.9);
+  transform-style: preserve-3d;
+  animation: obsidianKnight 3.2s ease-in-out infinite !important;
+  will-change: transform, filter;
 }
 
-body[data-theme="dark"] .panel,
-body[data-theme="dark"] .stat-card,
-body[data-theme="dark"] .mode-card {
-  background-image: linear-gradient(135deg, rgba(90,142,230,.045), transparent 55%);
-  box-shadow: 0 12px 34px rgba(0,0,0,.14);
+body[data-theme="dark"] .hero-orbit {
+  z-index: 1;
+  border-color: rgba(109,171,255,.55);
+  animation: obsidianOrbit 5s ease-in-out infinite alternate !important;
+}
+
+body[data-theme="dark"] .orbit-two {
+  border-color: rgba(166,130,255,.6);
+  animation-delay: -2.5s !important;
+}
+
+body[data-theme="dark"] .hero h1 span {
+  background: linear-gradient(100deg, #a4eaff, #669aff 43%, #b49aff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 20px rgba(76,133,255,.25));
+}
+
+body[data-theme="dark"] .brand-icon {
+  animation: obsidianLogo 2.8s ease-in-out infinite alternate;
 }
 
 body[data-theme="dark"] .chessboard {
-  border-color: #4773b4;
-  box-shadow: 0 0 0 1px rgba(119,175,255,.2),
-              0 0 30px rgba(53,115,237,.14),
+  border-color: #4779bd;
+  box-shadow: 0 0 0 1px rgba(119,175,255,.24),
+              0 0 28px rgba(53,115,237,.17),
               0 22px 60px rgba(0,0,0,.42);
 }
 
@@ -3351,275 +3346,67 @@ body[data-theme="dark"] .square[aria-disabled="false"]:hover {
               0 0 20px rgba(76,142,255,.22);
 }
 
-body[data-theme="dark"] .square.target-highlight {
-  box-shadow: inset 0 0 0 4px #8fc5ff,
-              0 0 22px rgba(89,157,255,.35);
-}
-
-@keyframes auraBoardFloat {
-  0%, 100% { margin-top: 0; filter: brightness(.94); }
-  50% { margin-top: -9px; filter: brightness(1.12); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body[data-theme="dark"] .hero-art::before {
-    animation: none !important;
-  }
-}
-
-
-/* ===== AURA MODE: STRONG VISUAL OVERRIDE ===== */
-
-body[data-theme="dark"] {
-  background-color: #050816 !important;
-  background-image:
-    radial-gradient(ellipse at 75% 5%, rgba(0, 110, 255, 0.24), transparent 42%),
-    radial-gradient(ellipse at 25% 70%, rgba(80, 40, 220, 0.12), transparent 45%) !important;
-  color: #edf5ff !important;
-}
-
-body[data-theme="dark"] .sidebar {
-  background: linear-gradient(180deg, #0b1530, #050816) !important;
-  border-right: 1px solid #244b91 !important;
-}
-
-body[data-theme="dark"] .topbar {
-  background: rgba(5, 8, 22, 0.96) !important;
-  border-bottom: 1px solid #244b91 !important;
-}
-
 body[data-theme="dark"] .panel,
 body[data-theme="dark"] .stat-card,
 body[data-theme="dark"] .mode-card,
 body[data-theme="dark"] .mp-stat-card,
 body[data-theme="dark"] .mp-difficulty-card {
-  background: linear-gradient(145deg, #111e39, #091226) !important;
-  border: 1px solid #294b83 !important;
-  box-shadow: 0 8px 32px rgba(0, 80, 255, 0.12) !important;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease !important;
-}
-
-body[data-theme="dark"] .mode-card:hover,
-body[data-theme="dark"] .mp-difficulty-card:hover {
-  border-color: #65a8ff !important;
-  box-shadow: 0 0 26px rgba(65, 135, 255, 0.3) !important;
-  transform: translateY(-3px) !important;
-}
-
-body[data-theme="dark"] .hero h1 span {
-  background: linear-gradient(100deg, #8be9ff, #548cff, #bd9aff) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-}
-
-body[data-theme="dark"] .hero-art {
-  border-radius: 24px;
-  background: radial-gradient(circle, rgba(38, 91, 190, 0.2), transparent 70%) !important;
-}
-
-body[data-theme="dark"] .brand-icon,
-body[data-theme="dark"] .primary-button {
-  background: linear-gradient(120deg, #3988ff, #7656ed) !important;
-  box-shadow: 0 0 22px rgba(67, 119, 255, 0.25) !important;
-}
-
-body[data-theme="dark"] .nav-link.active {
-  background: linear-gradient(100deg, #16366c, #171d48) !important;
-  border-color: #477fd8 !important;
-  box-shadow: inset 3px 0 #75b7ff, 0 0 18px rgba(53, 117, 255, 0.12) !important;
-}
-
-body[data-theme="dark"] .chessboard {
-  border: 2px solid #568de5 !important;
-  box-shadow: 0 0 0 1px rgba(110, 170, 255, 0.25),
-              0 0 32px rgba(45, 115, 255, 0.28),
-              0 20px 55px rgba(0, 0, 0, 0.45) !important;
-}
-
-body[data-theme="dark"] .section-kicker,
-body[data-theme="dark"] .eyebrow {
-  color: #7db8ff !important;
-}
-
-body[data-theme="dark"] .icon-button:hover,
-body[data-theme="dark"] .ghost-button:hover {
-  border-color: #65a8ff !important;
-  box-shadow: 0 0 18px rgba(65, 135, 255, 0.2) !important;
-}
-
-
-
-/* ==========================================
-   AURA MODE 2.0 — CINEMATIC 3D EXPERIENCE
-   ========================================== */
-
-body[data-theme="dark"] {
-  background-size: 200% 200%;
-  animation: auraAtmosphere 14s ease-in-out infinite alternate;
-}
-
-@keyframes auraAtmosphere {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
-}
-
-/* Floating 3D chessboard */
-body[data-theme="dark"] .hero-art {
-  perspective: 1000px !important;
-  transform-style: preserve-3d !important;
-  isolation: isolate;
-}
-
-body[data-theme="dark"] .hero-art::before {
-  width: 250px !important;
-  height: 250px !important;
-  background:
-    repeating-conic-gradient(
-      #9ac9ff 0% 25%,
-      #142b52 0% 50%
-    ) 0 0 / 25% 25% !important;
-  border: 2px solid #8ac5ff !important;
-  box-shadow:
-    0 0 18px rgba(77, 157, 255, .65),
-    0 0 55px rgba(56, 112, 255, .45),
-    0 35px 70px rgba(0, 0, 0, .55) !important;
-  transform-origin: center center;
-  animation: auraBoard3D 9s ease-in-out infinite !important;
-  will-change: transform, filter;
-}
-
-@keyframes auraBoard3D {
-  0%, 100% {
-    transform: translate(-50%, -50%) rotateX(59deg) rotateZ(-36deg) translateY(0);
-    filter: brightness(.85);
-  }
-  25% {
-    transform: translate(-50%, -50%) rotateX(65deg) rotateZ(-25deg) translateY(-10px);
-    filter: brightness(1.2);
-  }
-  50% {
-    transform: translate(-50%, -50%) rotateX(52deg) rotateZ(-45deg) translateY(-16px);
-    filter: brightness(1.1);
-  }
-  75% {
-    transform: translate(-50%, -50%) rotateX(63deg) rotateZ(-31deg) translateY(-7px);
-    filter: brightness(1.25);
-  }
-}
-
-/* Glowing, floating knight */
-body[data-theme="dark"] .hero-knight {
-  animation: auraKnightFloat 3.5s ease-in-out infinite !important;
-  transform-style: preserve-3d;
-  filter: drop-shadow(0 0 12px rgba(90, 175, 255, .9));
-}
-
-@keyframes auraKnightFloat {
-  0%, 100% {
-    transform: translateY(0) rotateY(-8deg) scale(1);
-    text-shadow: 0 0 14px #6ab7ff, 0 0 35px #466cff;
-  }
-  50% {
-    transform: translateY(-15px) rotateY(12deg) scale(1.08);
-    text-shadow: 0 0 24px #8edcff, 0 0 65px #536dff;
-  }
-}
-
-/* Animated orbital rings */
-body[data-theme="dark"] .hero-orbit {
-  animation: auraOrbitPulse 4s ease-in-out infinite alternate !important;
-  border-color: rgba(95, 165, 255, .4) !important;
-}
-
-body[data-theme="dark"] .orbit-two {
-  animation-delay: -2s !important;
-}
-
-@keyframes auraOrbitPulse {
-  from {
-    transform: scale(.94) rotate(0deg);
-    opacity: .35;
-  }
-  to {
-    transform: scale(1.08) rotate(14deg);
-    opacity: .9;
-  }
-}
-
-/* Cards: dimensional hover and luminous edges */
-body[data-theme="dark"] .stat-card,
-body[data-theme="dark"] .mode-card,
-body[data-theme="dark"] .panel,
-body[data-theme="dark"] .mp-stat-card,
-body[data-theme="dark"] .mp-difficulty-card {
-  transform-style: preserve-3d;
-  transition:
-    transform .35s cubic-bezier(.2,.8,.2,1),
-    box-shadow .35s ease,
-    border-color .35s ease !important;
+  background-image: linear-gradient(135deg, rgba(90,142,230,.055), transparent 58%);
+  transition: transform .32s ease, box-shadow .32s ease,
+              border-color .32s ease;
 }
 
 body[data-theme="dark"] .stat-card:hover,
 body[data-theme="dark"] .mode-card:hover,
 body[data-theme="dark"] .mp-stat-card:hover,
 body[data-theme="dark"] .mp-difficulty-card:hover {
-  transform: perspective(900px) translateY(-7px) rotateX(2deg) !important;
-  border-color: #6aabff !important;
-  box-shadow:
-    0 18px 42px rgba(0, 0, 0, .28),
-    0 0 25px rgba(65, 135, 255, .2) !important;
+  transform: perspective(900px) translateY(-6px) rotateX(2deg);
+  border-color: rgba(111,177,255,.72);
+  box-shadow: 0 18px 42px rgba(0,0,0,.28),
+              0 0 24px rgba(65,135,255,.18);
 }
 
-/* Buttons get a moving light sweep */
-body[data-theme="dark"] .primary-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
+@keyframes obsidianBoard {
+  0%, 100% {
+    transform: translate(-50%,-50%) rotateX(48deg)
+               rotateZ(-23deg) translateY(0) scale(1);
+    filter: brightness(.94);
+  }
+  50% {
+    transform: translate(-50%,-50%) rotateX(68deg)
+               rotateZ(18deg) translateY(-22px) scale(1.08);
+    filter: brightness(1.25);
+  }
 }
 
-body[data-theme="dark"] .primary-button::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -80%;
-  width: 45%;
-  height: 200%;
-  transform: rotate(22deg);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255,255,255,.32),
-    transparent
-  );
-  pointer-events: none;
-  animation: auraButtonSweep 5s ease-in-out infinite;
+@keyframes obsidianKnight {
+  0%, 100% {
+    transform: translateY(0) rotateY(-8deg) scale(1);
+    filter: drop-shadow(0 0 12px rgba(90,175,255,.72));
+  }
+  50% {
+    transform: translateY(-22px) rotateY(16deg) scale(1.09);
+    filter: drop-shadow(0 0 25px rgba(105,174,255,1));
+  }
 }
 
-@keyframes auraButtonSweep {
-  0%, 65% { left: -80%; }
-  100% { left: 150%; }
+@keyframes obsidianOrbit {
+  from { transform: scale(.94) rotate(0deg); opacity: .38; }
+  to   { transform: scale(1.08) rotate(16deg); opacity: .92; }
 }
 
-/* Stronger neon accents */
-body[data-theme="dark"] .brand-icon {
-  animation: auraLogoGlow 3s ease-in-out infinite alternate;
-}
-
-@keyframes auraLogoGlow {
+@keyframes obsidianLogo {
   from { box-shadow: 0 0 12px rgba(75,133,255,.25); }
-  to   { box-shadow: 0 0 32px rgba(75,133,255,.7); }
+  to   { box-shadow: 0 0 30px rgba(75,133,255,.72); }
 }
 
-/* Keep animations comfortable for reduced-motion users */
 @media (prefers-reduced-motion: reduce) {
-  body[data-theme="dark"],
   body[data-theme="dark"] .hero-art::before,
   body[data-theme="dark"] .hero-knight,
   body[data-theme="dark"] .hero-orbit,
-  body[data-theme="dark"] .brand-icon,
-  body[data-theme="dark"] .primary-button::after {
+  body[data-theme="dark"] .brand-icon {
     animation: none !important;
+    will-change: auto;
   }
 
   body[data-theme="dark"] .stat-card,
@@ -3628,56 +3415,4 @@ body[data-theme="dark"] .brand-icon {
   body[data-theme="dark"] .mp-difficulty-card {
     transition: none !important;
   }
-}
-
-
-/* ===== AURA ANIMATION FIX ===== */
-/* Re-enable the cinematic animations after earlier motion rules. */
-
-body[data-theme="dark"] {
-  animation: auraAtmosphere 14s ease-in-out infinite alternate !important;
-  animation-duration: 14s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .hero-art::before {
-  animation: auraBoard3D 9s ease-in-out infinite !important;
-  animation-duration: 9s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .hero-knight {
-  animation: auraKnightFloat 3.5s ease-in-out infinite !important;
-  animation-duration: 3.5s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .hero-orbit {
-  animation: auraOrbitPulse 4s ease-in-out infinite alternate !important;
-  animation-duration: 4s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .orbit-two {
-  animation: auraOrbitPulse 4s ease-in-out infinite alternate !important;
-  animation-delay: -2s !important;
-}
-
-body[data-theme="dark"] .brand-icon {
-  animation: auraLogoGlow 3s ease-in-out infinite alternate !important;
-  animation-duration: 3s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .primary-button::after {
-  animation: auraButtonSweep 5s ease-in-out infinite !important;
-  animation-duration: 5s !important;
-  animation-iteration-count: infinite !important;
-}
-
-body[data-theme="dark"] .stat-card,
-body[data-theme="dark"] .mode-card,
-body[data-theme="dark"] .mp-stat-card,
-body[data-theme="dark"] .mp-difficulty-card {
-  transition: transform .35s ease, box-shadow .35s ease !important;
 }
