@@ -188,6 +188,7 @@ const CVT_SUPABASE_KEY =
     }
   }
 
+
   // Guest mode works without creating an online account.
   function enterGuestMode() {
     sessionStorage.setItem("cvt-guest-session", "true");
@@ -202,6 +203,17 @@ const CVT_SUPABASE_KEY =
     if (accountPill) {
       accountPill.hidden = true;
     }
+
+    switchMode("signin");
+  }
+
+  // Open login from the dashboard top bar.
+  $("dashboardAuthButton")?.addEventListener("click", () => {
+    screen.hidden = false;
+    screen.style.visibility = "visible";
+    switchMode("signin");
+  });
+
 
     switchMode("signin");
   }
