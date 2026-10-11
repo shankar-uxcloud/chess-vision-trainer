@@ -484,21 +484,31 @@ const CVT_SUPABASE_KEY =
       }
     });
   }
+  // Wait for the chess loading animation before revealing login.
+  screen.style.visibility = "hidden";
 
- // Show the login screen when no user session exists.
-screen.style.visibility = "visible";
+  let cvtPreloaderDone = false;
 
-window.addEventListener("cvt:preloader-finished", () => {
-  if (!screen.hidden) {
-    screen.style.visibility = "visible";
-  }
-});
+  window.addEventListener("cvt:preloader-finished", () => {
+    cvtPreloaderDone = true;
 
-  // Preloader and login-screen coordination
-window.addEventListener("cvt:preloader-finished", () => {
-  const authScreen = document.getElementById("authScreen");
+    if (!screen.hidden) {
+      screen.style.visibility = "visible";
+    }
+  });
 
-  if (authScreen && !authScreen.hidden) {
-    authScreen.style.visibility = "visible";
-  }
-});
+  // Restore the existing session exactly once.
+  restoreSession().then(() => {
+    if (cvtPreloaderDone && !screen.hidden) {
+      screen.style.visibility = "visible";
+    }
+  }).catch((error) => {
+    console.error("Authentication startup failed:", error);
+    screen.hidden = false;
+
+    if (cvtPreloaderDone) {
+      screen.style.visibility = "visible";
+    }
+  });
+
+})();
