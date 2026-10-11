@@ -1113,7 +1113,7 @@ function runPreloader() {
     function startProgress() {
         if (started || done) return;
         started = true;
-        let value = 0;
+        let value = 1;
         const startTime = performance.now();
         if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
         function step() {
