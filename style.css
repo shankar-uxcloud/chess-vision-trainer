@@ -3464,3 +3464,123 @@ body[data-theme="heavy"] .hero-orbit.orbit-two {
     will-change: auto;
   }
 }
+
+
+/* =========================================
+   CHESS VISION TRAINER — GLOWING KNIGHT
+   Premium floating 3D effect for every theme
+   ========================================= */
+
+.hero-art {
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  isolation: isolate;
+  min-width: 240px;
+  min-height: 240px;
+  overflow: visible !important;
+}
+
+/* Floating knight */
+.hero-knight {
+  position: relative !important;
+  z-index: 3 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 130px !important;
+  height: 150px !important;
+  border-radius: 50% !important;
+
+  color: var(--accent) !important;
+  background:
+    radial-gradient(
+      ellipse at center,
+      var(--accent-soft) 0%,
+      transparent 72%
+    ) !important;
+
+  font-size: 108px !important;
+  line-height: 1 !important;
+
+  -webkit-text-stroke: 1px currentColor;
+  text-shadow:
+    0 0 5px currentColor,
+    0 0 12px var(--accent),
+    0 0 25px var(--accent),
+    0 0 45px var(--accent),
+    0 0 70px var(--accent-soft);
+
+  filter:
+    drop-shadow(0 0 8px var(--accent))
+    drop-shadow(0 0 18px var(--accent-soft));
+
+  transform-origin: center;
+  animation:
+    knightGlowFloat 3.2s ease-in-out infinite !important;
+
+  will-change: transform, filter;
+}
+
+/* Extra aura surrounding the knight */
+.hero-knight::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.18;
+  filter: blur(28px);
+  animation: knightAuraPulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Keep orbit rings visible around the glowing knight */
+.hero-orbit {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-orbit.orbit-two {
+  animation: rotateOrbit 18s linear infinite !important;
+}
+
+/* Floating motion with a gentle 3D tilt */
+@keyframes knightGlowFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-3deg) scale(1);
+    filter:
+      drop-shadow(0 0 8px var(--accent))
+      drop-shadow(0 0 18px var(--accent-soft));
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(3deg) scale(1.07);
+    filter:
+      drop-shadow(0 0 12px var(--accent))
+      drop-shadow(0 0 26px var(--accent))
+      drop-shadow(0 0 42px var(--accent-soft));
+  }
+}
+
+/* Pulsing light behind the knight */
+@keyframes knightAuraPulse {
+  0%, 100% {
+    opacity: 0.12;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(1.25);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hero-knight,
+  .hero-knight::before,
+  .hero-orbit.orbit-two {
+    animation: none !important;
+  }
+}
