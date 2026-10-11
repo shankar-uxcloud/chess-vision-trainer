@@ -14,8 +14,8 @@
   NEVER use a service_role or secret key here.
 */
 
-const CVT_SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-const CVT_SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+const CVT_SUPABASE_URL = "https://sugnutuorhddsxfqnlpe.supabase.co/"; 
+const CVT_SUPABASE_KEY = "sb_publishable_NzBEjINDhNSRzUHpmde5zQ_FCUwh4Uh";
 
 (() => {
   const $ = id => document.getElementById(id);
