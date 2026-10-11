@@ -4119,3 +4119,25 @@ html body .hero-art .hero-knight {
   }
 }
 
+
+
+
+/* Fix dashboard Sign in / Sign up button visibility */
+.dashboard-auth-button {
+  background: #ffb84d !important;
+  color: #10131a !important;
+  border: 1px solid #ffb84d !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 9px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dashboard-auth-button:hover {
+  background: #ffca78 !important;
+  color: #10131a !important;
+}
