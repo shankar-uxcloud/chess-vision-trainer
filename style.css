@@ -3684,3 +3684,39 @@ html body .hero-art .hero-knight::before {
   opacity: 0.18 !important;
   filter: blur(22px) !important;
 }
+
+
+
+
+/* ===== SOLID BLACK KNIGHT — REFERENCE MATCH ===== */
+
+html body .hero-art .hero-knight,
+html body[data-theme="dark"] .hero-art .hero-knight {
+  color: #050505 !important;
+  -webkit-text-fill-color: #050505 !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background: transparent !important;
+  opacity: 1 !important;
+
+  /* Keep the floating animation */
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+}
+
+/* Remove the glow directly behind the character */
+html body .hero-art .hero-knight::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Retain the soft golden atmosphere around the artwork */
+html body .hero-art::after {
+  box-shadow: 0 0 24px rgba(255, 184, 77, 0.12) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .hero-art .hero-knight {
+    animation: none !important;
+  }
+}
