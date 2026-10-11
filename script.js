@@ -3372,7 +3372,7 @@ function init() {
     buildCoords();
     buildBoard();
 
-    setTheme(load(KEYS.theme, "dark"));
+    setTheme(load(KEYS.theme, "light"));
     setBoardTheme(load(KEYS.board, "emerald"));
     setLabels(load(KEYS.labels, false));
     setCoords(load(KEYS.coords, true) !== false);
