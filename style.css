@@ -3663,3 +3663,24 @@ body[data-theme="dark"] .hero-art .hero-knight {
   background: #ffb84d !important;
   opacity: 0.22 !important;
 }
+
+
+
+
+/* FORCE THE KNIGHT TO DARK CHARCOAL */
+html body .hero-art .hero-knight,
+html body[data-theme="dark"] .hero-art .hero-knight {
+  color: #080808 !important;
+  -webkit-text-fill-color: #080808 !important;
+  -webkit-text-stroke: 1px #b87922 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Keep a soft gold aura behind the dark knight */
+html body .hero-art .hero-knight::before {
+  background: #ffb84d !important;
+  opacity: 0.18 !important;
+  filter: blur(22px) !important;
+}
