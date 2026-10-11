@@ -1104,9 +1104,10 @@ function runPreloader() {
     let completionTimer = null;
     let fadeTimer = null;
     let quoteTimer = null;
-    let quoteFadeTimer = null;
+    let typingTimer = null;
     let currentQuoteIndex = -1;
-    const completionPauseMs = 2000; // Configure between 1000 and 3000 ms.
+    let quoteCharacterIndex = 0;
+    const completionPauseMs = 3000; // Required post-load hold.
     const philosophyQuotes = [
         "Every move is a decision. Every decision shapes the game.",
         "The beauty of chess lies in the power of a single move.",
@@ -1126,34 +1127,52 @@ function runPreloader() {
     ];
     const finalQuote = "The next move is yours. Make it with purpose.";
 
-    function showQuote(index, immediate = false) {
-        if (!quoteEl || index === currentQuoteIndex) return;
+    function clearQuoteTimers() {
+        if (quoteTimer) clearTimeout(quoteTimer);
+        if (typingTimer) clearTimeout(typingTimer);
+        quoteTimer = null;
+        typingTimer = null;
+    }
+
+    function typeQuote(index) {
+        if (!quoteEl || done) return;
+        if (typingTimer) clearTimeout(typingTimer);
         currentQuoteIndex = index;
-        if (quoteFadeTimer) clearTimeout(quoteFadeTimer);
-        if (immediate || reducedMotion) {
-            quoteEl.textContent = philosophyQuotes[index];
-            quoteEl.classList.remove("is-changing");
+        quoteCharacterIndex = 0;
+        const quote = philosophyQuotes[index];
+        quoteEl.textContent = "";
+        if (reducedMotion) {
+            quoteEl.textContent = quote;
+            scheduleNextQuote();
             return;
         }
-        quoteEl.classList.add("is-changing");
-        quoteFadeTimer = window.setTimeout(() => {
-            quoteEl.textContent = philosophyQuotes[index];
-            quoteEl.classList.remove("is-changing");
-            quoteFadeTimer = null;
-        }, 220);
+        const typeNextCharacter = () => {
+            if (done) return;
+            quoteCharacterIndex += 1;
+            quoteEl.textContent = quote.slice(0, quoteCharacterIndex);
+            if (quoteCharacterIndex < quote.length) {
+                typingTimer = window.setTimeout(typeNextCharacter, 32);
+            } else {
+                typingTimer = null;
+                scheduleNextQuote();
+            }
+        };
+        typeNextCharacter();
+    }
+
+    function scheduleNextQuote() {
+        if (done) return;
+        if (quoteTimer) clearTimeout(quoteTimer);
+        quoteTimer = window.setTimeout(() => {
+            quoteTimer = null;
+            const nextIndex = (currentQuoteIndex + 1) % philosophyQuotes.length;
+            typeQuote(nextIndex);
+        }, reducedMotion ? 4200 : 2200);
     }
 
     function startQuoteRotation() {
-        if (!quoteEl || quoteTimer || done) return;
-        showQuote(0, true);
-        let nextIndex = 1;
-        const rotate = () => {
-            if (done) return;
-            showQuote(nextIndex);
-            nextIndex = (nextIndex + 1) % philosophyQuotes.length;
-            quoteTimer = window.setTimeout(rotate, reducedMotion ? 6500 : 4800);
-        };
-        quoteTimer = window.setTimeout(rotate, reducedMotion ? 6500 : 4800);
+        if (!quoteEl || quoteTimer || typingTimer || done) return;
+        typeQuote(0);
     }
 
     function revealPieces(progress) {
@@ -1173,10 +1192,7 @@ function runPreloader() {
         done = true;
         if (progressTimer) clearTimeout(progressTimer);
         if (fallbackTimer) clearTimeout(fallbackTimer);
-        if (quoteTimer) clearTimeout(quoteTimer);
-        if (quoteFadeTimer) clearTimeout(quoteFadeTimer);
-        quoteTimer = null;
-        quoteFadeTimer = null;
+        clearQuoteTimers();
         revealPieces(100);
         if (percentEl) percentEl.textContent = "100";
         if (barFill) barFill.style.width = "100%";
@@ -1185,14 +1201,13 @@ function runPreloader() {
         if (sub) sub.textContent = "EVERY SQUARE A DECISION · EVERY MOVE A MEMORY";
         if (hint) hint.textContent = "WELCOME TO CHESS VISION TRAINER";
         if (quoteEl) {
-            quoteEl.classList.remove("is-changing");
             quoteEl.textContent = finalQuote;
             quoteEl.classList.add("is-final");
         }
         el.classList.add("ready-hold");
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
 
-        // Hold the completed 100% state for two seconds before fading away.
+        // Hold the completed 100% state for exactly three seconds before fading away.
         completionTimer = window.setTimeout(() => {
             el.classList.add("done");
             fadeTimer = window.setTimeout(() => {
