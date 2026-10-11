@@ -3763,3 +3763,28 @@ html body .hero-art::after {
   }
 }
 
+
+
+/* ===== FORCE PURE BLACK KNIGHT ===== */
+html body .hero-art .hero-knight {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  filter: brightness(0) !important;
+  mix-blend-mode: normal !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* No glow or background behind the knight */
+html body .hero-art .hero-knight::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep the knight floating */
+html body .hero-art .hero-knight {
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+}
+
