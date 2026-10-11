@@ -485,18 +485,14 @@ const CVT_SUPABASE_KEY =
     });
   }
 
-  // Wait for the chess loading animation before revealing login.
-  screen.style.visibility = "hidden";
+ // Show the login screen when no user session exists.
+screen.style.visibility = "visible";
 
-  let preloaderFinished = false;
-
-  window.addEventListener("cvt:preloader-finished", () => {
-    preloaderFinished = true;
-
-    if (!screen.hidden) {
-      screen.style.visibility = "visible";
-    }
-  });
+window.addEventListener("cvt:preloader-finished", () => {
+  if (!screen.hidden) {
+    screen.style.visibility = "visible";
+  }
+});
 
   // Fallback in case the preloader event is missing.
   window.setTimeout(() => {
