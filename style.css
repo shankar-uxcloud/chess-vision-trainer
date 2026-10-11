@@ -3644,3 +3644,22 @@ body[data-theme="dark"] .hero-art .hero-knight {
     animation: none !important;
   }
 }
+
+
+
+
+/* ===== BLACK FLOATING KNIGHT ===== */
+.hero-art .hero-knight,
+body[data-theme="dark"] .hero-art .hero-knight {
+  color: #080808 !important;
+  -webkit-text-stroke: 1px #ffb84d !important;
+  text-shadow:
+    0 0 2px rgba(255, 184, 77, 0.65) !important;
+  filter: none !important;
+}
+
+/* Keep the aura warm and behind the black knight */
+.hero-art .hero-knight::before {
+  background: #ffb84d !important;
+  opacity: 0.22 !important;
+}
