@@ -4085,3 +4085,37 @@ html body .hero-art .hero-knight {
 .auth-screen[hidden] {
   display: none !important;
 }
+
+
+
+
+/* Dashboard sign-in button */
+.dashboard-auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid #ffb84d;
+  border-radius: 9px;
+  background: #ffb84d;
+  color: #111;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.dashboard-auth-button:hover {
+  background: #ffca78;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 520px) {
+  .dashboard-auth-button {
+    padding: 0 9px;
+    font-size: 10px;
+  }
+}
+
