@@ -3514,18 +3514,76 @@ body[data-theme="dark"] .mp-difficulty-card:hover {
 
 
 
-/* ===== FINAL OBSIDIAN KNIGHT OVERRIDE ===== */
-body[data-theme="dark"] .hero-art .hero-knight {
-  color: #fff2d6 !important;
-  background: transparent !important;
-  text-shadow: 0 0 1px #fff8e8 !important;
-  -webkit-text-stroke: 0.5px #fff8e8 !important;
-  filter: none !important;
-  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
-  opacity: 1 !important;
+/* ===== CHESS VISION TRAINER: BOARD + KNIGHT FIX ===== */
+
+/* Restore the artwork container in every theme */
+.hero-art {
+  display: grid !important;
+  position: relative !important;
+  place-items: center !important;
+  isolation: isolate !important;
+  width: 240px !important;
+  height: 240px !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
 }
 
-body[data-theme="dark"] .hero-art .hero-knight::before {
+/* Animated 3D chessboard behind the knight */
+body:not([data-theme="dark"]) .hero-art::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  z-index: 0 !important;
+  left: 50% !important;
+  top: 48% !important;
+  width: 190px !important;
+  height: 190px !important;
+  box-sizing: border-box !important;
+  border: 1px solid var(--accent) !important;
+  border-radius: 5px !important;
+
+  background:
+    repeating-conic-gradient(
+      var(--accent) 0% 25%,
+      var(--surface-3) 0% 50%
+    ) 0 0 / 25% 25% !important;
+
+  box-shadow:
+    0 0 12px var(--accent-soft),
+    0 0 28px var(--accent-soft),
+    0 16px 35px rgba(0, 0, 0, 0.35) !important;
+
+  transform-origin: center;
+  pointer-events: none !important;
+  animation: universalChessboardFloat 7s ease-in-out infinite !important;
+}
+
+/* Keep the knight above the board and clearly visible */
+.hero-art .hero-knight {
+  position: relative !important;
+  z-index: 3 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 130px !important;
+  height: 145px !important;
+
+  color: #fff2d6 !important;
+  background: transparent !important;
+  font-family: "Segoe UI Symbol", "DejaVu Sans", serif !important;
+  font-size: 104px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+
+  -webkit-text-stroke: 0.5px #fff8e8 !important;
+  text-shadow: 0 0 2px rgba(255, 245, 220, 0.5) !important;
+  filter: none !important;
+  opacity: 1 !important;
+
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+}
+
+/* Soft light behind the knight, not over its shape */
+.hero-art .hero-knight::before {
   content: "" !important;
   position: absolute !important;
   z-index: -1 !important;
@@ -3535,16 +3593,54 @@ body[data-theme="dark"] .hero-art .hero-knight::before {
   height: 100px !important;
   transform: translate(-50%, -50%) !important;
   border-radius: 50% !important;
-  background: #ffad38 !important;
-  opacity: 0.24 !important;
+  background: var(--accent) !important;
+  opacity: 0.22 !important;
   filter: blur(24px) !important;
   animation: sharpKnightAura 3s ease-in-out infinite !important;
   pointer-events: none !important;
 }
 
+/* Gentle 3D board movement */
+@keyframes universalChessboardFloat {
+  0%, 100% {
+    transform: translate(-50%, -50%)
+      perspective(700px) rotateX(52deg) rotateZ(-20deg);
+  }
+  50% {
+    transform: translate(-50%, -50%)
+      perspective(700px) rotateX(62deg) rotateZ(12deg)
+      translateY(-8px);
+  }
+}
+
+@keyframes sharpKnightFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-3deg) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) rotate(3deg) scale(1.04);
+  }
+}
+
+@keyframes sharpKnightAura {
+  0%, 100% { opacity: 0.16; scale: 0.85; }
+  50% { opacity: 0.30; scale: 1.12; }
+}
+
+/* Keep the original Obsidian board, but fix its knight too */
+body[data-theme="dark"] .hero-art .hero-knight {
+  color: #fff2d6 !important;
+  background: transparent !important;
+  text-shadow: 0 0 2px rgba(255, 245, 220, 0.5) !important;
+  -webkit-text-stroke: 0.5px #fff8e8 !important;
+  filter: none !important;
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  body[data-theme="dark"] .hero-art .hero-knight,
-  body[data-theme="dark"] .hero-art .hero-knight::before {
+  .hero-art::before,
+  .hero-art .hero-knight,
+  .hero-art .hero-knight::before {
     animation: none !important;
   }
 }
