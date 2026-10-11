@@ -3720,3 +3720,46 @@ html body .hero-art::after {
     animation: none !important;
   }
 }
+
+
+
+
+/* ===== PURE BLACK KNIGHT, TRANSPARENT BACKGROUND ===== */
+
+html body .hero-art .hero-knight,
+html body[data-theme="dark"] .hero-art .hero-knight {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background: transparent !important;
+  opacity: 1 !important;
+  mix-blend-mode: multiply !important;
+
+  animation: sharpKnightFloat 3.5s ease-in-out infinite !important;
+}
+
+/* Remove the glow behind the knight */
+html body .hero-art .hero-knight::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep the artwork container transparent */
+html body .hero-art {
+  background: transparent !important;
+}
+
+/* Preserve the board and orbit behind the knight */
+html body .hero-art::before,
+html body .hero-art::after {
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .hero-art .hero-knight {
+    animation: none !important;
+  }
+}
+
