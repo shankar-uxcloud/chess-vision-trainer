@@ -2924,8 +2924,16 @@ const VIEW_TITLES = {
     mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"], analytics: ["Workspace","Analytics"],
     achievements: ["Workspace","Achievements"], settings: ["Workspace","Settings"]
 };
-function setView(name) {
+function setView(name, options = {}) {
     if (!VIEW_TITLES[name]) name = "dashboard";
+    const previousView = document.body.dataset.view || "dashboard";
+    if (options.history !== false && previousView !== name) {
+        try {
+            window.history.pushState({ ...(window.history.state || {}), cvtView: name }, "", "#cvt-" + name);
+        } catch (error) {
+            console.warn("Browser history navigation is unavailable:", error);
+        }
+    }
     document.body.dataset.view = name;
     document.body.style.overflowY = name === "training" ? "auto" : "";
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.dataset.view === name));
@@ -2940,6 +2948,25 @@ function setView(name) {
     if (name === "daily") renderDailyChallenge();
 }
 function setupNav() {
+    const initialView = VIEW_TITLES[document.body.dataset.view] ? document.body.dataset.view : "dashboard";
+    try {
+        const currentHash = window.location.hash;
+        const hashView = currentHash.startsWith("#cvt-") ? currentHash.slice(5) : "";
+        const resolvedInitial = VIEW_TITLES[hashView] ? hashView : initialView;
+        document.body.dataset.view = resolvedInitial;
+        if (!window.history.state || !VIEW_TITLES[window.history.state.cvtView]) {
+            window.history.replaceState({ ...(window.history.state || {}), cvtView: resolvedInitial }, "", currentHash.startsWith("#cvt-") ? currentHash : "#cvt-" + resolvedInitial);
+        }
+        setView(resolvedInitial, { history: false });
+    } catch (error) {
+        setView(initialView, { history: false });
+    }
+    window.addEventListener("popstate", (event) => {
+        const stateView = event.state && event.state.cvtView;
+        const hashView = window.location.hash.startsWith("#cvt-") ? window.location.hash.slice(5) : "";
+        const destination = VIEW_TITLES[stateView] ? stateView : VIEW_TITLES[hashView] ? hashView : "dashboard";
+        setView(destination, { history: false });
+    });
     document.querySelectorAll("[data-nav]").forEach(el => {
         el.addEventListener("click", e => { e.preventDefault(); setView(el.dataset.nav); });
     });
