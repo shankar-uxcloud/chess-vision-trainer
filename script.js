@@ -2631,8 +2631,31 @@ function resetSession() {
         updateTimer(); updateProgress(); resetTarget(); enableBoard(false);
     }
 }
+function restartTrainingSession() {
+    // Restarting abandons the current regular session; it must not award XP,
+    // achievements, rating changes, or a history entry.
+    if (game.dailyActive || game.mode === "daily") {
+        toast("Use the Daily Challenge replay controls to start another attempt.");
+        return;
+    }
+    if (game.mode === "mindpalace" || mindPalace.running) {
+        toast("Use the Mind Palace controls to finish or restart that challenge.");
+        return;
+    }
+    clearInterval(game.timer);
+    clearInterval(game.countdownTimer);
+    clearTimeout(game.feedbackTimer);
+    game.timer = null;
+    game.countdownTimer = null;
+    game.feedbackTimer = null;
+    resetSession();
+    startSession();
+}
 function startSession() {
-    if (game.running) { finishSession(); return; }
+    if (game.running) {
+        toast("End or restart the current session before starting another.");
+        return;
+    }
     if (game.mode === "mindpalace") { startMindPalaceSession(); return; }
     if (game.mode === "daily") { startDailySession(false); return; }
 
@@ -3508,12 +3531,31 @@ function renderHistory() {
         const modeLabel = MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training";
         const perspLabel = s.perspective && s.perspective !== "white" ? " · " + (perspNames[s.perspective] || s.perspective) : "";
         const scoreLabel = s.visionScore ? ` · VS ${s.visionScore}` : "";
-        const html = '<div class="history-item-icon">♞</div>' +
-            '<div class="history-item-info"><strong>' + modeLabel + perspLabel + '</strong><span>' + dateTxt + ' · ' + timeTxt + ' · ' + Math.round(s.duration/60) + 'm' + scoreLabel + '</span></div>' +
-            '<div class="history-item-score"><strong>' + s.correct + '</strong><span>' + s.accuracy + '% accuracy</span></div>';
-        const item1 = document.createElement("div"); item1.className = "history-item"; item1.innerHTML = html;
-        if (list) list.appendChild(item1);
-        if (i < 5 && dash) { const item2 = document.createElement("div"); item2.className = "history-item"; item2.innerHTML = html; dash.appendChild(item2); }
+        const createHistoryItem = () => {
+            const item = document.createElement("div");
+            item.className = "history-item";
+            const icon = document.createElement("div");
+            icon.className = "history-item-icon";
+            icon.textContent = "♞";
+            const info = document.createElement("div");
+            info.className = "history-item-info";
+            const title = document.createElement("strong");
+            title.textContent = modeLabel + perspLabel;
+            const meta = document.createElement("span");
+            meta.textContent = dateTxt + " · " + timeTxt + " · " + Math.round(s.duration / 60) + "m" + scoreLabel;
+            info.append(title, meta);
+            const score = document.createElement("div");
+            score.className = "history-item-score";
+            const correct = document.createElement("strong");
+            correct.textContent = String(s.correct);
+            const accuracyLabel = document.createElement("span");
+            accuracyLabel.textContent = s.accuracy + "% accuracy";
+            score.append(correct, accuracyLabel);
+            item.append(icon, info, score);
+            return item;
+        };
+        if (list) list.appendChild(createHistoryItem());
+        if (i < 5 && dash) dash.appendChild(createHistoryItem());
     });
 }
 function clearHistory() {
@@ -3635,11 +3677,35 @@ function resetProgress() {
 /* Keyboard */
 function setupKeyboard() {
     document.addEventListener("keydown", e => {
-        const t = e.target;
-        if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") return;
+        const target = e.target instanceof Element ? e.target : null;
         const k = e.key.toLowerCase();
 
-        // MP-specific shortcuts during rebuild phase
+        // Never steal native keyboard activation or keystrokes from interactive/editable UI.
+        if (target && (
+            target.closest("input, textarea, select, button, a, [contenteditable=''], [contenteditable='true'], [role='textbox'], [role='dialog']") ||
+            target.isContentEditable
+        )) {
+            if (e.key === "Escape" && target.closest("#confirmOverlay:not(.hidden)")) {
+                e.preventDefault();
+                closeConfirm();
+            }
+            return; // Space on a focused button/link remains native.
+        }
+
+        const visible = el => !!el && !el.hidden && !el.classList.contains("hidden") &&
+            getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden";
+        const blocking = visible($("authScreen")) || visible($("guestWelcome")) ||
+            visible($("onboarding")) || visible($("confirmOverlay")) ||
+            visible($("countdownOverlay")) || visible($("preloader"));
+        if (blocking) {
+            if (e.key === "Escape") {
+                if (visible($("confirmOverlay"))) { e.preventDefault(); closeConfirm(); }
+                else document.body.classList.remove("sidebar-open");
+            }
+            return;
+        }
+
+        // MP-specific shortcuts during rebuild phase.
         if (mindPalace.running && mindPalace.phase === "rebuild") {
             if (k === "u") { e.preventDefault(); undoMindPalaceAction(); return; }
             if (k === "c") { e.preventDefault(); clearMindPalacePlayer(); return; }
@@ -3649,16 +3715,21 @@ function setupKeyboard() {
 
         if (k === "r") {
             e.preventDefault();
-            if (game.running) finishSession(); else startSession();
+            if (game.running || game.paused || game.countdownTimer) restartTrainingSession();
+            else if (game.mode === "daily" || game.mode === "mindpalace") {
+                toast("Use the challenge controls to start or replay this mode.");
+            } else startSession();
         } else if (e.code === "Space") {
-            e.preventDefault();
-            if (game.running) togglePause(); else startSession();
+            if (game.running) { e.preventDefault(); togglePause(); }
+            else if (!game.paused && !game.countdownTimer && game.mode !== "daily" && game.mode !== "mindpalace") {
+                e.preventDefault(); startSession();
+            }
         } else if (k === "f") { e.preventDefault(); toggleFullscreen(); }
         else if (k === "m") { e.preventDefault(); togglePanel(); }
         else if (e.key === "Escape") {
             document.body.classList.remove("sidebar-open");
             if (game.paused) togglePause();
-            else if (game.running && game.mode !== "mindpalace") togglePause();
+            else if (game.running && game.mode !== "mindpalace" && !game.dailyActive) togglePause();
         }
     });
 }
@@ -3697,8 +3768,9 @@ function init() {
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
     $("resultRestart").addEventListener("click", () => {
-        startSession();
-        $("training").scrollIntoView({ behavior:"smooth", block:"start" });
+        const trainingView = document.querySelector('.view[data-view="training"]');
+        if (trainingView) trainingView.scrollIntoView({ behavior:"smooth", block:"start" });
+        restartTrainingSession();
     });
     $("dailyReplayBtn").addEventListener("click", () => startDailySession(true));
     $("dailyViewStartBtn").addEventListener("click", () => {
