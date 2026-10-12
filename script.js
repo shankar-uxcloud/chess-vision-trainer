@@ -1038,10 +1038,53 @@ const PRELOADER_PIECES = [
     ["♖","♘","♗","♕","♔","♗","♘","♖"]
 ];
 
-function runPreloader() {
+function runPreloader(options = {}) {
+    const previousRun = window.__cvtPreloaderController;
+    if (previousRun) {
+        previousRun.active = false;
+        previousRun.timers.forEach(timer => window.clearTimeout(timer));
+        previousRun.timers.clear();
+        if (previousRun.loadHandler) window.removeEventListener("load", previousRun.loadHandler);
+    }
+    const controller = { active: true, timers: new Set(), loadHandler: null };
+    window.__cvtPreloaderController = controller;
+    const schedule = (callback, delay) => {
+        const timer = window.setTimeout(() => {
+            controller.timers.delete(timer);
+            if (controller.active) callback();
+        }, delay);
+        controller.timers.add(timer);
+        return timer;
+    };
+    const cancel = timer => {
+        if (timer) {
+            window.clearTimeout(timer);
+            controller.timers.delete(timer);
+        }
+    };
     const el = $("preloader");
-    if (!el || el.dataset.initialized === "true") return;
+    if (!el) return;
     el.dataset.initialized = "true";
+    el.style.display = "";
+    el.classList.remove("done", "ready-hold");
+    el.setAttribute("aria-hidden", "false");
+    const initialPercent = $("preloaderPercent");
+    const initialFill = $("preloaderBarFill");
+    const initialLabel = el.querySelector(".preloader-label");
+    const initialLine = $("preloaderLine");
+    const initialSub = $("preloaderSub");
+    const initialHint = el.querySelector(".preloader-hint");
+    const initialQuote = $("preloaderQuote");
+    if (initialPercent) initialPercent.textContent = "0";
+    if (initialFill) initialFill.style.width = "0%";
+    if (initialLabel) initialLabel.textContent = "LOADING";
+    if (initialLine) initialLine.textContent = "The board is a mirror of the mind.";
+    if (initialSub) initialSub.textContent = "EVERY SQUARE A DECISION · EVERY MOVE A MEMORY";
+    if (initialHint) initialHint.textContent = "PREPARING YOUR TRAINING SPACE";
+    if (initialQuote) {
+        initialQuote.textContent = "Every move is a decision.";
+        initialQuote.classList.remove("is-final");
+    }
     document.body.classList.add("preloading");
     document.documentElement.style.overflow = "hidden";
 
@@ -1053,7 +1096,7 @@ function runPreloader() {
     const percentEl = $("preloaderPercent");
     const label = el.querySelector(".preloader-label");
     const hint = el.querySelector(".preloader-hint");
-    if (!grid) return;
+    if (!grid) { controller.active = false; return; }
 
     grid.innerHTML = "";
     const pieceNodes = [];
@@ -1128,15 +1171,15 @@ function runPreloader() {
     const finalQuote = "The next move is yours. Make it with purpose.";
 
     function clearQuoteTimers() {
-        if (quoteTimer) clearTimeout(quoteTimer);
-        if (typingTimer) clearTimeout(typingTimer);
+        if (quoteTimer) cancel(quoteTimer);
+        if (typingTimer) cancel(typingTimer);
         quoteTimer = null;
         typingTimer = null;
     }
 
     function typeQuote(index) {
         if (!quoteEl || done) return;
-        if (typingTimer) clearTimeout(typingTimer);
+        if (typingTimer) cancel(typingTimer);
         currentQuoteIndex = index;
         quoteCharacterIndex = 0;
         const quote = philosophyQuotes[index];
@@ -1162,7 +1205,7 @@ function runPreloader() {
 
     function scheduleNextQuote() {
         if (done) return;
-        if (quoteTimer) clearTimeout(quoteTimer);
+        if (quoteTimer) cancel(quoteTimer);
         quoteTimer = window.setTimeout(() => {
             quoteTimer = null;
             const nextIndex = (currentQuoteIndex + 1) % philosophyQuotes.length;
@@ -1190,8 +1233,8 @@ function runPreloader() {
     function finish() {
         if (done) return;
         done = true;
-        if (progressTimer) clearTimeout(progressTimer);
-        if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (progressTimer) cancel(progressTimer);
+        if (fallbackTimer) cancel(fallbackTimer);
         clearQuoteTimers();
         revealPieces(100);
         if (percentEl) percentEl.textContent = "100";
@@ -1256,13 +1299,14 @@ function runPreloader() {
     }
 
     const ready = () => {
+        if (!controller.active) return;
         const fontsReady = document.fonts?.ready || Promise.resolve();
         Promise.resolve(fontsReady).catch(() => {}).then(() => {
-            window.setTimeout(startProgress, reducedMotion ? 0 : 250);
+            if (controller.active) schedule(startProgress, reducedMotion ? 0 : 250);
         });
     };
     if (document.readyState === "complete") ready();
-    else window.addEventListener("load", ready, { once: true });
+    else { controller.loadHandler = ready; window.addEventListener("load", ready, { once: true }); }
 
     fallbackTimer = window.setTimeout(() => { if (!done) finish(); }, duration + 15000);
 }
@@ -3668,4 +3712,14 @@ function init() {
     checkOnboarding();
     console.log("Chess Vision Trainer v3.8 — Mind Palace rebuild game ready.");
 }
-document.addEventListener("DOMContentLoaded", () => { init(); runPreloader(); });
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+    runPreloader();
+    const replayIntroButton = $("replayIntroBtn");
+    if (replayIntroButton) {
+        replayIntroButton.addEventListener("click", () => {
+            // Replay the intro as an overlay, without creating a route/history entry.
+            runPreloader({ replay: true });
+        });
+    }
+});
