@@ -986,22 +986,29 @@ function dailyOfficialAttempt() {
     return dailyStateFor(dailyDateKey()).attempts.find(attempt => attempt.official) || null;
 }
 
-let stats = { ...DEFAULT_STATS, ...(load(KEYS.stats, {}) || {}) };
-let history = load(KEYS.history, []);
-if (!Array.isArray(history)) history = [];
-let answerRecords = load(KEYS.answerRecords, []);
-if (!Array.isArray(answerRecords)) answerRecords = [];
+const backupValidation = window.CVTBackupValidation;
+const storedStats = load(KEYS.stats, DEFAULT_STATS);
+let stats = backupValidation?.validateStats(storedStats) || { ...DEFAULT_STATS };
+let history = backupValidation?.validateHistory(load(KEYS.history, [])) || [];
+let answerRecords = backupValidation?.validateAnswerRecords(load(KEYS.answerRecords, [])) || [];
 let adaptiveEnabled = load(KEYS.adaptive, false) === true;
 let flipBoardTraining = load(KEYS.flipBoardTraining, false) === true;
 let adaptiveIntensity = ["balanced", "focus", "aggressive"].includes(load(KEYS.adaptiveIntensity, "balanced"))
     ? load(KEYS.adaptiveIntensity, "balanced") : "balanced";
 let visionRating = load(KEYS.rating, null);
-if (!visionRating || typeof visionRating !== "object") visionRating = { current: 1000, history: [] };
-visionRating.current = Number.isFinite(Number(visionRating.current)) ? Math.round(Number(visionRating.current)) : 1000;
-visionRating.history = Array.isArray(visionRating.history) ? visionRating.history : [];
+if (!visionRating || typeof visionRating !== "object" || Array.isArray(visionRating) ||
+    !Number.isFinite(Number(visionRating.current)) || Number(visionRating.current) < 400 ||
+    Number(visionRating.current) > 2400 || !Array.isArray(visionRating.history) || visionRating.history.length > 100) {
+    visionRating = { current: 1000, history: [] };
+} else {
+    visionRating = { current: Math.round(Number(visionRating.current)), history: visionRating.history };
+}
+const validAchievementIds = new Set(ACHIEVEMENTS.map(item => item.id));
 let unlocked = load(KEYS.achievements, []);
 if (!Array.isArray(unlocked)) unlocked = [];
-let xp = Number(load(KEYS.xp, 0)) || 0;
+unlocked = [...new Set(unlocked.filter(id => typeof id === "string" && validAchievementIds.has(id)))];
+let xp = load(KEYS.xp, 0);
+if (!Number.isSafeInteger(xp) || xp < 0 || xp > 1000000000) xp = 0;
 let daily = load(KEYS.daily, null);
 if (!daily || daily.date !== todayKey()) { daily = { date: todayKey(), count: 0 }; save(KEYS.daily, daily); }
 let dailyChallenge = load(KEYS.dailyChallenge, null);
@@ -3602,62 +3609,96 @@ function exportData() {
     toast("Backup exported.");
 }
 function importData(file) {
-    const r = new FileReader();
-    r.onload = e => {
+    const MAX_BACKUP_BYTES = 5 * 1024 * 1024;
+    if (!file || typeof file.size !== "number" || file.size <= 0 || file.size > MAX_BACKUP_BYTES) {
+        toast("Import failed — choose a non-empty backup smaller than 5 MB.");
+        return;
+    }
+    if (!backupValidation) {
+        toast("Import failed — backup validation is unavailable. Reload the app and try again.");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => toast("Import failed — the selected file could not be read.");
+    reader.onload = event => {
         try {
-            const data = JSON.parse(e.target.result);
-            if (!data || typeof data !== "object") throw new Error("Bad file");
-            if (data.stats) { stats = { ...DEFAULT_STATS, ...data.stats }; save(KEYS.stats, stats); }
-            if (Array.isArray(data.history)) { history = data.history.slice(0,50); save(KEYS.history, history); }
-            if (Array.isArray(data.answerRecords)) { answerRecords = data.answerRecords.slice(-5000); save(KEYS.answerRecords, answerRecords); }
-            if (data.visionRating && typeof data.visionRating === "object") {
-                visionRating = {
-                    current: clamp(Math.round(Number(data.visionRating.current) || 1000), 400, 2400),
-                    history: Array.isArray(data.visionRating.history) ? data.visionRating.history.slice(-100) : []
-                };
+            if (typeof event.target.result !== "string" || event.target.result.length > MAX_BACKUP_BYTES) {
+                throw new Error("Backup file is too large or unreadable.");
+            }
+            // Validate and normalize every supported field before mutating any saved state.
+            const data = backupValidation.validateBackup(JSON.parse(event.target.result));
+
+            stats = { ...DEFAULT_STATS, ...data.stats };
+            history = data.history.slice(-50);
+            answerRecords = data.answerRecords.slice(-5000);
+            save(KEYS.stats, stats);
+            save(KEYS.history, history);
+            save(KEYS.answerRecords, answerRecords);
+
+            if (data.visionRating) {
+                visionRating = data.visionRating;
                 save(KEYS.rating, visionRating);
             }
-            if (typeof data.xp === "number") { xp = data.xp; save(KEYS.xp, xp); }
-            if (Array.isArray(data.unlocked)) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
-            if (data.daily && data.daily.date) { daily = data.daily; save(KEYS.daily, daily); }
-            if (data.dailyChallenge && Array.isArray(data.dailyChallenge.attempts)) {
-                dailyChallenge = {
-                    date: String(data.dailyChallenge.date || dailyDateKey()),
-                    attempts: data.dailyChallenge.attempts.slice(-20),
-                    streak: Number(data.dailyChallenge.streak) || 0,
-                    lastCompletedDate: data.dailyChallenge.lastCompletedDate || null
-                };
+            if (data.xp !== undefined) { xp = data.xp; save(KEYS.xp, xp); }
+            if (data.unlocked) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
+            if (data.daily) { daily = data.daily; save(KEYS.daily, daily); }
+            if (data.dailyChallenge) {
+                dailyChallenge = data.dailyChallenge;
                 save(KEYS.dailyChallenge, dailyChallenge);
             }
+
             if (data.settings) {
-                const s = data.settings;
-                if (s.theme) setTheme(s.theme);
-                if (s.board) setBoardTheme(s.board);
-                if (s.perspective) setPerspective(s.perspective);
-                else if (typeof s.flip === "boolean") setPerspective(s.flip ? "black" : "white");
-                if (typeof s.labels === "boolean") setLabels(s.labels);
-                if (typeof s.coords === "boolean") setCoords(s.coords);
-                if (typeof s.pieces === "boolean") setPiecesEnabled(s.pieces);
-                if (typeof s.sound === "boolean") { game.sound = s.sound; $("soundToggle").checked = s.sound; save(KEYS.sound, s.sound); }
-                if (typeof s.volume === "number") { game.volume = s.volume; $("volumeRange").value = Math.round(s.volume*100); save(KEYS.volume, s.volume); }
-                if (typeof s.ticks === "boolean") { game.ticks = s.ticks; $("ticksToggle").checked = s.ticks; save(KEYS.ticks, s.ticks); }
-                if (typeof s.boardSize === "number") setBoardSize(s.boardSize);
-                if (typeof s.musicVolume === "number") { setMusicVol(s.musicVolume); const el = $("musicVolume"); if (el) el.value = Math.round(s.musicVolume*100); }
-                if (typeof s.musicTrack === "number") setStream(s.musicTrack, false);
-                if (typeof s.musicSource === "string") switchSource(s.musicSource);
-                if (s.musicWidget) { drag.offsetX = Number(s.musicWidget.x) || 0; drag.offsetY = Number(s.musicWidget.y) || 0; applyWidgetPos(); saveWidgetPos(); }
-                if (typeof s.mpDifficulty === "string") setMindPalaceDifficulty(s.mpDifficulty);
-                if (typeof s.adaptive === "boolean") { adaptiveEnabled = s.adaptive; save(KEYS.adaptive, adaptiveEnabled); }
-                if (["balanced", "focus", "aggressive"].includes(s.adaptiveIntensity)) {
-                    adaptiveIntensity = s.adaptiveIntensity; save(KEYS.adaptiveIntensity, adaptiveIntensity);
-                }
+                const settings = data.settings;
+                setTheme(settings.theme);
+                setBoardTheme(settings.board);
+                setPerspective(settings.perspective);
+                setLabels(settings.labels);
+                setCoords(settings.coords);
+                setPiecesEnabled(settings.pieces);
+                game.sound = settings.sound;
+                $("soundToggle").checked = settings.sound;
+                save(KEYS.sound, settings.sound);
+                game.volume = settings.volume;
+                $("volumeRange").value = Math.round(settings.volume * 100);
+                save(KEYS.volume, settings.volume);
+                game.ticks = settings.ticks;
+                $("ticksToggle").checked = settings.ticks;
+                save(KEYS.ticks, settings.ticks);
+                setBoardSize(settings.boardSize);
+                setMusicVol(settings.musicVolume);
+                const musicVolumeControl = $("musicVolume");
+                if (musicVolumeControl) musicVolumeControl.value = Math.round(settings.musicVolume * 100);
+                setStream(settings.musicTrack, false);
+                switchSource(settings.musicSource);
+                drag.offsetX = settings.musicWidget.x;
+                drag.offsetY = settings.musicWidget.y;
+                applyWidgetPos();
+                saveWidgetPos();
+                setMindPalaceDifficulty(settings.mpDifficulty);
+                adaptiveEnabled = settings.adaptive;
+                save(KEYS.adaptive, adaptiveEnabled);
+                adaptiveIntensity = settings.adaptiveIntensity;
+                save(KEYS.adaptiveIntensity, adaptiveIntensity);
             }
-            updateAdaptiveUI();             updateDashboard(); updateLevelUI(); updateDailyUI(); renderDailyChallenge(); renderAchievements();
-            renderHistory(); renderAnalytics(); resetSession();
-            toast("Backup imported.");
-        } catch (err) { console.warn(err); toast("Import failed — invalid file."); }
+
+            updateAdaptiveUI();
+            updateDashboard();
+            updateLevelUI();
+            updateDailyUI();
+            renderDailyChallenge();
+            renderAchievements();
+            renderHistory();
+            renderAnalytics();
+            resetSession();
+            toast("Backup imported successfully.");
+        } catch (error) {
+            console.warn("Backup import rejected:", error);
+            toast(error instanceof Error && /Unsupported backup version|Backup/i.test(error.message)
+                ? "Import failed — backup is invalid or unsupported."
+                : "Import failed — invalid file. Your saved progress was not changed.");
+        }
     };
-    r.readAsText(file);
+    reader.readAsText(file);
 }
 function resetProgress() {
     openConfirm("Reset all progress?", "This will permanently delete your stats, history, XP, and achievements.", () => {
