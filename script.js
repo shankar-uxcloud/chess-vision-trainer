@@ -3093,7 +3093,8 @@ function setView(name, options = {}) {
         else view.removeAttribute("aria-current");
     });
     document.querySelectorAll(".nav-link[data-nav], .guest-nav-item[data-nav]").forEach(link => {
-        const active = link.dataset.nav === name;
+        // Alias items share a route but should not duplicate its active indicator.
+        const active = link.dataset.nav === name && link.dataset.navAlias !== "true";
         link.classList.toggle("active", active);
         if (active) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
