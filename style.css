@@ -4812,6 +4812,13 @@ body[data-theme="neon"] .auth-card {
   letter-spacing: .13em;
 }
 .guest-nav-item {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 13px;
