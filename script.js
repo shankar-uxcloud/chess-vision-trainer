@@ -1288,6 +1288,8 @@ function runPreloader(options = {}) {
     function startProgress() {
         if (done || startTime) return;
         startTime = performance.now();
+        // Start the watchdog from real progress start, not page initialization.
+        fallbackTimer = schedule(() => { if (!done && startTime > 0) finish(); }, duration + 15000);
         value = 1;
         if (percentEl) percentEl.textContent = "1";
         if (barFill) barFill.style.width = "1%";
@@ -1308,9 +1310,7 @@ function runPreloader(options = {}) {
     if (document.readyState === "complete") ready();
     else { controller.loadHandler = ready; window.addEventListener("load", ready, { once: true }); }
 
-    // Safety fallback may only finish a sequence that has actually started.
-    // Never show 100% while waiting for the window load event/resources.
-    fallbackTimer = schedule(() => { if (!done && startTime > 0) finish(); }, duration + 15000);
+
 }
 
 /* Sound */
