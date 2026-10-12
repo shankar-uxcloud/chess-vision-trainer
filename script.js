@@ -3149,7 +3149,9 @@ function renderMission() {
 function setTheme(t) {
     if (!["dark","light","neon","heavy"].includes(t)) t = "dark";
     document.body.dataset.theme = t;
-    $("appearanceTheme").value = t;
+    document.documentElement.style.colorScheme = t === "light" ? "light" : "dark";
+    const selector = $("appearanceTheme");
+    if (selector) selector.value = t;
     save(KEYS.theme, t);
 }
 function setBoardTheme(t) {
