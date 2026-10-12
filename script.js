@@ -2659,10 +2659,7 @@ function restartTrainingSession() {
     startSession();
 }
 function startSession() {
-    if (game.running) {
-        toast("End or restart the current session before starting another.");
-        return;
-    }
+    if (game.running) { finishSession(); return; }
     if (game.mode === "mindpalace") { startMindPalaceSession(); return; }
     if (game.mode === "daily") { startDailySession(false); return; }
 
