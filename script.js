@@ -1194,7 +1194,7 @@ function runPreloader(options = {}) {
             quoteCharacterIndex += 1;
             quoteEl.textContent = quote.slice(0, quoteCharacterIndex);
             if (quoteCharacterIndex < quote.length) {
-                typingTimer = window.setTimeout(typeNextCharacter, 32);
+                typingTimer = schedule(typeNextCharacter, 32);
             } else {
                 typingTimer = null;
                 scheduleNextQuote();
@@ -1206,7 +1206,7 @@ function runPreloader(options = {}) {
     function scheduleNextQuote() {
         if (done) return;
         if (quoteTimer) cancel(quoteTimer);
-        quoteTimer = window.setTimeout(() => {
+        quoteTimer = schedule(() => {
             quoteTimer = null;
             const nextIndex = (currentQuoteIndex + 1) % philosophyQuotes.length;
             typeQuote(nextIndex);
@@ -1224,7 +1224,7 @@ function runPreloader(options = {}) {
                 piece.classList.add("arrived");
                 const square = piece.parentElement;
                 square.classList.add("piece-landing");
-                if (!reducedMotion) window.setTimeout(() => square.classList.remove("piece-landing"), 360);
+                if (!reducedMotion) schedule(() => square.classList.remove("piece-landing"), 360);
                 else square.classList.remove("piece-landing");
             }
         });
@@ -1251,9 +1251,9 @@ function runPreloader(options = {}) {
         try { sessionStorage.setItem(KEYS.preloaderSeen, "1"); } catch {}
 
         // Hold the completed 100% state for exactly three seconds before fading away.
-        completionTimer = window.setTimeout(() => {
+        completionTimer = schedule(() => {
             el.classList.add("done");
-            fadeTimer = window.setTimeout(() => {
+            fadeTimer = schedule(() => {
                 el.style.display = "none";
                 el.setAttribute("aria-hidden", "true");
                 document.body.classList.remove("preloading");
@@ -1282,7 +1282,7 @@ function runPreloader(options = {}) {
         if (value === 75 && line) line.textContent = "Your starting position is taking shape.";
         if (value >= 100) { finish(); return; }
         const nextAt = startTime + (value * duration / 100);
-        progressTimer = window.setTimeout(step, Math.max(12, nextAt - performance.now()));
+        progressTimer = schedule(step, Math.max(12, nextAt - performance.now()));
     }
 
     function startProgress() {
@@ -1295,7 +1295,7 @@ function runPreloader(options = {}) {
         revealPieces(1);
         if (label) label.textContent = "INITIALIZING CHESS VISION";
         if (hint) hint.textContent = "PREPARING YOUR TRAINING SPACE";
-        progressTimer = window.setTimeout(step, duration / 100);
+        progressTimer = schedule(step, duration / 100);
     }
 
     const ready = () => {
@@ -1308,7 +1308,7 @@ function runPreloader(options = {}) {
     if (document.readyState === "complete") ready();
     else { controller.loadHandler = ready; window.addEventListener("load", ready, { once: true }); }
 
-    fallbackTimer = window.setTimeout(() => { if (!done) finish(); }, duration + 15000);
+    fallbackTimer = schedule(() => { if (!done) finish(); }, duration + 15000);
 }
 
 /* Sound */
