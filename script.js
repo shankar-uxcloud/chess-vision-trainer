@@ -3047,63 +3047,111 @@ function showResults(newRecord, gained) {
     $("resultsPanel").classList.remove("hidden");
 }
 
-/* View routing */
+/* View routing — one canonical hash route per existing view. */
 const VIEW_TITLES = {
     dashboard: ["Home","Dashboard"], training: ["Workspace","Training"],
-    mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"], analytics: ["Workspace","Analytics"],
-    achievements: ["Workspace","Achievements"], settings: ["Workspace","Settings"]
+    mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"],
+    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"],
+    settings: ["Workspace","Settings"]
 };
+function routeFromHash(hash = window.location.hash) {
+    const match = /^#cvt-([a-z0-9-]+)$/i.exec(hash || "");
+    return match && VIEW_TITLES[match[1]] ? match[1] : null;
+}
 function setView(name, options = {}) {
     if (!VIEW_TITLES[name]) name = "dashboard";
     const previousView = document.body.dataset.view || "dashboard";
-    if (options.history !== false && previousView !== name) {
+    const targetHash = "#cvt-" + name;
+
+    if (options.history !== false) {
         try {
-            window.history.pushState({ ...(window.history.state || {}), cvtView: name }, "", "#cvt-" + name);
+            // Do not add duplicate entries when the URL and rendered view already match.
+            if (window.location.hash !== targetHash) {
+                window.history.pushState({ ...(window.history.state || {}), cvtView: name }, "", targetHash);
+            } else if (window.history.state?.cvtView !== name) {
+                window.history.replaceState({ ...(window.history.state || {}), cvtView: name }, "", targetHash);
+            }
         } catch (error) {
             console.warn("Browser history navigation is unavailable:", error);
         }
     }
+
     document.body.dataset.view = name;
     document.body.style.overflowY = name === "training" ? "auto" : "";
-    document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.dataset.view === name));
-    document.querySelectorAll(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.nav === name));
-    $("breadcrumbParent").textContent = VIEW_TITLES[name][0];
-    $("breadcrumbCurrent").textContent = VIEW_TITLES[name][1];
+    document.querySelectorAll(".view").forEach(view => {
+        view.classList.toggle("active", view.dataset.view === name);
+        if (view.dataset.view === name) view.setAttribute("aria-current", "page");
+        else view.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-nav]").forEach(link => {
+        const active = link.dataset.nav === name;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+    });
+
+    const parent = $("breadcrumbParent");
+    const current = $("breadcrumbCurrent");
+    if (parent) parent.textContent = VIEW_TITLES[name][0];
+    if (current) current.textContent = VIEW_TITLES[name][1];
     document.body.classList.remove("sidebar-open");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (previousView !== name || options.scroll !== false) {
+        window.scrollTo({ top: 0, behavior: options.history === false ? "auto" : "smooth" });
+    }
     if (name === "analytics") renderAnalytics();
     if (name === "achievements") renderAchievements();
     if (name === "mindpalace") updateMindPalaceUI();
     if (name === "daily") renderDailyChallenge();
 }
 function setupNav() {
-    const initialView = VIEW_TITLES[document.body.dataset.view] ? document.body.dataset.view : "dashboard";
+    const fallbackView = VIEW_TITLES[document.body.dataset.view] ? document.body.dataset.view : "dashboard";
+    const initialView = routeFromHash() || fallbackView;
+
+    // Keep the URL and history state in sync even when a previous page left stale state.
     try {
-        const currentHash = window.location.hash;
-        const hashView = currentHash.startsWith("#cvt-") ? currentHash.slice(5) : "";
-        const resolvedInitial = VIEW_TITLES[hashView] ? hashView : initialView;
-        document.body.dataset.view = resolvedInitial;
-        if (!window.history.state || !VIEW_TITLES[window.history.state.cvtView]) {
-            window.history.replaceState({ ...(window.history.state || {}), cvtView: resolvedInitial }, "", currentHash.startsWith("#cvt-") ? currentHash : "#cvt-" + resolvedInitial);
-        }
-        setView(resolvedInitial, { history: false });
+        window.history.replaceState(
+            { ...(window.history.state || {}), cvtView: initialView },
+            "",
+            "#cvt-" + initialView
+        );
     } catch (error) {
-        setView(initialView, { history: false });
+        console.warn("Could not normalize the initial route:", error);
     }
-    window.addEventListener("popstate", (event) => {
-        const stateView = event.state && event.state.cvtView;
-        const hashView = window.location.hash.startsWith("#cvt-") ? window.location.hash.slice(5) : "";
-        const destination = VIEW_TITLES[stateView] ? stateView : VIEW_TITLES[hashView] ? hashView : "dashboard";
+    setView(initialView, { history: false, scroll: false });
+
+    const syncFromLocation = event => {
+        // The URL is canonical; stale state must never override the route in the address bar.
+        const destination = routeFromHash() || (event?.state && VIEW_TITLES[event.state.cvtView] ? event.state.cvtView : "dashboard");
         setView(destination, { history: false });
-    });
+        if (window.history.state?.cvtView !== destination) {
+            try {
+                window.history.replaceState({ ...(window.history.state || {}), cvtView: destination }, "", "#cvt-" + destination);
+            } catch (error) {
+                console.warn("Could not synchronize browser history state:", error);
+            }
+        }
+    };
+    window.addEventListener("popstate", syncFromLocation);
+    window.addEventListener("hashchange", syncFromLocation);
+
     document.querySelectorAll("[data-nav]").forEach(el => {
-        el.addEventListener("click", e => { e.preventDefault(); setView(el.dataset.nav); });
+        el.addEventListener("click", event => {
+            const target = el.dataset.nav;
+            if (!VIEW_TITLES[target]) return;
+            event.preventDefault();
+            setView(target);
+        });
     });
-    $("mobileMenu").addEventListener("click", () => document.body.classList.toggle("sidebar-open"));
-    document.addEventListener("click", e => {
+    const mobileMenu = $("mobileMenu");
+    mobileMenu?.addEventListener("click", () => {
+        const open = document.body.classList.toggle("sidebar-open");
+        mobileMenu.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", event => {
         if (document.body.classList.contains("sidebar-open") &&
-            !e.target.closest(".sidebar") && !e.target.closest("#mobileMenu")) {
+            !event.target.closest(".sidebar") && !event.target.closest("#mobileMenu")) {
             document.body.classList.remove("sidebar-open");
+            mobileMenu?.setAttribute("aria-expanded", "false");
         }
     });
     document.querySelectorAll("[data-action='quick-train']").forEach(el => {
