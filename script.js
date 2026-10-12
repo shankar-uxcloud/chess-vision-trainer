@@ -2820,8 +2820,11 @@ function finishSession() {
         stats.flawless = (stats.flawless || 0) + 1;
     }
 
+    // Analytics should count elapsed training time, not the configured session limit.
+    // Early exits must not inflate total practice time to the full duration.
+    const elapsedSessionSeconds = Math.max(0, game.duration - game.timeLeft);
     stats.totalTime =
-        (stats.totalTime || 0) + game.duration;
+        (stats.totalTime || 0) + elapsedSessionSeconds;
 
     stats.totalQuestions =
         (stats.totalQuestions || 0) +
