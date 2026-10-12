@@ -19,101 +19,128 @@
 
 
 
-<!-- CHESS VISION TRAINER LOGIN -->
-<section class="auth-screen" id="authScreen" hidden>
-  <div class="auth-card">
-    <div class="auth-brand">
-      <div class="auth-brand-icon">♞</div>
-      <div>
-        <div class="auth-brand-name">CHESS<span>VISION</span></div>
-        <div class="auth-brand-sub">TRAINER</div>
+<!-- CHESS VISION TRAINER AUTHENTICATION -->
+<section class="auth-screen" id="authScreen" hidden aria-label="Chess Vision Trainer authentication">
+  <div class="auth-experience">
+    <aside class="auth-visual" aria-label="Chess Vision Trainer board vision artwork">
+      <div class="auth-visual-grain" aria-hidden="true"></div>
+      <div class="auth-visual-top">
+        <a class="auth-visual-brand" href="#" aria-label="Chess Vision Trainer">
+          <span class="auth-visual-mark" aria-hidden="true">♞</span>
+          <span><strong>CHESS<span>VISION</span></strong><small>TRAINER</small></span>
+        </a>
+        <span class="auth-visual-index"><i></i> BOARD VISION / 001</span>
       </div>
+      <div class="auth-art-copy">
+        <p class="auth-art-kicker"><span></span> TRAIN YOUR PERCEPTION</p>
+        <h2>See beyond<br>the <em>next move.</em></h2>
+        <p>Build the clarity to recognize patterns, read the board, and think one move ahead.</p>
+      </div>
+      <div class="auth-art-stage" aria-hidden="true">
+        <div class="auth-art-orbit auth-art-orbit-a"></div>
+        <div class="auth-art-orbit auth-art-orbit-b"></div>
+        <div class="auth-art-glow"></div>
+        <div class="auth-art-coordinate auth-coord-a">e4</div>
+        <div class="auth-art-coordinate auth-coord-b">c6</div>
+        <div class="auth-art-coordinate auth-coord-c">f7</div>
+        <div class="auth-art-board">
+          <span>♜</span><span></span><span>♝</span><span></span><span>♚</span><span></span><span>♞</span><span>♜</span>
+          <span>♟</span><span>♟</span><span></span><span>♟</span><span>♟</span><span>♟</span><span>♟</span><span></span>
+          <span></span><span></span><span>♟</span><span></span><span></span><span>♞</span><span></span><span>♟</span>
+          <span></span><span></span><span></span><span>♘</span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span>♙</span><span></span><span>♙</span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span>♘</span><span></span><span></span>
+          <span>♙</span><span>♙</span><span></span><span>♙</span><span></span><span>♙</span><span>♙</span><span>♙</span>
+          <span>♖</span><span>♘</span><span>♗</span><span>♕</span><span>♔</span><span>♗</span><span></span><span>♖</span>
+        </div>
+        <div class="auth-art-scan"></div>
+      </div>
+      <div class="auth-visual-bottom">
+        <span class="auth-visual-quote">“Every square is a possibility.”</span>
+        <span class="auth-visual-footnote">FOCUS · PATTERN · PRECISION</span>
+      </div>
+    </aside>
+
+    <div class="auth-form-side">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="auth-brand-icon" aria-hidden="true">♞</div>
+          <div>
+            <div class="auth-brand-name">CHESS<span>VISION</span></div>
+            <div class="auth-brand-sub">TRAINER</div>
+          </div>
+        </div>
+
+        <p class="auth-eyebrow">YOUR NEXT MOVE STARTS HERE</p>
+        <h1 id="authTitle">Welcome back.</h1>
+        <p id="authDescription" class="auth-description">Sign in to enter your chess training space.</p>
+
+        <div id="authMessage" class="auth-message" role="status" aria-live="polite" hidden></div>
+
+        <form id="signInForm" class="auth-form">
+          <label for="loginEmail">Email address</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">✉</span>
+            <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
+
+          <label for="loginPassword">Password</label>
+          <div class="auth-password-wrap">
+            <span class="auth-input-icon" aria-hidden="true">⌑</span>
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+            <button type="button" class="auth-show-password" data-toggle-password="loginPassword" aria-label="Show password" aria-controls="loginPassword">Show</button>
+          </div>
+
+          <div class="auth-form-utility">
+            <span class="auth-secure-note"><span aria-hidden="true">◇</span> Secure sign in</span>
+            <button type="button" class="auth-text-button" id="showForgot">Forgot password?</button>
+          </div>
+
+          <button type="submit" class="auth-submit" id="signInButton">Sign in <span aria-hidden="true">↗</span></button>
+
+          <p class="auth-switch">New to Chess Vision? <button type="button" class="auth-text-button" id="showSignup">Create an account</button></p>
+        </form>
+
+        <form id="signUpForm" class="auth-form" hidden>
+          <label for="signupName">Display name</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">♙</span>
+            <input id="signupName" type="text" autocomplete="name" maxlength="60" placeholder="How should we call you?" required>
+          </div>
+
+          <label for="signupEmail">Email address</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">✉</span>
+            <input id="signupEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
+
+          <label for="signupPassword">Create password</label>
+          <div class="auth-password-wrap">
+            <span class="auth-input-icon" aria-hidden="true">⌑</span>
+            <input id="signupPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" required>
+            <button type="button" class="auth-show-password" data-toggle-password="signupPassword" aria-label="Show password" aria-controls="signupPassword">Show</button>
+          </div>
+
+          <button type="submit" class="auth-submit" id="signUpButton">Create account <span aria-hidden="true">↗</span></button>
+          <p class="auth-switch">Already have an account? <button type="button" class="auth-text-button" id="showSignin">Sign in</button></p>
+        </form>
+
+        <form id="resetForm" class="auth-form" hidden>
+          <label for="resetEmail">Email address</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">✉</span>
+            <input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
+          <button type="submit" class="auth-submit">Send reset link <span aria-hidden="true">↗</span></button>
+          <p class="auth-switch"><button type="button" class="auth-text-button" id="backToSignin">← Back to sign in</button></p>
+        </form>
+
+        <div class="auth-divider"><span>OR</span></div>
+        <button type="button" class="auth-guest" id="continueGuest">Continue as guest <span aria-hidden="true">→</span></button>
+        <p class="auth-footer"><span aria-hidden="true">♞</span> Eight training modes. One stronger mind.</p>
+      </div>
+      <p class="auth-side-legal">BUILT FOR THE NEXT MOVE <span>·</span> CHESS VISION TRAINER</p>
     </div>
-
-    <p class="auth-eyebrow">YOUR NEXT MOVE STARTS HERE</p>
-    <h1 id="authTitle">Welcome back.</h1>
-    <p id="authDescription" class="auth-description">
-      Sign in to enter your training space.
-    </p>
-
-    <div id="authMessage" class="auth-message" role="status"
-         aria-live="polite" hidden></div>
-
-    <form id="signInForm" class="auth-form">
-      <label for="loginEmail">Email address</label>
-      <input id="loginEmail" type="email" autocomplete="email"
-             placeholder="you@example.com" required>
-
-      <label for="loginPassword">Password</label>
-      <div class="auth-password-wrap">
-        <input id="loginPassword" type="password"
-               autocomplete="current-password" required>
-        <button type="button" class="auth-show-password"
-                data-toggle-password="loginPassword">Show</button>
-      </div>
-
-      <button type="button" class="auth-text-button"
-              id="showForgot">Forgot password?</button>
-
-      <button type="submit" class="auth-submit" id="signInButton">
-        Sign in <span>→</span>
-      </button>
-
-      <p class="auth-switch">
-        New here?
-        <button type="button" class="auth-text-button"
-                id="showSignup">Create an account</button>
-      </p>
-    </form>
-
-    <form id="signUpForm" class="auth-form" hidden>
-      <label for="signupName">Display name</label>
-      <input id="signupName" type="text" autocomplete="name"
-             maxlength="60" required>
-
-      <label for="signupEmail">Email address</label>
-      <input id="signupEmail" type="email" autocomplete="email" required>
-
-      <label for="signupPassword">Create password</label>
-      <div class="auth-password-wrap">
-        <input id="signupPassword" type="password"
-               autocomplete="new-password" minlength="6" required>
-        <button type="button" class="auth-show-password"
-                data-toggle-password="signupPassword">Show</button>
-      </div>
-
-      <button type="submit" class="auth-submit" id="signUpButton">
-        Create account <span>→</span>
-      </button>
-
-      <p class="auth-switch">
-        Already registered?
-        <button type="button" class="auth-text-button"
-                id="showSignin">Sign in</button>
-      </p>
-    </form>
-
-    <form id="resetForm" class="auth-form" hidden>
-      <label for="resetEmail">Email address</label>
-      <input id="resetEmail" type="email" autocomplete="email" required>
-
-      <button type="submit" class="auth-submit">
-        Send reset link <span>→</span>
-      </button>
-
-      <p class="auth-switch">
-        <button type="button" class="auth-text-button"
-                id="backToSignin">Back to sign in</button>
-      </p>
-    </form>
-
-    <div class="auth-divider"><span>OR</span></div>
-
-    <button type="button" class="auth-guest" id="continueGuest">
-      Continue as guest <span>→</span>
-    </button>
-
-    <p class="auth-footer">Eight training modes. One stronger mind.</p>
   </div>
 </section>
 
