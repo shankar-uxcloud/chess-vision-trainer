@@ -5775,7 +5775,7 @@ body[data-theme] .icon-button:hover, body[data-theme] .mobile-menu:hover {
 }
 body[data-theme] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 body[data-theme] select, body[data-theme] textarea {
-  color: var(--text); background-color: var(--control-bg); border-color: var(--control-border);
+  color: var(--text); background-color: var(--surface-2); border-color: var(--border);
 }
 body[data-theme] input::placeholder, body[data-theme] textarea::placeholder { color: var(--muted); opacity: 1; }
 body[data-theme] select option { background: var(--surface); color: var(--text); }
@@ -5851,4 +5851,21 @@ body[data-theme="heavy"] .chart-panel { box-shadow: inset 0 1px rgba(255,255,255
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+}
+
+/* Resolve semantic aliases per theme so descendants inherit the active palette. */
+body[data-theme] {
+  --bg-primary: var(--bg);
+  --bg-sidebar: var(--sidebar);
+  --bg-card: var(--surface);
+  --bg-elevated: var(--surface-2);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--muted);
+  --border-color: var(--border);
+  --accent-primary: var(--accent);
+  --accent-secondary: var(--accent-2);
+  --control-bg: var(--surface-2);
+  --control-border: var(--border);
+  --chart-grid: var(--border);
 }
