@@ -3087,7 +3087,7 @@ function setView(name, options = {}) {
         if (view.dataset.view === name) view.setAttribute("aria-current", "page");
         else view.removeAttribute("aria-current");
     });
-    document.querySelectorAll("[data-nav]").forEach(link => {
+    document.querySelectorAll(".nav-link[data-nav], .guest-nav-item[data-nav]").forEach(link => {
         const active = link.dataset.nav === name;
         link.classList.toggle("active", active);
         if (active) link.setAttribute("aria-current", "page");
