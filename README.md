@@ -1,118 +1,99 @@
 # ♟️ Chess Vision Trainer
 
 <div align="center">
-  <img src="chess-vision-trainer-animated.gif" alt="Animated 3D-style Chess Vision Trainer chessboard" width="700">
+  <img src="chess-vision-trainer-animated.gif" alt="Chess Vision Trainer animated chessboard" width="700">
 
   <h3>Train your chess vision. Sharpen your focus. Think ahead.</h3>
 
-  <p>
-    <a href="https://shankar-uxcloud.github.io/chess-vision-trainer/">
-      🚀 <strong>Launch Live Demo</strong>
-    </a>
-  </p>
+  <p><a href="https://shankar-uxcloud.github.io/chess-vision-trainer/"><strong>🚀 Launch Live Demo</strong></a></p>
 </div>
 
-Chess Vision Trainer is a web application designed to help chess players practice board visualization, improve concentration, and build stronger pattern-recognition skills.
+Chess Vision Trainer is a static, browser-based chess visualization and attention-training app built with vanilla HTML, CSS, and JavaScript. It includes local progress tracking and optional Supabase authentication.
 
----
+## Features
 
-## 📌 Project Overview
+- Seven routed views: Dashboard, Training, Mind Palace, Daily Challenge, Analytics, Achievements, and Settings.
+- Eight standard training modes: Square Vision, Coordinate Trainer, Reverse Coordinates, Knight Vision, Blindfold Training, Color Recognition, Custom Practice, and ChessVision Daily. Mind Palace is an additional reconstruction challenge.
+- Four appearance themes: Dark, Light, Neon, and Heavy Dark.
+- Board orientation, coordinates, optional pieces, session timers, pause/resume, results, XP, achievements, rating, and analytics.
+- Daily Challenge official attempts and practice replays.
+- Browser-local persistence, JSON backup export/import, and session history.
+- Optional Supabase sign-in, sign-up, password reset, sign-out, and guest access.
+- Responsive layouts, keyboard shortcuts, reduced-motion handling, and a chessboard loading screen.
 
-Visualizing chess positions without moving the pieces is an important skill for chess players. This project aims to provide an accessible, browser-based environment for practicing chess visualization and focused training.
+## Run locally
 
-## ✨ Key Features
+Requirements: a modern browser. Node.js 22 or later is only required to run the regression tests.
 
-- ♟️ **Chess-focused interface** — designed around chess training.
-- 🎯 **Focus-oriented experience** — encourages attentive practice.
-- 🧠 **Visualization practice** — supports exercises aimed at improving board awareness.
-- 💻 **Browser-based application** — no backend setup required for basic use.
-- 🌐 **Easy access** — launch the hosted version or run it locally.
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/shankar-uxcloud/chess-vision-trainer.git
+   cd chess-vision-trainer
+   ```
+2. Open `index.html` directly, or serve the folder with VS Code Live Server.
+3. For account features, ensure the Supabase project URL and publishable key in `index.html` match your project. Guest mode can be used without signing in.
 
-## 🛠️ Built With
-
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-222222?style=flat-square&logo=githubpages)
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- A modern web browser
-- Git (optional, for cloning the repository)
-
-### Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/shankar-uxcloud/chess-vision-trainer.git
-```
-
-Navigate into the project:
-
-```bash
-cd chess-vision-trainer
-```
-
-Open `index.html` in your browser, or launch the folder using Visual Studio Code with Live Server.
-
-## 📁 Project Structure
+## Project structure
 
 ```text
 chess-vision-trainer/
-├── assets/
+├── .github/
+│   └── workflows/
+│       └── regression.yml
+├── tests/
+│   └── data-validation.test.cjs
 ├── index.html
 ├── style.css
 ├── script.js
+├── auth.js
+├── data-validation.js
 ├── chess-vision-trainer-animated.gif
 └── README.md
 ```
 
-## 🗺️ Roadmap
+- `index.html`: application markup, routed views, authentication and guest UI, loading screen, and script loading order.
+- `style.css`: layout, responsive rules, animations, and four theme styles.
+- `script.js`: routing, training modes, timers, scoring, analytics, persistence, import/export, and loading behavior.
+- `auth.js`: Supabase authentication and guest/session handling.
+- `data-validation.js`: dependency-free validation for imported backups and persisted records.
+- `tests/`: Node's built-in test-runner regression tests.
 
-Potential future enhancements:
+## Regression tests
 
-- [ ] Timed chess visualization challenges
-- [ ] Multiple difficulty levels
-- [ ] Daily practice challenges
-- [ ] Training statistics and progress tracking
-- [ ] Keyboard accessibility improvements
-- [ ] Mobile usability enhancements
+Install Node.js 22+ and run:
 
-## 🤝 Contributing
+```bash
+node --check script.js
+node --check auth.js
+node --check data-validation.js
+node --test tests/*.test.cjs
+```
 
-Contributions and constructive feedback are welcome!
+GitHub Actions runs the same syntax checks and regression tests on pushes to `main` and audit branches, and on pull requests targeting `main`.
 
-1. Fork this repository.
-2. Create a feature branch.
-3. Implement your improvement.
-4. Test your changes.
-5. Submit a pull request with a clear description.
+## Backup safety
 
-## 💡 Ideas for Contributions
+Backups are JSON files exported by the app. Import validation checks the supported version, record structures, numeric bounds, enumerated settings, and file size before applying data. Invalid imports should leave existing progress unchanged. Keep a separate backup before importing unfamiliar files.
 
-- Improve responsive layouts.
-- Fix bugs and edge cases.
-- Enhance accessibility.
-- Optimize JavaScript and CSS.
-- Improve documentation.
+## Current maintenance priorities
 
-## 👨‍💻 Author
+- Expand automated coverage for training lifecycle, routing/history, Daily Challenge, Mind Palace scoring, and keyboard behavior.
+- Perform browser-level checks across all four themes and desktop/mobile viewport sizes.
+- Continue consolidating duplicated CSS only when visual regression checks can protect intended overrides.
+- Review accessibility, contrast, CDN reliability, and authentication transitions in real browsers.
+
+## Contributing
+
+Please open an issue or pull request with a focused change, a reproduction case for bugs, and the tests performed. Avoid broad CSS rewrites without regression coverage.
+
+## Author
 
 **P SHANKAR**
 
 - GitHub: [@shankar-uxcloud](https://github.com/shankar-uxcloud)
-- Project: [Chess Vision Trainer](https://github.com/shankar-uxcloud/chess-vision-trainer)
-- Live Demo: [Open Application](https://shankar-uxcloud.github.io/chess-vision-trainer/)
+- Repository: [Chess Vision Trainer](https://github.com/shankar-uxcloud/chess-vision-trainer)
+- Live demo: [Open application](https://shankar-uxcloud.github.io/chess-vision-trainer/)
 
 ---
 
-<div align="center">
-
-⭐ If you find this project interesting, consider starring the repository!
-
 *Built to make chess visualization practice more accessible.*
-
-</div>
