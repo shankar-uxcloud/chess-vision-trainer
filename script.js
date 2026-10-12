@@ -1308,7 +1308,9 @@ function runPreloader(options = {}) {
     if (document.readyState === "complete") ready();
     else { controller.loadHandler = ready; window.addEventListener("load", ready, { once: true }); }
 
-    fallbackTimer = schedule(() => { if (!done) finish(); }, duration + 15000);
+    // Safety fallback may only finish a sequence that has actually started.
+    // Never show 100% while waiting for the window load event/resources.
+    fallbackTimer = schedule(() => { if (!done && startTime > 0) finish(); }, duration + 15000);
 }
 
 /* Sound */
