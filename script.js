@@ -3076,6 +3076,10 @@ function setView(name, options = {}) {
         }
     }
 
+    // Choosing an in-app route from the guest landing must dismiss that landing.
+    const guestWelcome = $("guestWelcome");
+    if (guestWelcome && !guestWelcome.hidden) guestWelcome.hidden = true;
+
     document.body.dataset.view = name;
     document.body.style.overflowY = name === "training" ? "auto" : "";
     document.querySelectorAll(".view").forEach(view => {
