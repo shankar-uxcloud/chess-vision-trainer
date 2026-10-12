@@ -6466,3 +6466,28 @@ body[data-theme] .auth-account-pill button {
 body[data-theme] .auth-screen :is(button, a, input):focus-visible {
   outline-color: var(--focus-ring, var(--auth-accent)) !important;
 }
+/* Keep small auth controls as text controls in Neon Mode.
+   The global neon button treatment must not turn Show/Hide or inline links
+   into filled gradient buttons. */
+body[data-theme="neon"] .auth-screen .auth-text-button,
+body[data-theme="neon"] .auth-screen .auth-show-password {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--auth-accent) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transform: none;
+  filter: none;
+  font-weight: 650;
+}
+body[data-theme="neon"] .auth-screen .auth-text-button:hover,
+body[data-theme="neon"] .auth-screen .auth-show-password:hover {
+  background: transparent !important;
+  color: #FFFFFF !important;
+  text-decoration: underline;
+  box-shadow: none !important;
+}
