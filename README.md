@@ -101,7 +101,7 @@ Contributions and constructive feedback are welcome!
 
 ## 👨‍💻 Author
 
-**P. SHANKAR**
+**P SHANKAR**
 
 - GitHub: [@shankar-uxcloud](https://github.com/shankar-uxcloud)
 - Project: [Chess Vision Trainer](https://github.com/shankar-uxcloud/chess-vision-trainer)
@@ -116,3 +116,5 @@ Contributions and constructive feedback are welcome!
 *Built to make chess visualization practice more accessible.*
 
 </div>
+
+
