@@ -14,7 +14,6 @@
 
 Chess Vision Trainer is a web application designed to help chess players practice board visualization, improve concentration, and build stronger pattern-recognition skills.
 
-
 ## 📌 Project Overview
 
 Visualizing chess positions without moving the pieces is an important skill for chess players. This project aims to provide an accessible, browser-based environment for practicing chess visualization and focused training.
