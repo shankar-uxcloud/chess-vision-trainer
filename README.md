@@ -1,3 +1,4 @@
+
 # ♟️ Chess Vision Trainer
 
 <div align="center">
