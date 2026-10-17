@@ -986,22 +986,29 @@ function dailyOfficialAttempt() {
     return dailyStateFor(dailyDateKey()).attempts.find(attempt => attempt.official) || null;
 }
 
-let stats = { ...DEFAULT_STATS, ...(load(KEYS.stats, {}) || {}) };
-let history = load(KEYS.history, []);
-if (!Array.isArray(history)) history = [];
-let answerRecords = load(KEYS.answerRecords, []);
-if (!Array.isArray(answerRecords)) answerRecords = [];
+const backupValidation = window.CVTBackupValidation;
+const storedStats = load(KEYS.stats, DEFAULT_STATS);
+let stats = backupValidation?.validateStats(storedStats) || { ...DEFAULT_STATS };
+let history = backupValidation?.validateHistory(load(KEYS.history, [])) || [];
+let answerRecords = backupValidation?.validateAnswerRecords(load(KEYS.answerRecords, [])) || [];
 let adaptiveEnabled = load(KEYS.adaptive, false) === true;
 let flipBoardTraining = load(KEYS.flipBoardTraining, false) === true;
 let adaptiveIntensity = ["balanced", "focus", "aggressive"].includes(load(KEYS.adaptiveIntensity, "balanced"))
     ? load(KEYS.adaptiveIntensity, "balanced") : "balanced";
 let visionRating = load(KEYS.rating, null);
-if (!visionRating || typeof visionRating !== "object") visionRating = { current: 1000, history: [] };
-visionRating.current = Number.isFinite(Number(visionRating.current)) ? Math.round(Number(visionRating.current)) : 1000;
-visionRating.history = Array.isArray(visionRating.history) ? visionRating.history : [];
+if (!visionRating || typeof visionRating !== "object" || Array.isArray(visionRating) ||
+    !Number.isFinite(Number(visionRating.current)) || Number(visionRating.current) < 400 ||
+    Number(visionRating.current) > 2400 || !Array.isArray(visionRating.history) || visionRating.history.length > 100) {
+    visionRating = { current: 1000, history: [] };
+} else {
+    visionRating = { current: Math.round(Number(visionRating.current)), history: visionRating.history };
+}
+const validAchievementIds = new Set(ACHIEVEMENTS.map(item => item.id));
 let unlocked = load(KEYS.achievements, []);
 if (!Array.isArray(unlocked)) unlocked = [];
-let xp = Number(load(KEYS.xp, 0)) || 0;
+unlocked = [...new Set(unlocked.filter(id => typeof id === "string" && validAchievementIds.has(id)))];
+let xp = load(KEYS.xp, 0);
+if (!Number.isSafeInteger(xp) || xp < 0 || xp > 1000000000) xp = 0;
 let daily = load(KEYS.daily, null);
 if (!daily || daily.date !== todayKey()) { daily = { date: todayKey(), count: 0 }; save(KEYS.daily, daily); }
 let dailyChallenge = load(KEYS.dailyChallenge, null);
@@ -2631,6 +2638,26 @@ function resetSession() {
         updateTimer(); updateProgress(); resetTarget(); enableBoard(false);
     }
 }
+function restartTrainingSession() {
+    // Restarting abandons the current regular session; it must not award XP,
+    // achievements, rating changes, or a history entry.
+    if (game.dailyActive || game.mode === "daily") {
+        toast("Use the Daily Challenge replay controls to start another attempt.");
+        return;
+    }
+    if (game.mode === "mindpalace" || mindPalace.running) {
+        toast("Use the Mind Palace controls to finish or restart that challenge.");
+        return;
+    }
+    clearInterval(game.timer);
+    clearInterval(game.countdownTimer);
+    clearTimeout(game.feedbackTimer);
+    game.timer = null;
+    game.countdownTimer = null;
+    game.feedbackTimer = null;
+    resetSession();
+    startSession();
+}
 function startSession() {
     if (game.running) { finishSession(); return; }
     if (game.mode === "mindpalace") { startMindPalaceSession(); return; }
@@ -3508,12 +3535,31 @@ function renderHistory() {
         const modeLabel = MODE_INFO[s.mode] ? MODE_INFO[s.mode].label : "Training";
         const perspLabel = s.perspective && s.perspective !== "white" ? " · " + (perspNames[s.perspective] || s.perspective) : "";
         const scoreLabel = s.visionScore ? ` · VS ${s.visionScore}` : "";
-        const html = '<div class="history-item-icon">♞</div>' +
-            '<div class="history-item-info"><strong>' + modeLabel + perspLabel + '</strong><span>' + dateTxt + ' · ' + timeTxt + ' · ' + Math.round(s.duration/60) + 'm' + scoreLabel + '</span></div>' +
-            '<div class="history-item-score"><strong>' + s.correct + '</strong><span>' + s.accuracy + '% accuracy</span></div>';
-        const item1 = document.createElement("div"); item1.className = "history-item"; item1.innerHTML = html;
-        if (list) list.appendChild(item1);
-        if (i < 5 && dash) { const item2 = document.createElement("div"); item2.className = "history-item"; item2.innerHTML = html; dash.appendChild(item2); }
+        const createHistoryItem = () => {
+            const item = document.createElement("div");
+            item.className = "history-item";
+            const icon = document.createElement("div");
+            icon.className = "history-item-icon";
+            icon.textContent = "♞";
+            const info = document.createElement("div");
+            info.className = "history-item-info";
+            const title = document.createElement("strong");
+            title.textContent = modeLabel + perspLabel;
+            const meta = document.createElement("span");
+            meta.textContent = dateTxt + " · " + timeTxt + " · " + Math.round(s.duration / 60) + "m" + scoreLabel;
+            info.append(title, meta);
+            const score = document.createElement("div");
+            score.className = "history-item-score";
+            const correct = document.createElement("strong");
+            correct.textContent = String(s.correct);
+            const accuracyLabel = document.createElement("span");
+            accuracyLabel.textContent = s.accuracy + "% accuracy";
+            score.append(correct, accuracyLabel);
+            item.append(icon, info, score);
+            return item;
+        };
+        if (list) list.appendChild(createHistoryItem());
+        if (i < 5 && dash) dash.appendChild(createHistoryItem());
     });
 }
 function clearHistory() {
@@ -3560,62 +3606,96 @@ function exportData() {
     toast("Backup exported.");
 }
 function importData(file) {
-    const r = new FileReader();
-    r.onload = e => {
+    const MAX_BACKUP_BYTES = 5 * 1024 * 1024;
+    if (!file || typeof file.size !== "number" || file.size <= 0 || file.size > MAX_BACKUP_BYTES) {
+        toast("Import failed — choose a non-empty backup smaller than 5 MB.");
+        return;
+    }
+    if (!backupValidation) {
+        toast("Import failed — backup validation is unavailable. Reload the app and try again.");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => toast("Import failed — the selected file could not be read.");
+    reader.onload = event => {
         try {
-            const data = JSON.parse(e.target.result);
-            if (!data || typeof data !== "object") throw new Error("Bad file");
-            if (data.stats) { stats = { ...DEFAULT_STATS, ...data.stats }; save(KEYS.stats, stats); }
-            if (Array.isArray(data.history)) { history = data.history.slice(0,50); save(KEYS.history, history); }
-            if (Array.isArray(data.answerRecords)) { answerRecords = data.answerRecords.slice(-5000); save(KEYS.answerRecords, answerRecords); }
-            if (data.visionRating && typeof data.visionRating === "object") {
-                visionRating = {
-                    current: clamp(Math.round(Number(data.visionRating.current) || 1000), 400, 2400),
-                    history: Array.isArray(data.visionRating.history) ? data.visionRating.history.slice(-100) : []
-                };
+            if (typeof event.target.result !== "string" || event.target.result.length > MAX_BACKUP_BYTES) {
+                throw new Error("Backup file is too large or unreadable.");
+            }
+            // Validate and normalize every supported field before mutating any saved state.
+            const data = backupValidation.validateBackup(JSON.parse(event.target.result));
+
+            stats = { ...DEFAULT_STATS, ...data.stats };
+            history = data.history.slice(-50);
+            answerRecords = data.answerRecords.slice(-5000);
+            save(KEYS.stats, stats);
+            save(KEYS.history, history);
+            save(KEYS.answerRecords, answerRecords);
+
+            if (data.visionRating) {
+                visionRating = data.visionRating;
                 save(KEYS.rating, visionRating);
             }
-            if (typeof data.xp === "number") { xp = data.xp; save(KEYS.xp, xp); }
-            if (Array.isArray(data.unlocked)) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
-            if (data.daily && data.daily.date) { daily = data.daily; save(KEYS.daily, daily); }
-            if (data.dailyChallenge && Array.isArray(data.dailyChallenge.attempts)) {
-                dailyChallenge = {
-                    date: String(data.dailyChallenge.date || dailyDateKey()),
-                    attempts: data.dailyChallenge.attempts.slice(-20),
-                    streak: Number(data.dailyChallenge.streak) || 0,
-                    lastCompletedDate: data.dailyChallenge.lastCompletedDate || null
-                };
+            if (data.xp !== undefined) { xp = data.xp; save(KEYS.xp, xp); }
+            if (data.unlocked) { unlocked = data.unlocked; save(KEYS.achievements, unlocked); }
+            if (data.daily) { daily = data.daily; save(KEYS.daily, daily); }
+            if (data.dailyChallenge) {
+                dailyChallenge = data.dailyChallenge;
                 save(KEYS.dailyChallenge, dailyChallenge);
             }
+
             if (data.settings) {
-                const s = data.settings;
-                if (s.theme) setTheme(s.theme);
-                if (s.board) setBoardTheme(s.board);
-                if (s.perspective) setPerspective(s.perspective);
-                else if (typeof s.flip === "boolean") setPerspective(s.flip ? "black" : "white");
-                if (typeof s.labels === "boolean") setLabels(s.labels);
-                if (typeof s.coords === "boolean") setCoords(s.coords);
-                if (typeof s.pieces === "boolean") setPiecesEnabled(s.pieces);
-                if (typeof s.sound === "boolean") { game.sound = s.sound; $("soundToggle").checked = s.sound; save(KEYS.sound, s.sound); }
-                if (typeof s.volume === "number") { game.volume = s.volume; $("volumeRange").value = Math.round(s.volume*100); save(KEYS.volume, s.volume); }
-                if (typeof s.ticks === "boolean") { game.ticks = s.ticks; $("ticksToggle").checked = s.ticks; save(KEYS.ticks, s.ticks); }
-                if (typeof s.boardSize === "number") setBoardSize(s.boardSize);
-                if (typeof s.musicVolume === "number") { setMusicVol(s.musicVolume); const el = $("musicVolume"); if (el) el.value = Math.round(s.musicVolume*100); }
-                if (typeof s.musicTrack === "number") setStream(s.musicTrack, false);
-                if (typeof s.musicSource === "string") switchSource(s.musicSource);
-                if (s.musicWidget) { drag.offsetX = Number(s.musicWidget.x) || 0; drag.offsetY = Number(s.musicWidget.y) || 0; applyWidgetPos(); saveWidgetPos(); }
-                if (typeof s.mpDifficulty === "string") setMindPalaceDifficulty(s.mpDifficulty);
-                if (typeof s.adaptive === "boolean") { adaptiveEnabled = s.adaptive; save(KEYS.adaptive, adaptiveEnabled); }
-                if (["balanced", "focus", "aggressive"].includes(s.adaptiveIntensity)) {
-                    adaptiveIntensity = s.adaptiveIntensity; save(KEYS.adaptiveIntensity, adaptiveIntensity);
-                }
+                const settings = data.settings;
+                setTheme(settings.theme);
+                setBoardTheme(settings.board);
+                setPerspective(settings.perspective);
+                setLabels(settings.labels);
+                setCoords(settings.coords);
+                setPiecesEnabled(settings.pieces);
+                game.sound = settings.sound;
+                $("soundToggle").checked = settings.sound;
+                save(KEYS.sound, settings.sound);
+                game.volume = settings.volume;
+                $("volumeRange").value = Math.round(settings.volume * 100);
+                save(KEYS.volume, settings.volume);
+                game.ticks = settings.ticks;
+                $("ticksToggle").checked = settings.ticks;
+                save(KEYS.ticks, settings.ticks);
+                setBoardSize(settings.boardSize);
+                setMusicVol(settings.musicVolume);
+                const musicVolumeControl = $("musicVolume");
+                if (musicVolumeControl) musicVolumeControl.value = Math.round(settings.musicVolume * 100);
+                setStream(settings.musicTrack, false);
+                switchSource(settings.musicSource);
+                drag.offsetX = settings.musicWidget.x;
+                drag.offsetY = settings.musicWidget.y;
+                applyWidgetPos();
+                saveWidgetPos();
+                setMindPalaceDifficulty(settings.mpDifficulty);
+                adaptiveEnabled = settings.adaptive;
+                save(KEYS.adaptive, adaptiveEnabled);
+                adaptiveIntensity = settings.adaptiveIntensity;
+                save(KEYS.adaptiveIntensity, adaptiveIntensity);
             }
-            updateAdaptiveUI();             updateDashboard(); updateLevelUI(); updateDailyUI(); renderDailyChallenge(); renderAchievements();
-            renderHistory(); renderAnalytics(); resetSession();
-            toast("Backup imported.");
-        } catch (err) { console.warn(err); toast("Import failed — invalid file."); }
+
+            updateAdaptiveUI();
+            updateDashboard();
+            updateLevelUI();
+            updateDailyUI();
+            renderDailyChallenge();
+            renderAchievements();
+            renderHistory();
+            renderAnalytics();
+            resetSession();
+            toast("Backup imported successfully.");
+        } catch (error) {
+            console.warn("Backup import rejected:", error);
+            toast(error instanceof Error && /Unsupported backup version|Backup/i.test(error.message)
+                ? "Import failed — backup is invalid or unsupported."
+                : "Import failed — invalid file. Your saved progress was not changed.");
+        }
     };
-    r.readAsText(file);
+    reader.readAsText(file);
 }
 function resetProgress() {
     openConfirm("Reset all progress?", "This will permanently delete your stats, history, XP, and achievements.", () => {
@@ -3635,11 +3715,35 @@ function resetProgress() {
 /* Keyboard */
 function setupKeyboard() {
     document.addEventListener("keydown", e => {
-        const t = e.target;
-        if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") return;
+        const target = e.target instanceof Element ? e.target : null;
         const k = e.key.toLowerCase();
 
-        // MP-specific shortcuts during rebuild phase
+        // Never steal native keyboard activation or keystrokes from interactive/editable UI.
+        if (target && (
+            target.closest("input, textarea, select, button, a, [contenteditable=''], [contenteditable='true'], [role='textbox'], [role='dialog']") ||
+            target.isContentEditable
+        )) {
+            if (e.key === "Escape" && target.closest("#confirmOverlay:not(.hidden)")) {
+                e.preventDefault();
+                closeConfirm();
+            }
+            return; // Space on a focused button/link remains native.
+        }
+
+        const visible = el => !!el && !el.hidden && !el.classList.contains("hidden") &&
+            getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden";
+        const blocking = visible($("authScreen")) || visible($("guestWelcome")) ||
+            visible($("onboarding")) || visible($("confirmOverlay")) ||
+            visible($("countdownOverlay")) || visible($("preloader"));
+        if (blocking) {
+            if (e.key === "Escape") {
+                if (visible($("confirmOverlay"))) { e.preventDefault(); closeConfirm(); }
+                else document.body.classList.remove("sidebar-open");
+            }
+            return;
+        }
+
+        // MP-specific shortcuts during rebuild phase.
         if (mindPalace.running && mindPalace.phase === "rebuild") {
             if (k === "u") { e.preventDefault(); undoMindPalaceAction(); return; }
             if (k === "c") { e.preventDefault(); clearMindPalacePlayer(); return; }
@@ -3649,16 +3753,21 @@ function setupKeyboard() {
 
         if (k === "r") {
             e.preventDefault();
-            if (game.running) finishSession(); else startSession();
+            if (game.running || game.paused || game.countdownTimer) restartTrainingSession();
+            else if (game.mode === "daily" || game.mode === "mindpalace") {
+                toast("Use the challenge controls to start or replay this mode.");
+            } else startSession();
         } else if (e.code === "Space") {
-            e.preventDefault();
-            if (game.running) togglePause(); else startSession();
+            if (game.running) { e.preventDefault(); togglePause(); }
+            else if (!game.paused && !game.countdownTimer && game.mode !== "daily" && game.mode !== "mindpalace") {
+                e.preventDefault(); startSession();
+            }
         } else if (k === "f") { e.preventDefault(); toggleFullscreen(); }
         else if (k === "m") { e.preventDefault(); togglePanel(); }
         else if (e.key === "Escape") {
             document.body.classList.remove("sidebar-open");
             if (game.paused) togglePause();
-            else if (game.running && game.mode !== "mindpalace") togglePause();
+            else if (game.running && game.mode !== "mindpalace" && !game.dailyActive) togglePause();
         }
     });
 }
@@ -3697,8 +3806,9 @@ function init() {
     $("pauseBtn").addEventListener("click", togglePause);
     $("resumeBtn").addEventListener("click", togglePause);
     $("resultRestart").addEventListener("click", () => {
-        startSession();
-        $("training").scrollIntoView({ behavior:"smooth", block:"start" });
+        const trainingView = document.querySelector('.view[data-view="training"]');
+        if (trainingView) trainingView.scrollIntoView({ behavior:"smooth", block:"start" });
+        restartTrainingSession();
     });
     $("dailyReplayBtn").addEventListener("click", () => startDailySession(true));
     $("dailyViewStartBtn").addEventListener("click", () => {
