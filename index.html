@@ -25,7 +25,7 @@
     <aside class="auth-visual" aria-label="Chess Vision Trainer board vision artwork">
       <div class="auth-visual-grain" aria-hidden="true"></div>
       <div class="auth-visual-top">
-        <a class="auth-visual-brand" href="#" aria-label="Chess Vision Trainer">
+        <a class="auth-visual-brand" href="#cvt-dashboard" aria-label="Chess Vision Trainer home">
           <span class="auth-visual-mark" aria-hidden="true">♞</span>
           <span><strong>CHESS<span>VISION</span></strong><small>TRAINER</small></span>
         </a>
@@ -148,7 +148,7 @@
 <!-- Guest welcome / demo landing page -->
 <section class="guest-welcome" id="guestWelcome" hidden aria-labelledby="guestWelcomeTitle">
   <aside class="guest-welcome-sidebar">
-    <a class="guest-welcome-brand" href="#" aria-label="Chess Vision Trainer">
+    <a class="guest-welcome-brand" href="#cvt-dashboard" aria-label="Chess Vision Trainer home">
       <span class="guest-brand-mark">♞</span>
       <span>CHESS<span>VISION</span></span>
     </a>
@@ -238,7 +238,7 @@
 </div>
 
 <aside class="sidebar" id="sidebar">
-  <a href="#" class="brand" data-nav="dashboard" aria-label="Chess Vision Trainer home">
+  <a href="#cvt-dashboard" class="brand" data-nav="dashboard" aria-label="Chess Vision Trainer home">
     <div class="brand-icon">♞</div>
     <div>
       <div class="brand-name">CHESS<span>VISION</span></div>
@@ -248,13 +248,13 @@
 
   <div class="side-label">NAVIGATION</div>
   <nav class="side-nav" id="sideNav">
-    <a href="#" class="nav-link active" data-nav="dashboard"><span class="nav-icon">◆</span><span>Dashboard</span><span class="nav-arrow">→</span></a>
-    <a href="#" class="nav-link" data-nav="training"><span class="nav-icon">◎</span><span>Training</span></a>
-    <a href="#" class="nav-link" data-nav="daily"><span class="nav-icon">◆</span><span>Daily Challenge</span></a>
-    <a href="#" class="nav-link" data-nav="mindpalace"><span class="nav-icon">🧠</span><span>Mind Palace</span></a>
-    <a href="#" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
-    <a href="#" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
-    <a href="#" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
+    <a href="#cvt-dashboard" class="nav-link active" data-nav="dashboard"><span class="nav-icon">◆</span><span>Dashboard</span><span class="nav-arrow">→</span></a>
+    <a href="#cvt-training" class="nav-link" data-nav="training"><span class="nav-icon">◎</span><span>Training</span></a>
+    <a href="#cvt-daily" class="nav-link" data-nav="daily"><span class="nav-icon">◆</span><span>Daily Challenge</span></a>
+    <a href="#cvt-mindpalace" class="nav-link" data-nav="mindpalace"><span class="nav-icon">🧠</span><span>Mind Palace</span></a>
+    <a href="#cvt-analytics" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
+    <a href="#cvt-achievements" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
+    <a href="#cvt-settings" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
   </nav>
 
   <div class="side-label">TODAY'S GOAL</div>
@@ -999,6 +999,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./data-validation.js"></script>
 <script src="./script.js"></script>
 <script src="./auth.js"></script>
 </body>
