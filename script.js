@@ -2073,7 +2073,14 @@ function genTarget() {
 }
 function updateQuestionNumber() { const el = $("targetNumber"); if (el) el.textContent = "QUESTION " + String(game.questionIndex).padStart(2,"0"); }
 function genSquareTarget() {
-    const coord = game.dailyActive ? game.dailySequence[game.questionIndex] : nextTarget();
+    // Square Vision uses a uniformly shuffled 64-square bag so coordinates
+    // appear randomly without repeats until the full board has been covered.
+    // A new target is requested only after the current answer is correct.
+    const coord = game.dailyActive
+        ? game.dailySequence[game.questionIndex]
+        : game.mode === "square"
+            ? squareBag.next(game.target)
+            : nextTarget();
     game.target = coord;
     if (isDualMode()) game.dualTarget = coord;
     game.questionIndex++; updateQuestionNumber();
