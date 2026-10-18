@@ -2567,7 +2567,7 @@ function updateVisionRating() {
         const averageReaction = valid.length ? Math.round(valid.reduce((sum, rt) => sum + rt, 0) / valid.length) : 3000;
         void syncVisionRatingToCloud(game.sessionId, {
             correct: game.correct, mistakes: game.mistakes, averageReaction,
-            bestStreak: game.bestStreak, duration: Math.max(0, Math.round(game.duration - game.timeLeft)),
+            bestStreak: game.bestStreak, duration: Math.max(0, Math.round(game.duration)),
             mode: game.mode
         });
     }
