@@ -2540,7 +2540,8 @@ async function syncVisionRatingToCloud(sessionId, metrics) {
             renderHistory();
         }
         refreshRatingUI();
-        if (typeof showResults === "function") showResults(false, 0);
+        const resultRating = $("resultRating");
+        if (resultRating) resultRating.textContent = String(visionRating.current);
     } catch (error) {
         if (generation === ratingCloudGeneration) {
             console.error("Vision Rating cloud sync failed; local rating is retained.", error);
