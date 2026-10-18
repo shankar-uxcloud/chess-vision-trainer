@@ -1948,8 +1948,15 @@ function updateFlipTrainingUI() {
     off.classList.toggle("active", !flipBoardTraining || disabled);
     on.setAttribute("aria-pressed", flipBoardTraining && !disabled ? "true" : "false");
     off.setAttribute("aria-pressed", !flipBoardTraining || disabled ? "true" : "false");
-    if (hint) hint.textContent = disabled && game.perspective === "both"
-        ? "Both mode already uses both perspectives." : "Repeat each target from the opposite view.";
+    if (hint) {
+        if (game.mode === "square" && game.perspective === "both") {
+            hint.textContent = "Square Vision: find one random coordinate; the next appears after a correct click.";
+        } else {
+            hint.textContent = disabled && game.perspective === "both"
+                ? "Both mode already uses both perspectives."
+                : "Repeat each target from the opposite view.";
+        }
+    }
 }
 function setFlipBoardTraining(enabled) {
     flipBoardTraining = !!enabled;
@@ -1984,7 +1991,11 @@ function setBoardFlip(flip) {
         enableBoard(game.running && game.mode !== "coordinate" && game.mode !== "reverse" && game.mode !== "color");
     }
 }
-function isDualMode() { return game.perspective === "both"; }
+function isDualMode() {
+    // In Square Vision, "Both" must not require the same coordinate twice.
+    // Keep the single-target random practice flow; other modes retain dual-view behavior.
+    return game.perspective === "both" && game.mode !== "square";
+}
 function isAutoMode() { return game.perspective === "auto"; }
 function pickAutoSide() {
     if (!isAutoMode()) { game.autoSide = null; return; }
