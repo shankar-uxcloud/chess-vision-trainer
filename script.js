@@ -2693,6 +2693,17 @@ function renderVisionRating() {
     const weekText = (week >= 0 ? "+" : "") + week + " this week";
     ["visionRatingValue", "visionRatingLarge"].forEach(id => { const el = $(id); if (el) el.textContent = current; });
     ["visionRatingWeek", "visionRatingChange"].forEach(id => { const el = $(id); if (el) el.textContent = weekText; });
+    const storageStatus = $("visionRatingStorageStatus");
+    if (storageStatus) {
+        storageStatus.textContent = !ratingCloudUserId ? "GUEST · LOCAL" :
+            !ratingCloudReady ? "SYNCING…" :
+            ratingCloudAvailable ? "ACCOUNT SYNCED" : "LOCAL · SYNC PENDING";
+        storageStatus.title = !ratingCloudUserId
+            ? "Guest rating is stored in this browser."
+            : ratingCloudAvailable
+                ? "Your rating is synced to your signed-in account."
+                : "Your local rating is preserved; cloud sync is not currently available.";
+    }
     const values = visionRating.history.slice(-20).map(entry => entry.rating);
     renderChartBars("chartRating", values, Math.max(1200, ...values));
 }
