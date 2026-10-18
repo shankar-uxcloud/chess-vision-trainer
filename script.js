@@ -2438,18 +2438,138 @@ function calculateVisionRatingUpdate() {
     const delta = Math.round(clamp((performance - .5) * 84, -42, 42));
     return { delta, performance, accuracy: accuracyScore, averageReaction };
 }
+let ratingCloudUserId = null;
+let ratingCloudReady = false;
+let ratingCloudGeneration = 0;
+let ratingCloudSyncInFlight = new Set();
+
+function ratingLocalKey(userId) {
+    return userId ? "cvt-vision-rating-user-" + userId : "cvt-vision-rating-guest-v1";
+}
+function saveRatingSnapshot(userId) {
+    save(ratingLocalKey(userId), visionRating);
+}
+function normalizeRatingProfile(profile) {
+    if (!profile || !Number.isFinite(Number(profile.rating))) return null;
+    return {
+        current: clamp(Math.round(Number(profile.rating)), 400, 2400),
+        history: (Array.isArray(profile.history) ? profile.history : []).filter(row =>
+            row && Number.isFinite(Number(row.rating)) && Number.isFinite(Number(row.delta)) &&
+            typeof row.date === "string").slice(-100).map(row => ({
+                date: row.date, rating: clamp(Math.round(Number(row.rating)), 400, 2400),
+                delta: Math.round(Number(row.delta)), performance: clamp(Number(row.performance) || 0, 0, 1),
+                mode: typeof row.mode === "string" ? row.mode : "square"
+            }))
+    };
+}
+function refreshRatingUI() {
+    renderVisionRating();
+    updateDashboard();
+    renderAnalytics();
+}
+async function loadCloudVisionRating(userId, generation) {
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (!client || !userId) return;
+    try {
+        const { data, error } = await client.rpc("get_my_vision_rating");
+        if (error) throw error;
+        if (generation !== ratingCloudGeneration || ratingCloudUserId !== userId) return;
+        visionRating = normalizeRatingProfile(data) ||
+            normalizeRatingProfile(load(ratingLocalKey(userId), null)) || { current: 1000, history: [] };
+        save(KEYS.rating, visionRating);
+        saveRatingSnapshot(userId);
+        ratingCloudReady = true;
+        refreshRatingUI();
+    } catch (error) {
+        if (generation !== ratingCloudGeneration) return;
+        ratingCloudReady = true;
+        console.warn("Cloud Vision Rating could not be loaded. Local rating remains available.", error);
+        toast("Cloud rating is not ready. Run the Supabase rating migration to enable account sync.");
+    }
+}
+window.addEventListener("cvt:auth-state", event => {
+    const user = event.detail?.user || null;
+    const nextUserId = user && typeof user.id === "string" ? user.id : null;
+    if (nextUserId === ratingCloudUserId && ratingCloudReady) return;
+
+    if (ratingCloudUserId) saveRatingSnapshot(ratingCloudUserId);
+    else saveRatingSnapshot(null);
+
+    ratingCloudGeneration++;
+    const generation = ratingCloudGeneration;
+    ratingCloudUserId = nextUserId;
+    ratingCloudReady = !nextUserId;
+    if (!nextUserId) {
+        visionRating = normalizeRatingProfile(load(ratingLocalKey(null), null)) || { current: 1000, history: [] };
+        save(KEYS.rating, visionRating);
+        refreshRatingUI();
+        return;
+    }
+    // Never leave another account's rating visible while loading this account.
+    visionRating = { current: 1000, history: [] };
+    save(KEYS.rating, visionRating);
+    refreshRatingUI();
+    void loadCloudVisionRating(nextUserId, generation);
+});
+
+async function syncVisionRatingToCloud(sessionId, metrics) {
+    const userId = ratingCloudUserId;
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (!userId || !client || !ratingCloudReady || !sessionId || ratingCloudSyncInFlight.has(sessionId)) return;
+    ratingCloudSyncInFlight.add(sessionId);
+    const generation = ratingCloudGeneration;
+    try {
+        const { data, error } = await client.rpc("record_vision_rating", {
+            p_session_id: sessionId, p_correct: metrics.correct, p_mistakes: metrics.mistakes,
+            p_average_reaction_ms: metrics.averageReaction, p_best_streak: metrics.bestStreak,
+            p_duration_seconds: metrics.duration, p_mode: metrics.mode
+        });
+        if (error) throw error;
+        if (generation !== ratingCloudGeneration || userId !== ratingCloudUserId) return;
+        const profile = normalizeRatingProfile(data);
+        if (!profile) throw new Error("Invalid Vision Rating profile returned by Supabase.");
+        visionRating = profile;
+        save(KEYS.rating, visionRating);
+        saveRatingSnapshot(userId);
+        const matchingSession = history.find(item => item.sessionId === sessionId);
+        if (matchingSession) {
+            matchingSession.rating = visionRating.current;
+            const last = visionRating.history[visionRating.history.length - 1];
+            if (last) { matchingSession.ratingDelta = last.delta; matchingSession.ratingPerformance = last.performance; }
+            save(KEYS.history, history);
+            renderHistory();
+        }
+        refreshRatingUI();
+        if (typeof showResults === "function") showResults(false, 0);
+    } catch (error) {
+        if (generation === ratingCloudGeneration) {
+            console.error("Vision Rating cloud sync failed; local rating is retained.", error);
+            toast("Rating remains on this device; cloud sync failed. Check Supabase setup.");
+        }
+    } finally {
+        ratingCloudSyncInFlight.delete(sessionId);
+    }
+}
+
 function updateVisionRating() {
     const update = calculateVisionRatingUpdate();
     visionRating.current = clamp(Math.round(visionRating.current + update.delta), 400, 2400);
     visionRating.history.push({
-        date: new Date().toISOString(),
-        rating: visionRating.current,
-        delta: update.delta,
-        performance: Number(update.performance.toFixed(4)),
-        mode: game.mode
+        date: new Date().toISOString(), rating: visionRating.current, delta: update.delta,
+        performance: Number(update.performance.toFixed(4)), mode: game.mode
     });
     visionRating.history = visionRating.history.slice(-100);
     save(KEYS.rating, visionRating);
+    saveRatingSnapshot(ratingCloudUserId);
+    if (ratingCloudUserId && ratingCloudReady) {
+        const valid = game.reactionTimes.filter(rt => rt > 0 && rt < 30000);
+        const averageReaction = valid.length ? Math.round(valid.reduce((sum, rt) => sum + rt, 0) / valid.length) : 3000;
+        void syncVisionRatingToCloud(game.sessionId, {
+            correct: game.correct, mistakes: game.mistakes, averageReaction,
+            bestStreak: game.bestStreak, duration: Math.max(0, Math.round(game.duration - game.timeLeft)),
+            mode: game.mode
+        });
+    }
     return update;
 }
 function ratingWeekChange() {
@@ -2912,6 +3032,7 @@ function finishSession() {
         : 0;
 
     const result = {
+        sessionId: game.sessionId,
         correct: game.correct,
         mistakes: game.mistakes,
         accuracy: acc,
