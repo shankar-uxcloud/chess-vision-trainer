@@ -62,7 +62,7 @@ begin
   if p_average_reaction_ms is null or p_average_reaction_ms < 0 or p_average_reaction_ms > 30000 then raise exception 'Invalid reaction time'; end if;
   if p_best_streak is null or p_best_streak < 0 or p_best_streak > p_correct + p_mistakes then raise exception 'Invalid streak'; end if;
   if p_duration_seconds is null or p_duration_seconds < 0 or p_duration_seconds > 86400 then raise exception 'Invalid duration'; end if;
-  if p_mode not in ('square','coordinate','reverse','knight','blindfold','color','custom') then raise exception 'Unsupported rating mode'; end if;
+  if p_mode not in ('square','coordinate','reverse','knight','blindfold','color','custom','daily') then raise exception 'Unsupported rating mode'; end if;
 
   insert into public.user_vision_ratings(user_id) values(v_user_id) on conflict(user_id) do nothing;
   select * into v_profile from public.user_vision_ratings where user_id = v_user_id for update;
@@ -81,7 +81,7 @@ begin
   v_reaction := greatest(0,least(1,1-(p_average_reaction_ms-450)/2550));
   v_consistency := greatest(0,least(1,p_best_streak::numeric/greatest(v_attempts,1)*1.6));
   v_difficulty := case when p_mode='knight' then 0.9 when p_mode='reverse' then 0.82
-    when p_mode='blindfold' then 0.86 when p_mode='color' then 0.68
+    when p_mode='blindfold' then 0.86 when p_mode='color' then 0.68 when p_mode='daily' then 0.82
     when p_duration_seconds <= 45 then 0.82 when p_duration_seconds >= 120 then 0.76 else 0.7 end;
   select avg((entry->>'performance')::numeric) into v_recent
   from (select entry from jsonb_array_elements(v_profile.history) with ordinality h(entry,ord)
