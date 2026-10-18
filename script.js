@@ -2440,27 +2440,74 @@ function calculateVisionRatingUpdate() {
 }
 let ratingCloudUserId = null;
 let ratingCloudReady = false;
+let ratingCloudAvailable = false;
 let ratingCloudGeneration = 0;
 let ratingCloudSyncInFlight = new Set();
 
 function ratingLocalKey(userId) {
     return userId ? "cvt-vision-rating-user-" + userId : "cvt-vision-rating-guest-v1";
 }
+function ratingPendingKey(userId) {
+    return "cvt-vision-rating-pending-user-" + userId;
+}
 function saveRatingSnapshot(userId) {
     save(ratingLocalKey(userId), visionRating);
 }
 function normalizeRatingProfile(profile) {
-    if (!profile || !Number.isFinite(Number(profile.rating))) return null;
+    if (!profile || typeof profile !== "object" || Array.isArray(profile)) return null;
+    // Cloud rows use "rating"; local snapshots use "current".
+    const rawRating = profile.rating ?? profile.current;
+    if (!Number.isFinite(Number(rawRating))) return null;
     return {
-        current: clamp(Math.round(Number(profile.rating)), 400, 2400),
-        history: (Array.isArray(profile.history) ? profile.history : []).filter(row =>
-            row && Number.isFinite(Number(row.rating)) && Number.isFinite(Number(row.delta)) &&
-            typeof row.date === "string").slice(-100).map(row => ({
-                date: row.date, rating: clamp(Math.round(Number(row.rating)), 400, 2400),
-                delta: Math.round(Number(row.delta)), performance: clamp(Number(row.performance) || 0, 0, 1),
+        current: clamp(Math.round(Number(rawRating)), 400, 2400),
+        history: (Array.isArray(profile.history) ? profile.history : [])
+            .filter(row => row && Number.isFinite(Number(row.rating)) &&
+                Number.isFinite(Number(row.delta)) && typeof row.date === "string")
+            .slice(-100)
+            .map(row => ({
+                date: row.date,
+                rating: clamp(Math.round(Number(row.rating)), 400, 2400),
+                delta: Math.round(Number(row.delta)),
+                performance: clamp(Number(row.performance) || 0, 0, 1),
                 mode: typeof row.mode === "string" ? row.mode : "square"
             }))
     };
+}
+function readPendingRatingSessions(userId) {
+    if (!userId) return [];
+    const pending = load(ratingPendingKey(userId), []);
+    if (!Array.isArray(pending)) return [];
+    return pending.filter(row =>
+        row && typeof row.sessionId === "string" && row.sessionId.length > 0 &&
+        row.metrics && Number.isFinite(Number(row.metrics.correct)) &&
+        Number.isFinite(Number(row.metrics.mistakes)) &&
+        Number.isFinite(Number(row.metrics.averageReaction)) &&
+        Number.isFinite(Number(row.metrics.bestStreak)) &&
+        Number.isFinite(Number(row.metrics.duration)) &&
+        typeof row.metrics.mode === "string"
+    ).slice(-50);
+}
+function queuePendingRatingSession(userId, sessionId, metrics) {
+    if (!userId || !sessionId || !metrics) return;
+    const pending = readPendingRatingSessions(userId);
+    if (pending.some(row => row.sessionId === sessionId)) return;
+    pending.push({
+        sessionId: String(sessionId),
+        metrics: {
+            correct: Math.max(0, Math.round(Number(metrics.correct) || 0)),
+            mistakes: Math.max(0, Math.round(Number(metrics.mistakes) || 0)),
+            averageReaction: clamp(Number(metrics.averageReaction) || 0, 0, 30000),
+            bestStreak: Math.max(0, Math.round(Number(metrics.bestStreak) || 0)),
+            duration: clamp(Math.round(Number(metrics.duration) || 0), 0, 86400),
+            mode: metrics.mode
+        }
+    });
+    save(ratingPendingKey(userId), pending.slice(-50));
+}
+function removePendingRatingSession(userId, sessionId) {
+    if (!userId) return;
+    save(ratingPendingKey(userId), readPendingRatingSessions(userId)
+        .filter(row => row.sessionId !== sessionId));
 }
 function refreshRatingUI() {
     renderVisionRating();
@@ -2474,17 +2521,27 @@ async function loadCloudVisionRating(userId, generation) {
         const { data, error } = await client.rpc("get_my_vision_rating");
         if (error) throw error;
         if (generation !== ratingCloudGeneration || ratingCloudUserId !== userId) return;
-        visionRating = normalizeRatingProfile(data) ||
-            normalizeRatingProfile(load(ratingLocalKey(userId), null)) || { current: 1000, history: [] };
+
+        const cloudProfile = normalizeRatingProfile(data);
+        if (!cloudProfile) throw new Error("Supabase returned an invalid Vision Rating profile.");
+        visionRating = cloudProfile;
         save(KEYS.rating, visionRating);
         saveRatingSnapshot(userId);
         ratingCloudReady = true;
+        ratingCloudAvailable = true;
         refreshRatingUI();
+        void flushPendingRatingSessions(userId, generation);
     } catch (error) {
-        if (generation !== ratingCloudGeneration) return;
+        if (generation !== ratingCloudGeneration || ratingCloudUserId !== userId) return;
+        // Keep this account's last known local snapshot instead of replacing it with 1000.
+        visionRating = normalizeRatingProfile(load(ratingLocalKey(userId), null)) ||
+            { current: 1000, history: [] };
+        save(KEYS.rating, visionRating);
         ratingCloudReady = true;
-        console.warn("Cloud Vision Rating could not be loaded. Local rating remains available.", error);
-        toast("Cloud rating is not ready. Run the Supabase rating migration to enable account sync.");
+        ratingCloudAvailable = false;
+        refreshRatingUI();
+        console.warn("Cloud Vision Rating could not be loaded. The account's local snapshot remains available.", error);
+        toast("Cloud rating is unavailable. Check the Supabase rating migration and connection.");
     }
 }
 window.addEventListener("cvt:auth-state", event => {
@@ -2499,78 +2556,130 @@ window.addEventListener("cvt:auth-state", event => {
     const generation = ratingCloudGeneration;
     ratingCloudUserId = nextUserId;
     ratingCloudReady = !nextUserId;
+    ratingCloudAvailable = false;
     if (!nextUserId) {
-        visionRating = normalizeRatingProfile(load(ratingLocalKey(null), null)) || { current: 1000, history: [] };
+        visionRating = normalizeRatingProfile(load(ratingLocalKey(null), null)) ||
+            { current: 1000, history: [] };
         save(KEYS.rating, visionRating);
         refreshRatingUI();
         return;
     }
-    // Never leave another account's rating visible while loading this account.
-    visionRating = { current: 1000, history: [] };
+
+    // Never leave another account's rating visible while this account loads.
+    visionRating = normalizeRatingProfile(load(ratingLocalKey(nextUserId), null)) ||
+        { current: 1000, history: [] };
     save(KEYS.rating, visionRating);
     refreshRatingUI();
     void loadCloudVisionRating(nextUserId, generation);
 });
 
-async function syncVisionRatingToCloud(sessionId, metrics) {
+async function syncVisionRatingToCloud(sessionId, metrics, options = {}) {
     const userId = ratingCloudUserId;
     const client = window.CVT_SUPABASE_CLIENT;
-    if (!userId || !client || !ratingCloudReady || !sessionId || ratingCloudSyncInFlight.has(sessionId)) return;
+    if (!userId || !client || !ratingCloudReady || !ratingCloudAvailable ||
+        !sessionId || ratingCloudSyncInFlight.has(sessionId)) return false;
+
     ratingCloudSyncInFlight.add(sessionId);
     const generation = ratingCloudGeneration;
     try {
         const { data, error } = await client.rpc("record_vision_rating", {
-            p_session_id: sessionId, p_correct: metrics.correct, p_mistakes: metrics.mistakes,
-            p_average_reaction_ms: metrics.averageReaction, p_best_streak: metrics.bestStreak,
-            p_duration_seconds: metrics.duration, p_mode: metrics.mode
+            p_session_id: sessionId,
+            p_correct: metrics.correct,
+            p_mistakes: metrics.mistakes,
+            p_average_reaction_ms: metrics.averageReaction,
+            p_best_streak: metrics.bestStreak,
+            p_duration_seconds: metrics.duration,
+            p_mode: metrics.mode
         });
         if (error) throw error;
-        if (generation !== ratingCloudGeneration || userId !== ratingCloudUserId) return;
+        if (generation !== ratingCloudGeneration || userId !== ratingCloudUserId) return false;
+
         const profile = normalizeRatingProfile(data);
         if (!profile) throw new Error("Invalid Vision Rating profile returned by Supabase.");
         visionRating = profile;
+        ratingCloudAvailable = true;
         save(KEYS.rating, visionRating);
         saveRatingSnapshot(userId);
+
         const matchingSession = history.find(item => item.sessionId === sessionId);
         if (matchingSession) {
             matchingSession.rating = visionRating.current;
             const last = visionRating.history[visionRating.history.length - 1];
-            if (last) { matchingSession.ratingDelta = last.delta; matchingSession.ratingPerformance = last.performance; }
+            if (last) {
+                matchingSession.ratingDelta = last.delta;
+                matchingSession.ratingPerformance = last.performance;
+            }
             save(KEYS.history, history);
             renderHistory();
         }
         refreshRatingUI();
         const resultRating = $("resultRating");
         if (resultRating) resultRating.textContent = String(visionRating.current);
+        return true;
     } catch (error) {
-        if (generation === ratingCloudGeneration) {
-            console.error("Vision Rating cloud sync failed; local rating is retained.", error);
-            toast("Rating remains on this device; cloud sync failed. Check Supabase setup.");
+        if (generation === ratingCloudGeneration && userId === ratingCloudUserId) {
+            ratingCloudAvailable = false;
+            if (!options.fromQueue) queuePendingRatingSession(userId, sessionId, metrics);
+            refreshRatingUI();
+            console.error("Vision Rating cloud sync failed; the local rating is retained and the session is queued for retry.", error);
+            toast("Rating saved on this device. Cloud sync will retry when the connection is available.");
         }
+        return false;
     } finally {
         ratingCloudSyncInFlight.delete(sessionId);
     }
 }
-
+async function flushPendingRatingSessions(userId, generation) {
+    if (!userId || generation !== ratingCloudGeneration ||
+        userId !== ratingCloudUserId || !ratingCloudReady || !ratingCloudAvailable) return;
+    const pending = readPendingRatingSessions(userId);
+    for (const row of pending) {
+        if (generation !== ratingCloudGeneration || userId !== ratingCloudUserId) return;
+        const synced = await syncVisionRatingToCloud(row.sessionId, row.metrics, { fromQueue: true });
+        if (!synced) return;
+        removePendingRatingSession(userId, row.sessionId);
+    }
+}
 function updateVisionRating() {
     const update = calculateVisionRatingUpdate();
+    const attempts = game.correct + game.mistakes;
+
+    // Ignore very short sessions so they cannot distort the rating. This matches
+    // the database rule and prevents local/cloud ratings from disagreeing.
+    if (attempts < 5) return { ...update, delta: 0 };
+
     visionRating.current = clamp(Math.round(visionRating.current + update.delta), 400, 2400);
     visionRating.history.push({
-        date: new Date().toISOString(), rating: visionRating.current, delta: update.delta,
-        performance: Number(update.performance.toFixed(4)), mode: game.mode
+        date: new Date().toISOString(),
+        rating: visionRating.current,
+        delta: update.delta,
+        performance: Number(update.performance.toFixed(4)),
+        mode: game.mode
     });
     visionRating.history = visionRating.history.slice(-100);
     save(KEYS.rating, visionRating);
     saveRatingSnapshot(ratingCloudUserId);
-    if (ratingCloudUserId && ratingCloudReady) {
+
+    if (ratingCloudUserId) {
         const valid = game.reactionTimes.filter(rt => rt > 0 && rt < 30000);
-        const averageReaction = valid.length ? Math.round(valid.reduce((sum, rt) => sum + rt, 0) / valid.length) : 3000;
-        void syncVisionRatingToCloud(game.sessionId, {
-            correct: game.correct, mistakes: game.mistakes, averageReaction,
-            bestStreak: game.bestStreak, duration: Math.max(0, Math.round(game.duration)),
+        const metrics = {
+            correct: game.correct,
+            mistakes: game.mistakes,
+            averageReaction: valid.length
+                ? Math.round(valid.reduce((sum, rt) => sum + rt, 0) / valid.length)
+                : 3000,
+            bestStreak: game.bestStreak,
+            duration: Math.max(0, Math.round(game.duration)),
             mode: game.mode
-        });
+        };
+        if (ratingCloudReady && ratingCloudAvailable) {
+            void syncVisionRatingToCloud(game.sessionId, metrics);
+        } else {
+            // Don't lose a completed session if auth/profile loading is still in progress.
+            queuePendingRatingSession(ratingCloudUserId, game.sessionId, metrics);
+        }
     }
+    refreshRatingUI();
     return update;
 }
 function ratingWeekChange() {
