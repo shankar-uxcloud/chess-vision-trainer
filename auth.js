@@ -58,6 +58,9 @@ const CVT_SUPABASE_KEY =
     );
   }
 
+  // Share the authenticated client with the training app's account-rating sync.
+  window.CVT_SUPABASE_CLIENT = supabaseClient;
+
   // Display a message in the authentication screen.
   function showMessage(text, type = "info") {
     if (!message) return;
@@ -174,6 +177,9 @@ const CVT_SUPABASE_KEY =
 
   // Enter the chess trainer after authentication or as a guest.
   function enterApp(user = null) {
+    window.dispatchEvent(new CustomEvent("cvt:auth-state", {
+      detail: { user: user ? { id: user.id, email: user.email || "" } : null }
+    }));
     screen.hidden = true;
     if (guestWelcome) guestWelcome.hidden = true;
 
@@ -220,6 +226,7 @@ const CVT_SUPABASE_KEY =
 
   // Return to the login screen.
   function showLogin() {
+    window.dispatchEvent(new CustomEvent("cvt:auth-state", { detail: { user: null } }));
     screen.hidden = false;
     screen.style.visibility = "visible";
 
