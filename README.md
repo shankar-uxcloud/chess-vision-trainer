@@ -97,3 +97,10 @@ Please open an issue or pull request with a focused change, a reproduction case 
 ---
 
 *Built to make chess visualization practice more accessible.*
+
+
+## Per-user Vision Rating (Supabase)
+
+Guest ratings remain local to the browser. Signed-in users can keep a separate rating profile in Supabase and sync it across devices. The SQL migration at `supabase/migrations/20261018_user_vision_rating.sql` creates the rating profile/session tables, enables row-level security, and adds authenticated RPC functions. The database calculates rating changes and prevents a session ID from awarding rating twice; sessions with fewer than five answers do not change rating.
+
+**One-time setup:** Open the Supabase project configured in `auth.js`, select **SQL Editor**, paste and run the migration file, then sign in to the app. Until this SQL is run, account-level sync is unavailable and the app retains local ratings. Guest mode continues to work locally.
