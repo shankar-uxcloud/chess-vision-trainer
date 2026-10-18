@@ -226,7 +226,6 @@ const CVT_SUPABASE_KEY =
 
   // Return to the login screen.
   function showLogin() {
-    window.dispatchEvent(new CustomEvent("cvt:auth-state", { detail: { user: null } }));
     screen.hidden = false;
     screen.style.visibility = "visible";
 
@@ -520,6 +519,7 @@ const CVT_SUPABASE_KEY =
       if (session?.user) {
         enterApp(session.user);
       } else if (event === "SIGNED_OUT") {
+        window.dispatchEvent(new CustomEvent("cvt:auth-state", { detail: { user: null } }));
         sessionStorage.removeItem("cvt-guest-session");
         showLogin();
       }
