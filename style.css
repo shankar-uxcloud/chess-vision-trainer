@@ -6765,3 +6765,18 @@ body[data-theme="light"] .guest-primary-cta { color: #FFFFFF; }
   .coach-card-stats { flex-wrap: wrap; gap: 12px 18px; }
   .coach-card-stats span { min-width: 82px; }
 }
+
+
+/* Adaptive Coach: live progress toward the next Vision Rank */
+.coach-rank-progress { margin-top: 16px; max-width: 560px; }
+.coach-rank-progress-head, .coach-rank-progress-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.coach-rank-progress-head { color: var(--muted); font: 500 10px "DM Mono", monospace; letter-spacing: .12em; }
+.coach-rank-progress-head strong { color: var(--accent); font-size: 11px; letter-spacing: .02em; white-space: nowrap; }
+.coach-rank-track { height: 7px; margin-top: 9px; overflow: hidden; border-radius: 99px; background: var(--surface-3); border: 1px solid var(--border); }
+.coach-rank-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-2), var(--accent), var(--violet)); box-shadow: 0 0 12px var(--accent-soft); transition: width .5s ease; }
+.coach-rank-progress-foot { margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.coach-rank-progress-foot span:last-child { text-align: right; }
+@media (max-width: 700px) {
+  .coach-rank-progress { max-width: 100%; }
+  .coach-rank-progress-foot { font-size: 9px; }
+}
