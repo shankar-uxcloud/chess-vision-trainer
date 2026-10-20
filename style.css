@@ -6886,3 +6886,82 @@ body[data-theme="neon"] #chessboard .square.knight-found {
   .training-board-panel { padding: 12px; }
   .training-board-panel .board-shortcut { flex-basis: 100%; }
 }
+
+
+/* Final training layout polish: prevent target header/meta collisions */
+.training-layout .gameplay-stage > .target-panel,
+.training-layout .gameplay-stage > .mp-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  padding: 20px 16px !important;
+}
+.training-layout .gameplay-stage .target-topline {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 8px 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.training-layout .gameplay-stage .target-label {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 1 130px !important;
+  min-width: 0 !important;
+  gap: 8px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.35 !important;
+}
+.training-layout .gameplay-stage .target-right-meta {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.training-layout .gameplay-stage .target-number {
+  font-size: clamp(10px, .75vw, 12px) !important;
+  letter-spacing: .06em !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-align: right !important;
+}
+.training-layout .gameplay-stage .target-coordinate {
+  width: 100% !important;
+  font-size: clamp(44px, 4.2vw, 72px) !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  min-height: .9em !important;
+}
+.training-layout .gameplay-stage .target-hint {
+  margin: 0 !important;
+  text-align: center !important;
+  font-size: clamp(12px, .9vw, 15px) !important;
+  overflow-wrap: break-word !important;
+}
+.training-layout .gameplay-stage .target-feedback { text-align: center !important; }
+
+/* Signed-in state: the account pill replaces the sign-in CTA instead of overlapping it */
+body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
+  display: none !important;
+}
+.auth-account-pill {
+  max-width: min(420px, calc(100vw - 24px)) !important;
+}
+@media (max-width: 1250px) {
+  .training-layout .gameplay-stage .target-label { flex-basis: 100% !important; }
+  .training-layout .gameplay-stage .target-right-meta { justify-content: space-between !important; width: 100% !important; }
+  .training-layout .gameplay-stage .target-number { text-align: left !important; }
+}
+@media (max-width: 900px) {
+  .training-layout .gameplay-stage .target-label { flex-basis: auto !important; }
+  .training-layout .gameplay-stage .target-coordinate { font-size: clamp(48px, 12vw, 76px) !important; }
+}
