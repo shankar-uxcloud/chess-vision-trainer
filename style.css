@@ -6822,3 +6822,67 @@ body[data-theme="neon"] #chessboard .square.knight-source,
 body[data-theme="neon"] #chessboard .square.knight-found {
   background-image: none !important;
 }
+
+
+/* Layout polish: keep board shortcuts and account controls inside their boundaries */
+.training-board-panel,
+.training-board-panel * { min-width: 0; }
+.training-board-panel { overflow: hidden; }
+.training-board-panel .board-panel-head { flex-wrap: wrap; }
+.training-board-panel .board-panel-head > * { min-width: 0; max-width: 100%; }
+.training-board-panel .board-panel-sub { overflow-wrap: anywhere; }
+.training-board-panel .board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 4px 4px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  text-align: center;
+}
+.training-board-panel .board-legend > span { min-width: 0; }
+.training-board-panel .board-shortcut {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.training-board-panel .board-shortcut kbd { flex: 0 0 auto; white-space: nowrap; }
+.target-panel { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.target-panel .target-label,
+.target-panel .target-hint,
+.target-panel .target-number { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.topbar, .topbar-actions { min-width: 0; }
+.topbar-actions { flex-wrap: wrap; justify-content: flex-end; }
+.dashboard-auth-button { flex-shrink: 0; }
+.auth-account-pill {
+  box-sizing: border-box;
+  max-width: min(420px, calc(100vw - 24px));
+  gap: 8px;
+}
+.auth-account-pill #authAccountLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-account-pill button { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 900px) {
+  .training-board-panel .board-legend { gap: 7px 10px; font-size: 12px; }
+  .training-board-panel .board-shortcut { font-size: 11px; }
+  .auth-account-pill { top: 8px; right: 8px; padding: 6px 8px; max-width: calc(100vw - 16px); }
+}
+@media (max-width: 600px) {
+  .topbar { gap: 8px; align-items: flex-start; padding-top: 10px; padding-bottom: 10px; }
+  .topbar-actions { gap: 6px; }
+  .training-board-panel { padding: 12px; }
+  .training-board-panel .board-shortcut { flex-basis: 100%; }
+}
