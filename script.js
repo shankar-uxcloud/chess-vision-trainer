@@ -2687,12 +2687,43 @@ function ratingWeekChange() {
     return visionRating.history.filter(entry => Date.parse(entry.date) >= cutoff)
         .reduce((sum, entry) => sum + (Number(entry.delta) || 0), 0);
 }
+function visionRankInfo(rating) {
+    const value = clamp(Math.round(Number(rating) || 1000), 400, 2400);
+    const ranks = [
+        { name: "Beginner", min: 400 },
+        { name: "Intermediate", min: 900 },
+        { name: "Advanced", min: 1200 },
+        { name: "Expert", min: 1500 },
+        { name: "Master", min: 1800 },
+        { name: "Vision Elite", min: 2100 }
+    ];
+    let rank = ranks[0], next = null;
+    for (let i = 0; i < ranks.length; i++) {
+        if (value >= ranks[i].min) rank = ranks[i];
+        else { next = ranks[i]; break; }
+    }
+    return { name: rank.name, nextRating: next ? next.min : null, pointsToNext: next ? next.min - value : 0 };
+}
 function renderVisionRating() {
     const current = Math.round(visionRating.current || 1000);
     const week = ratingWeekChange();
     const weekText = (week >= 0 ? "+" : "") + week + " this week";
+    const rank = visionRankInfo(current);
+    const latest = visionRating.history.length ? visionRating.history[visionRating.history.length - 1] : null;
+    const latestDelta = latest && Number.isFinite(Number(latest.delta)) ? Math.round(Number(latest.delta)) : null;
+    const latestText = latestDelta === null ? "—" : (latestDelta > 0 ? "+" : "") + latestDelta;
     ["visionRatingValue", "visionRatingLarge"].forEach(id => { const el = $(id); if (el) el.textContent = current; });
     ["visionRatingWeek", "visionRatingChange"].forEach(id => { const el = $(id); if (el) el.textContent = weekText; });
+    ["coachRank", "visionRatingRank"].forEach(id => { const el = $(id); if (el) el.textContent = rank.name; });
+    const nextRank = $("visionRatingNext");
+    if (nextRank) nextRank.textContent = rank.nextRating ? rank.pointsToNext + " points to " + visionRankInfo(rank.nextRating).name + " (" + rank.nextRating + ")" : "Top rank achieved";
+    const lastChange = $("coachLastChange");
+    if (lastChange) {
+        lastChange.textContent = latestText;
+        lastChange.classList.toggle("rating-gain", latestDelta !== null && latestDelta > 0);
+        lastChange.classList.toggle("rating-loss", latestDelta !== null && latestDelta < 0);
+        lastChange.title = latest && latest.date ? "Last rated session: " + new Date(latest.date).toLocaleString() : "Complete a rated session to see your change.";
+    }
     const storageStatus = $("visionRatingStorageStatus");
     if (storageStatus) {
         storageStatus.textContent = !ratingCloudUserId ? "GUEST · LOCAL" :
@@ -2725,6 +2756,8 @@ function updateDashboard() {
     const intelligence = calculateIntelligence();
     const coachSummary = $("coachCardSummary"), coachWeakest = $("coachWeakest"), coachRating = $("coachRating");
     if (coachRating) coachRating.textContent = Math.round(visionRating.current || 1000);
+    const coachRank = $("coachRank");
+    if (coachRank) coachRank.textContent = visionRankInfo(visionRating.current || 1000).name;
     if (coachWeakest) coachWeakest.textContent = intelligence.weakest.length ? intelligence.weakest[0].square : "—";
     if (coachSummary) coachSummary.textContent = intelligence.records.length < 10
         ? "Complete " + Math.max(0, 10 - intelligence.records.length) + " more answer" + (intelligence.records.length === 9 ? "" : "s") + " to unlock personalized coaching."
