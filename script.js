@@ -2702,13 +2702,33 @@ function visionRankInfo(rating) {
         if (value >= ranks[i].min) rank = ranks[i];
         else { next = ranks[i]; break; }
     }
-    return { name: rank.name, nextRating: next ? next.min : null, pointsToNext: next ? next.min - value : 0 };
+    return { name: rank.name, minRating: rank.min, nextRating: next ? next.min : null, pointsToNext: next ? next.min - value : 0 };
+}
+function renderCoachRankProgress(rating) {
+    const value = clamp(Math.round(Number(rating) || 1000), 400, 2400);
+    const rank = visionRankInfo(value);
+    const fill = $("coachRankProgressFill");
+    const bar = $("coachRankProgressBar");
+    const text = $("coachRankProgressText");
+    const current = $("coachRankCurrentFloor");
+    const target = $("coachRankNextTarget");
+    const label = $("coachRankProgressLabel");
+    const span = rank.nextRating ? rank.nextRating - rank.minRating : 0;
+    const earned = rank.nextRating ? value - rank.minRating : span;
+    const pct = rank.nextRating && span > 0 ? clamp(Math.round(earned / span * 100), 0, 100) : 100;
+    if (fill) fill.style.width = pct + "%";
+    if (bar) bar.setAttribute("aria-valuenow", String(pct));
+    if (text) text.textContent = rank.nextRating ? (value - rank.minRating) + " / " + span + " pts" : "MAX RANK";
+    if (current) current.textContent = rank.name + " · " + rank.minRating;
+    if (target) target.textContent = rank.nextRating ? visionRankInfo(rank.nextRating).name + " · " + rank.nextRating : "Vision Elite unlocked";
+    if (label) label.textContent = rank.nextRating ? "PROGRESS TO NEXT RANK" : "RANK MASTERY";
 }
 function renderVisionRating() {
     const current = Math.round(visionRating.current || 1000);
     const week = ratingWeekChange();
     const weekText = (week >= 0 ? "+" : "") + week + " this week";
     const rank = visionRankInfo(current);
+    renderCoachRankProgress(current);
     const latest = visionRating.history.length ? visionRating.history[visionRating.history.length - 1] : null;
     const latestDelta = latest && Number.isFinite(Number(latest.delta)) ? Math.round(Number(latest.delta)) : null;
     const latestText = latestDelta === null ? "—" : (latestDelta > 0 ? "+" : "") + latestDelta;
