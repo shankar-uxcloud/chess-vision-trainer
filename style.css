@@ -6754,3 +6754,14 @@ body[data-theme="neon"] .guest-sidebar-signin:hover {
 body[data-theme="dark"] .guest-primary-cta,
 body[data-theme="heavy"] .guest-primary-cta { color: #03110D; }
 body[data-theme="light"] .guest-primary-cta { color: #FFFFFF; }
+
+/* Vision rating rank and session change */
+.rating-rank-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; color: var(--muted); font-size: var(--fs-sm); }
+.rating-rank-line strong { color: var(--accent); font-weight: 700; }
+.rating-rank-line span:last-child { font-size: var(--fs-xs); }
+.coach-card-stats strong.rating-gain { color: var(--green); }
+.coach-card-stats strong.rating-loss { color: var(--red); }
+@media (max-width: 1050px) {
+  .coach-card-stats { flex-wrap: wrap; gap: 12px 18px; }
+  .coach-card-stats span { min-width: 82px; }
+}
