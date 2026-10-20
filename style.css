@@ -6965,3 +6965,47 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
   .training-layout .gameplay-stage .target-label { flex-basis: auto !important; }
   .training-layout .gameplay-stage .target-coordinate { font-size: clamp(48px, 12vw, 76px) !important; }
 }
+
+
+/* Strong final overrides for narrow target cards and authenticated header state */
+.training-layout .gameplay-stage .target-topline {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  justify-items: stretch !important;
+  gap: 10px !important;
+}
+.training-layout .gameplay-stage .target-label {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  text-align: left !important;
+}
+.training-layout .gameplay-stage .target-right-meta {
+  display: flex !important;
+  width: 100% !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+}
+.training-layout .gameplay-stage .target-number {
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  text-align: left !important;
+}
+.auth-account-pill[hidden],
+.dashboard-auth-button[hidden] { display: none !important; }
+.auth-account-pill {
+  position: absolute !important;
+  top: 12px !important;
+  right: 20px !important;
+  z-index: 10010 !important;
+}
+@media (max-width: 900px) {
+  .auth-account-pill {
+    position: fixed !important;
+    top: 8px !important;
+    right: 8px !important;
+  }
+}
