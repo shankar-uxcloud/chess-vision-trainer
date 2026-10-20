@@ -7009,3 +7009,43 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
     right: 8px !important;
   }
 }
+
+
+/* Critical fix: hidden training mode panels must never participate in the stage grid.
+   Earlier !important flex rules accidentally made the inactive panel visible,
+   causing the target and Mind Palace cards to stack on top of each other. */
+.training-layout .gameplay-stage > .target-panel.hidden,
+.training-layout .gameplay-stage > .mp-panel.hidden {
+  display: none !important;
+}
+.training-layout > .gameplay-stage {
+  grid-template-columns: minmax(230px, 0.62fr) minmax(320px, 1fr) !important;
+  align-items: start !important;
+}
+.training-layout .gameplay-stage > .target-panel:not(.hidden),
+.training-layout .gameplay-stage > .mp-panel:not(.hidden) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+}
+.training-layout .gameplay-stage > .training-board-panel {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+@media (max-width: 1300px) {
+  .training-layout > .gameplay-stage {
+    grid-template-columns: minmax(210px, 0.58fr) minmax(280px, 1fr) !important;
+  }
+}
+@media (max-width: 1050px) {
+  .training-layout > .gameplay-stage {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .training-layout .gameplay-stage > .target-panel:not(.hidden),
+  .training-layout .gameplay-stage > .mp-panel:not(.hidden),
+  .training-layout .gameplay-stage > .training-board-panel {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
