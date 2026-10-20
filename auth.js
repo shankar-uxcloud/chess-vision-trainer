@@ -187,6 +187,12 @@ const CVT_SUPABASE_KEY =
       accountPill.hidden = !user;
     }
 
+    // Keep the header CTA and signed-in account pill mutually exclusive.
+    const dashboardAuthButton = $("dashboardAuthButton");
+    if (dashboardAuthButton) {
+      dashboardAuthButton.hidden = Boolean(user);
+    }
+
     if (user && accountLabel) {
       accountLabel.textContent = user.email || "Signed in";
     }
