@@ -238,6 +238,8 @@ const CVT_SUPABASE_KEY =
     if (accountPill) {
       accountPill.hidden = true;
     }
+    const dashboardAuthButton = $("dashboardAuthButton");
+    if (dashboardAuthButton) dashboardAuthButton.hidden = false;
 
     switchMode("signin");
   }
