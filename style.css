@@ -6782,36 +6782,39 @@ body[data-theme="light"] .guest-primary-cta { color: #FFFFFF; }
 }
 
 
-/* High-contrast neon board palettes: strong light/dark separation with vivid glow */
-body[data-theme="neon"][data-board="emerald"]  { --board-light:#7CFFCB; --board-dark:#063B36; --board-glow:#00FFB3; --board-label-light:#003B30; --board-label-dark:#D9FFF4; }
-body[data-theme="neon"][data-board="walnut"]   { --board-light:#FFD166; --board-dark:#3D145E; --board-glow:#FFB000; --board-label-light:#4A2500; --board-label-dark:#FFF0FF; }
-body[data-theme="neon"][data-board="ice"]      { --board-light:#D7FCFF; --board-dark:#0647A6; --board-glow:#00E5FF; --board-label-light:#002D46; --board-label-dark:#F0FCFF; }
-body[data-theme="neon"][data-board="rose"]     { --board-light:#FFB7F2; --board-dark:#65003F; --board-glow:#FF38D1; --board-label-light:#57003B; --board-label-dark:#FFE9FA; }
-body[data-theme="neon"][data-board="midnight"] { --board-light:#BDB2FF; --board-dark:#10072F; --board-glow:#9D4DFF; --board-label-light:#25105C; --board-label-dark:#F2E8FF; }
-body[data-theme="neon"][data-board="classic"]  { --board-light:#F4FBFF; --board-dark:#111827; --board-glow:#62F5FF; --board-label-light:#111827; --board-label-dark:#F4FBFF; }
+/* Neon board = luminous two-tone squares, intentionally distinct from the dark page UI */
+body[data-theme="neon"][data-board="emerald"]  { --board-light:#00FFD1; --board-dark:#174BFF; --board-glow:#00FFD1; --board-label-light:#03172A; --board-label-dark:#FFFFFF; }
+body[data-theme="neon"][data-board="walnut"]   { --board-light:#FFF000; --board-dark:#FF2BD6; --board-glow:#FFF000; --board-label-light:#24102C; --board-label-dark:#FFFFFF; }
+body[data-theme="neon"][data-board="ice"]      { --board-light:#F4FFFF; --board-dark:#00B8FF; --board-glow:#00F0FF; --board-label-light:#00314C; --board-label-dark:#00152B; }
+body[data-theme="neon"][data-board="rose"]     { --board-light:#FFB7F8; --board-dark:#FF1744; --board-glow:#FF55E7; --board-label-light:#4A003E; --board-label-dark:#FFFFFF; }
+body[data-theme="neon"][data-board="midnight"] { --board-light:#B7FF00; --board-dark:#6A00FF; --board-glow:#B7FF00; --board-label-light:#182000; --board-label-dark:#FFFFFF; }
+body[data-theme="neon"][data-board="classic"]  { --board-light:#FFFFFF; --board-dark:#00F5FF; --board-glow:#00F5FF; --board-label-light:#071A2A; --board-label-dark:#00202B; }
 
 body[data-theme="neon"] #chessboard {
   border: 2px solid var(--board-glow) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 0 16px color-mix(in srgb, var(--board-glow) 35%, transparent), 0 0 38px rgba(0,0,0,.65) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 0 20px color-mix(in srgb, var(--board-glow) 55%, transparent), 0 0 46px color-mix(in srgb, var(--board-glow) 22%, transparent) !important;
 }
 body[data-theme="neon"] #chessboard .square.light {
   background: var(--board-light) !important;
   background-image: none !important;
   color: var(--board-label-light);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
 }
 body[data-theme="neon"] #chessboard .square.dark {
   background: var(--board-dark) !important;
   background-image: none !important;
   color: var(--board-label-dark);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
 }
 body[data-theme="neon"] #chessboard .square.light .square-label { color: var(--board-label-light); }
 body[data-theme="neon"] #chessboard .square.dark .square-label { color: var(--board-label-dark); }
 body[data-theme="neon"] #chessboard .square[aria-disabled="false"]:hover {
   background-image: none !important;
-  box-shadow: inset 0 0 0 3px var(--board-glow), inset 0 0 26px color-mix(in srgb, var(--board-glow) 32%, transparent), 0 0 12px color-mix(in srgb, var(--board-glow) 28%, transparent);
-  filter: brightness(1.06);
+  outline: 3px solid var(--board-glow);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 3px var(--board-glow), inset 0 0 30px color-mix(in srgb, var(--board-glow) 35%, transparent), 0 0 16px color-mix(in srgb, var(--board-glow) 38%, transparent);
+  filter: brightness(1.08) saturate(1.12);
 }
 body[data-theme="neon"] #chessboard .square.last-correct,
 body[data-theme="neon"] #chessboard .square.target-highlight,
