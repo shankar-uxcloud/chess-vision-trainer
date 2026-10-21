@@ -82,6 +82,17 @@ Backups are JSON files exported by the app. Import validation checks the support
 - Continue consolidating duplicated CSS only when visual regression checks can protect intended overrides.
 - Review accessibility, contrast, CDN reliability, and authentication transitions in real browsers.
 
+
+## Training layout maintenance
+
+The training workspace mounts the target card, Mind Palace card, and chessboard into the gameplay stage. The target and Mind Palace cards share that stage, so only the card for the active mode should be visible.
+
+- Keep the inactive panel's `hidden` class respected by CSS; do not override it with `display: ... !important`.
+- On desktop, keep the active target/Mind Palace card and board in separate grid columns.
+- At tablet and mobile widths, let the active card and board stack in normal document flow.
+- After changing these rules, check Square Vision and Mind Palace in both desktop and narrow viewports.
+
+
 ## Contributing
 
 Please open an issue or pull request with a focused change, a reproduction case for bugs, and the tests performed. Avoid broad CSS rewrites without regression coverage.
