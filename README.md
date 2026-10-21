@@ -83,6 +83,15 @@ Backups are JSON files exported by the app. Import validation checks the support
 - Review accessibility, contrast, CDN reliability, and authentication transitions in real browsers.
 
 
+
+## Maintenance log
+
+### 2026-10-21 — Training layout regression
+
+- Fixed the gameplay stage so the inactive target/Mind Palace panel stays hidden.
+- Kept the active prompt card separate from the chessboard on desktop and stacked them at narrower widths.
+- Documented the visibility rule to help prevent the same overlap from returning.
+
 ## Training layout maintenance
 
 The training workspace mounts the target card, Mind Palace card, and chessboard into the gameplay stage. The target and Mind Palace cards share that stage, so only the card for the active mode should be visible.
