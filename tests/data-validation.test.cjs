@@ -43,3 +43,33 @@ test("preserves a valid exported daily challenge structure", () => {
   data.dailyChallenge.attempts.push({ official: true, score: 10, correct: 5, accuracy: 25, completionTime: 20, streak: 3, ratingDelta: 2, completedAt: "2026-10-12T12:00:00.000Z", dailyStreak: 1 });
   assert.equal(validateBackup(data).dailyChallenge.attempts.length, 1);
 });
+
+
+test("accepts bounded optional session metrics and rejects out-of-range values", () => {
+  const good = baseBackup();
+  good.history[0].avgReaction = 850;
+  good.history[0].ratingDelta = -12;
+  good.history[0].visionScore = 1200;
+  const clean = validateBackup(good);
+  assert.equal(clean.history[0].avgReaction, 850);
+  assert.equal(clean.history[0].ratingDelta, -12);
+  assert.equal(clean.history[0].visionScore, 1200);
+
+  const bad = baseBackup();
+  bad.history[0].rating = Number.MAX_VALUE;
+  assert.throws(() => validateBackup(bad), /invalid session history/i);
+});
+
+test("rejects answer records with invalid square coordinates or excessive reaction time", () => {
+  const invalidSquare = {
+    targetSquare: "i4", correct: false, reactionTime: 500, mode: "square",
+    perspectiveSide: "white", sessionId: "session-2", timestamp: "2026-10-22T12:00:00.000Z"
+  };
+  assert.equal(validateAnswerRecords([invalidSquare]), null);
+
+  const excessiveTime = {
+    targetSquare: "e4", correct: true, reactionTime: 3600001, mode: "square",
+    perspectiveSide: "white", sessionId: "session-2", timestamp: "2026-10-22T12:00:00.000Z"
+  };
+  assert.equal(validateAnswerRecords([excessiveTime]), null);
+});
