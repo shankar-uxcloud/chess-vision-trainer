@@ -70,7 +70,7 @@
                 !/^[a-h][1-8]$/.test(row.targetSquare) || typeof row.correct !== "boolean" ||
                 !finite(row.reactionTime) || row.reactionTime < 0 || row.reactionTime > 3600000 ||
                 !MODES.has(row.mode) || !PERSPECTIVES.has(row.perspectiveSide) ||
-                typeof row.sessionId !== "string" || row.sessionId.length > 200 ||
+                typeof row.sessionId !== "string" || row.sessionId.trim().length === 0 || row.sessionId.length > 200 ||
                 !validDate(row.timestamp)) return null;
             if (row.square !== undefined && (typeof row.square !== "string" || !/^[a-h][1-8]$/.test(row.square))) return null;
             if (row.flipChallenge !== undefined && typeof row.flipChallenge !== "boolean") return null;
