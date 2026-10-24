@@ -73,3 +73,28 @@ test("rejects answer records with invalid square coordinates or excessive reacti
   };
   assert.equal(validateAnswerRecords([excessiveTime]), null);
 });
+
+
+test("rejects answer records with missing session IDs and malformed timestamps", () => {
+  const missingSession = {
+    targetSquare: "a1", correct: true, reactionTime: 250, mode: "square",
+    perspectiveSide: "white", sessionId: "", timestamp: "2026-10-24T10:00:00.000Z"
+  };
+  assert.equal(validateAnswerRecords([missingSession]), null);
+
+  const malformedTimestamp = {
+    targetSquare: "h8", correct: false, reactionTime: 250, mode: "square",
+    perspectiveSide: "white", sessionId: "session-3", timestamp: "not-a-date"
+  };
+  assert.equal(validateAnswerRecords([malformedTimestamp]), null);
+});
+
+test("keeps optional history flags strictly boolean", () => {
+  const valid = baseBackup();
+  valid.history[0].official = true;
+  assert.equal(validateBackup(valid).history[0].official, true);
+
+  const invalid = baseBackup();
+  invalid.history[0].official = "true";
+  assert.throws(() => validateBackup(invalid), /invalid session history/i);
+});
