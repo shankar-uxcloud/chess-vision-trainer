@@ -7249,3 +7249,7 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
 .blindfold-prototype-note { margin-top:16px; color:var(--muted); font-size:10px; line-height:1.6; }
 @media(max-width:1000px) { .blindfold-workspace { grid-template-columns:1fr; } .blindfold-session-panel,.blindfold-recall-panel { width:100%; } }
 @media(max-width:650px) { .blindfold-hero { grid-template-columns:1fr; padding:22px; } .blindfold-hero-visual { min-height:160px; } .blindfold-visual-orbit { width:150px; height:150px; } .blindfold-stats-grid { gap:8px; } .blindfold-stat { padding:12px; gap:7px; } .blindfold-stat strong { font-size:21px; } .blindfold-stat-label { font-size:8px; } .blindfold-stat small { font-size:9px; } .blindfold-stat-icon { width:30px; height:30px; font-size:17px; } .blindfold-session-panel,.blindfold-recall-panel { padding:15px; } .blindfold-setup-grid { grid-template-columns:1fr; } .blindfold-controls { flex-direction:column; } }
+
+
+/* Respect hidden state on the blindfold board panels. */
+.blindfold-hidden-board[hidden], .blindfold-visible-board[hidden] { display:none !important; }
