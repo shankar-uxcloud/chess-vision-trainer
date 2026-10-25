@@ -366,6 +366,20 @@
       <button class="primary-button" id="dailyChallengeBtn" type="button">Play today's challenge <span class="button-arrow">→</span></button>
     </div>
 
+    <section class="panel consistency-panel" aria-labelledby="consistencyTitle">
+      <div class="panel-head consistency-head">
+        <div><div class="section-kicker">YOUR MOMENTUM</div><h3 id="consistencyTitle">Training consistency</h3><p class="consistency-subtitle">A 12-week view of the work you put in. Every square represents a day.</p></div>
+        <div class="consistency-streak"><span aria-hidden="true">🔥</span><strong id="consistencyCurrentStreak">0 days</strong><small>current streak</small></div>
+      </div>
+      <div class="consistency-summary" aria-live="polite">
+        <div><strong id="consistencyActiveDays">0</strong><span>active days</span></div>
+        <div><strong id="consistencySessions">0</strong><span>sessions · 12 weeks</span></div>
+        <div><strong id="consistencyAnswers">0</strong><span>correct answers</span></div>
+      </div>
+      <div class="consistency-calendar-wrap"><div class="consistency-weekdays" aria-hidden="true"><span>Mon</span><span>Wed</span><span>Fri</span></div><div class="consistency-calendar" id="consistencyCalendar" role="group" aria-label="Training activity over the last 12 weeks"></div></div>
+      <div class="consistency-legend"><span>Less</span><i class="level-0"></i><i class="level-1"></i><i class="level-2"></i><i class="level-3"></i><i class="level-4"></i><span>More</span><span class="consistency-tip" id="consistencyInsight">Start a session to light up your calendar.</span></div>
+    </section>
+
     <div class="dashboard-grid">
       <div class="panel">
         <div class="panel-head">
