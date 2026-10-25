@@ -806,6 +806,7 @@ function endMindPalaceSession() {
     history.unshift(result);
     history = history.slice(0, 50);
     save(KEYS.history, history);
+    schedulePlayerProfileSync();
     renderHistory();
     renderAnalytics();
 
@@ -2484,7 +2485,8 @@ function applyProfileProgress(progress) {
     xp = safe.xp;
     unlocked = safe.unlocked;
     if (safe.dailyChallenge) dailyChallenge = safe.dailyChallenge;
-    save(KEYS.stats, stats); save(KEYS.history, history); save(KEYS.answerRecords, answerRecords);
+    save(KEYS.stats, stats); save(KEYS.history, history);
+    schedulePlayerProfileSync(); save(KEYS.answerRecords, answerRecords);
     save(KEYS.rating, visionRating); save(KEYS.xp, xp); save(KEYS.achievements, unlocked);
     if (safe.dailyChallenge) save(KEYS.dailyChallenge, dailyChallenge);
     save(profileProgressKey(profileCloudUserId), safe);
@@ -2813,6 +2815,7 @@ async function syncVisionRatingToCloud(sessionId, metrics, options = {}) {
                 matchingSession.ratingPerformance = last.performance;
             }
             save(KEYS.history, history);
+    schedulePlayerProfileSync();
             renderHistory();
         }
         refreshRatingUI();
@@ -3490,6 +3493,7 @@ function finishSession() {
 
     save(KEYS.stats, stats);
     save(KEYS.history, history);
+    schedulePlayerProfileSync();
 
     updateDashboard();
     renderHistory();
@@ -3566,6 +3570,7 @@ function finishDailyChallenge() {
     history = history.slice(0, 50);
     save(KEYS.stats, stats);
     save(KEYS.history, history);
+    schedulePlayerProfileSync();
     $("sessionStateText").textContent = "COMPLETE";
     $("topStatus").textContent = official ? "DAILY COMPLETE" : "PRACTICE COMPLETE";
     $("startBtnText").textContent = "Play again";
@@ -4140,6 +4145,7 @@ function clearHistory() {
     if (!history.length) { toast("No history to clear."); return; }
     openConfirm("Clear session history?", "Your lifetime stats and personal best will remain.", () => {
         history = []; save(KEYS.history, history);
+    schedulePlayerProfileSync();
         renderHistory(); renderAnalytics();
         toast("Session history cleared.");
     });
@@ -4204,6 +4210,7 @@ function importData(file) {
             answerRecords = data.answerRecords.slice(-5000);
             save(KEYS.stats, stats);
             save(KEYS.history, history);
+    schedulePlayerProfileSync();
             save(KEYS.answerRecords, answerRecords);
 
             if (data.visionRating) {
@@ -4278,7 +4285,8 @@ function resetProgress() {
         history = []; answerRecords = []; unlocked = []; xp = 0;
         daily = { date: todayKey(), count: 0 };
         dailyChallenge = { date: dailyDateKey(), attempts: [], streak: 0, lastCompletedDate: null };
-        save(KEYS.stats, stats); save(KEYS.history, history); save(KEYS.answerRecords, answerRecords); save(KEYS.rating, visionRating);
+        save(KEYS.stats, stats); save(KEYS.history, history);
+    schedulePlayerProfileSync(); save(KEYS.answerRecords, answerRecords); save(KEYS.rating, visionRating);
         save(KEYS.achievements, unlocked); save(KEYS.xp, xp); save(KEYS.daily, daily); save(KEYS.dailyChallenge, dailyChallenge);
         updateDashboard(); updateLevelUI(); updateDailyUI();
         renderAchievements(); renderHistory(); renderAnalytics();
