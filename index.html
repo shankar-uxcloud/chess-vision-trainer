@@ -254,6 +254,7 @@
     <a href="#cvt-mindpalace" class="nav-link" data-nav="mindpalace"><span class="nav-icon">🧠</span><span>Mind Palace</span></a>
     <a href="#cvt-analytics" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
     <a href="#cvt-profile" class="nav-link" data-nav="profile"><span class="nav-icon">♙</span><span>Player Profile</span></a>
+    <a href="#cvt-tactics" class="nav-link" data-nav="tactics"><span class="nav-icon">♟</span><span>Tactics Arena</span></a>
     <a href="#cvt-achievements" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
     <a href="#cvt-settings" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
   </nav>
@@ -877,6 +878,38 @@
       <div class="panel"><div class="panel-head"><div><div class="section-kicker">ACHIEVEMENTS</div><h3>Your milestones</h3></div><button class="text-button" data-nav="achievements">All achievements →</button></div><div class="profile-achievements" id="profileAchievementSummary"></div></div>
     </div>
     <div class="panel profile-sync-panel"><div><div class="section-kicker">CLOUD BACKUP</div><h3>Keep your progress with you</h3><p id="profileSyncDescription">Sign in to save your profile, training sessions, achievements and experience to your account.</p></div><div class="profile-sync-actions"><button class="ghost-button" id="syncProfileNow" type="button">Sync now</button><button class="text-button" id="exportProfileBackup" type="button">Export backup ↓</button></div></div>
+  </section>
+
+  <section class="view view-tactics" data-view="tactics">
+    <div class="section-head tactics-page-head">
+      <div><div class="section-kicker">CALCULATE · DISCOVER · WIN</div><h2>Chess Tactics Arena</h2><p class="section-sub">Spot the idea. Find the strongest move. Build your tactical instincts.</p></div>
+      <span class="tactics-live-chip"><span></span> DAILY PRACTICE</span>
+    </div>
+    <div class="tactics-hero panel">
+      <div><div class="section-kicker">YOUR NEXT BREAKTHROUGH</div><h1>One move can change <span>everything.</span></h1><p>Train your pattern recognition with bite-sized tactical challenges, hints, and a streak that keeps you sharp.</p><div class="tactics-hero-meta"><span>♞ Pattern recognition</span><span>◷ Quick sessions</span><span>✦ Streak tracking</span></div></div>
+      <div class="tactics-hero-art" aria-hidden="true"><div class="tactics-orbit"></div><div class="tactics-hero-knight">♞</div><div class="tactics-art-label">THINK AHEAD / 002</div></div>
+    </div>
+    <div class="tactics-stats-grid">
+      <div class="tactics-stat panel"><span class="tactics-stat-icon">✦</span><span class="tactics-stat-label">PUZZLES SOLVED</span><strong id="tacticsSolvedCount">0</strong><small>In this practice session</small></div>
+      <div class="tactics-stat panel"><span class="tactics-stat-icon">♨</span><span class="tactics-stat-label">CURRENT STREAK</span><strong id="tacticsStreakCount">0</strong><small>Correct answers in a row</small></div>
+      <div class="tactics-stat panel"><span class="tactics-stat-icon">◎</span><span class="tactics-stat-label">ACCURACY</span><strong id="tacticsAccuracy">—</strong><small>Based on your attempts</small></div>
+    </div>
+    <div class="tactics-workspace">
+      <div class="panel tactics-puzzle-panel">
+        <div class="tactics-puzzle-top"><div><span class="tactics-puzzle-number" id="tacticsPuzzleNumber">PUZZLE 01 / 03</span><h3 id="tacticsPuzzleTitle">Find the fork</h3></div><span class="tactics-difficulty" id="tacticsPuzzleDifficulty">BEGINNER</span></div>
+        <div class="tactics-board-shell"><div class="tactics-board" id="tacticsBoard" role="img" aria-label="Illustrative chess puzzle board"></div></div>
+        <div class="tactics-board-caption"><span id="tacticsSideToMove">WHITE TO MOVE</span><span id="tacticsThemeLabel">KNIGHT FORK</span></div>
+        <div class="tactics-progress-track"><span id="tacticsProgressFill"></span></div>
+        <div class="tactics-puzzle-note"><span class="tactics-note-icon">✧</span><span id="tacticsPuzzlePrompt">Find the move that attacks two valuable targets at once.</span></div>
+      </div>
+      <div class="panel tactics-answer-panel">
+        <div class="section-kicker">MAKE YOUR MOVE</div><h3>What would you play?</h3><p class="tactics-answer-sub">Choose the move that best matches the tactical idea.</p>
+        <div class="tactics-answers" id="tacticsAnswerOptions"></div>
+        <div class="tactics-feedback" id="tacticsFeedback" role="status" aria-live="polite">Take your time. Look for checks, captures, and threats.</div>
+        <div class="tactics-action-row"><button class="ghost-button" id="tacticsHintBtn" type="button">✦ Reveal a hint</button><button class="primary-button" id="tacticsNextBtn" type="button" disabled>Next puzzle →</button></div>
+        <div class="tactics-session-note"><span>♧</span><span>Prototype mode: sample positions and answer choices demonstrate the experience; engine-validated puzzle data will be added in the next stage.</span></div>
+      </div>
+    </div>
   </section>
 
   <section class="view view-settings" data-view="settings">
