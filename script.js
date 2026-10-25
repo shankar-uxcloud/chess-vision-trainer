@@ -2593,6 +2593,8 @@ async function loadPlayerProfileFromCloud(user) {
         if (generation !== profileCloudGeneration || userId !== profileCloudUserId) return;
         if (data && safeProfileProgress(data.progress)) {
             profileDisplayName = (typeof data.display_name === "string" && data.display_name.trim()) || profileDisplayName;
+            const accountLabel = $("authAccountLabel");
+            if (accountLabel) accountLabel.textContent = profileDisplayName;
             applyProfileProgress(data.progress);
             profileSetCloudState("synced", "Loaded your saved progress from the cloud.");
         } else {
