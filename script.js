@@ -2439,6 +2439,123 @@ function calculateVisionRatingUpdate() {
     const delta = Math.round(clamp((performance - .5) * 84, -42, 42));
     return { delta, performance, accuracy: accuracyScore, averageReaction };
 }
+
+/* Chess Tactics Arena UI prototype. Puzzle data/answers are illustrative, not engine-validated. */
+const TACTICS_DEMOS = [
+    { title:"Find the fork", difficulty:"BEGINNER", theme:"KNIGHT FORK", side:"WHITE TO MOVE",
+      prompt:"Look for a knight jump that creates two threats at once.",
+      hint:"A knight can attack squares of both colors. Look for a jump toward the center.",
+      board:["....k...","...r....","........","....n...","........","..N.....","........","....K..."],
+      options:[{move:"Nd5+",detail:"Central knight jump",correct:true},{move:"Na4",detail:"Quiet retreat",correct:false},{move:"Kf2",detail:"King move",correct:false}] },
+    { title:"Spot the pin", difficulty:"INTERMEDIATE", theme:"PIN & PRESSURE", side:"WHITE TO MOVE",
+      prompt:"Find the move that increases pressure on the pinned defender.",
+      hint:"Check whether a rook or queen can line up with the enemy king through a defending piece.",
+      board:["....k...","...p....","........","...r....","....B...","........","........","....K..R"],
+      options:[{move:"R-e1",detail:"Line up the rook",correct:true},{move:"Kb2",detail:"King move",correct:false},{move:"Bf3",detail:"Withdraw the bishop",correct:false}] },
+    { title:"Create a double attack", difficulty:"ADVANCED", theme:"DOUBLE THREAT", side:"WHITE TO MOVE",
+      prompt:"Choose the most forcing move and make your opponent answer a threat.",
+      hint:"Look at forcing moves first: checks, captures, and direct attacks on valuable pieces.",
+      board:["....k...","...q....","........","..n.....","....Q...","........","........","....K..."],
+      options:[{move:"Qe7+",detail:"Forcing queen check",correct:true},{move:"Qb5",detail:"Queen reposition",correct:false},{move:"Kf2",detail:"King move",correct:false}] }
+];
+let tacticsState = { index:0, solved:0, attempts:0, streak:0, bestStreak:0, answered:false, hintUsed:false };
+function renderTacticsArena() {
+    const puzzle = TACTICS_DEMOS[tacticsState.index];
+    if (!puzzle) return;
+    const set = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+    set("tacticsSolvedCount", tacticsState.solved);
+    set("tacticsStreakCount", tacticsState.streak);
+    set("tacticsAccuracy", tacticsState.attempts ? Math.round(tacticsState.solved / tacticsState.attempts * 100) + "%" : "—");
+    set("tacticsPuzzleNumber", "PUZZLE " + String(tacticsState.index + 1).padStart(2,"0") + " / " + String(TACTICS_DEMOS.length).padStart(2,"0"));
+    set("tacticsPuzzleTitle", puzzle.title);
+    set("tacticsPuzzleDifficulty", puzzle.difficulty);
+    set("tacticsSideToMove", puzzle.side);
+    set("tacticsThemeLabel", puzzle.theme);
+    set("tacticsPuzzlePrompt", puzzle.prompt);
+    const fill = $("tacticsProgressFill");
+    if (fill) fill.style.width = ((tacticsState.index + 1) / TACTICS_DEMOS.length * 100) + "%";
+    const board = $("tacticsBoard");
+    if (board) {
+        board.innerHTML = "";
+        const glyphs = {K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+        puzzle.board.forEach((row, rank) => [...row].forEach((piece, file) => {
+            const square = document.createElement("div");
+            square.className = "tactics-square " + ((rank + file) % 2 ? "dark" : "light");
+            if (piece !== ".") {
+                const pieceEl = document.createElement("span");
+                pieceEl.className = piece === piece.toUpperCase() ? "tactics-piece-white" : "tactics-piece-black";
+                pieceEl.textContent = glyphs[piece] || "";
+                square.appendChild(pieceEl);
+            }
+            if (file === 0) { const coordinate = document.createElement("span"); coordinate.className = "tactics-coordinate"; coordinate.textContent = 8 - rank; square.appendChild(coordinate); }
+            if (rank === 7) { const coordinate = document.createElement("span"); coordinate.className = "tactics-coordinate"; coordinate.style.left = "auto"; coordinate.style.top = "auto"; coordinate.style.right = "3px"; coordinate.style.bottom = "2px"; coordinate.textContent = "abcdefgh"[file]; square.appendChild(coordinate); }
+            board.appendChild(square);
+        }));
+    }
+    const options = $("tacticsAnswerOptions");
+    if (options) {
+        options.innerHTML = "";
+        puzzle.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.type = "button"; button.className = "tactics-answer-option";
+            button.disabled = tacticsState.answered;
+            const copy = document.createElement("span"); copy.textContent = option.detail;
+            const move = document.createElement("span"); move.className = "tactics-move-code"; move.textContent = option.move;
+            button.append(copy, move);
+            button.addEventListener("click", () => chooseTacticsAnswer(index));
+            if (tacticsState.answered && option.correct) button.classList.add("is-correct");
+            options.appendChild(button);
+        });
+    }
+    const feedback = $("tacticsFeedback");
+    if (feedback && !tacticsState.answered) { feedback.className = "tactics-feedback"; feedback.textContent = "Take your time. Look for checks, captures, and threats."; }
+    const hintButton = $("tacticsHintBtn");
+    if (hintButton) { hintButton.disabled = tacticsState.answered || tacticsState.hintUsed; hintButton.textContent = tacticsState.hintUsed ? "Hint revealed" : "✦ Reveal a hint"; }
+    const next = $("tacticsNextBtn");
+    if (next) { next.disabled = !tacticsState.answered; next.textContent = tacticsState.index === TACTICS_DEMOS.length - 1 ? "Restart arena ↻" : "Next puzzle →"; }
+}
+function chooseTacticsAnswer(index) {
+    if (tacticsState.answered) return;
+    const puzzle = TACTICS_DEMOS[tacticsState.index], choice = puzzle?.options[index];
+    if (!choice) return;
+    tacticsState.attempts++;
+    tacticsState.answered = true;
+    if (choice.correct) { tacticsState.solved++; tacticsState.streak++; tacticsState.bestStreak = Math.max(tacticsState.bestStreak, tacticsState.streak); }
+    else tacticsState.streak = 0;
+    const feedback = $("tacticsFeedback");
+    if (feedback) {
+        feedback.className = "tactics-feedback " + (choice.correct ? "is-correct" : "is-wrong");
+        feedback.textContent = choice.correct ? "Correct! Nice pattern recognition — you found the intended tactical idea." : "Not quite. The intended idea is " + puzzle.options.find(option => option.correct).move + ". Review the hint, then keep going.";
+    }
+    const options = $("tacticsAnswerOptions");
+    if (options) [...options.children].forEach((button, i) => {
+        button.disabled = true;
+        if (puzzle.options[i].correct) button.classList.add("is-correct");
+        else if (i === index) button.classList.add("is-wrong");
+    });
+    const hint = $("tacticsHintBtn"); if (hint) hint.disabled = true;
+    const next = $("tacticsNextBtn"); if (next) next.disabled = false;
+    renderTacticsArena();
+}
+$("tacticsHintBtn")?.addEventListener("click", () => {
+    if (tacticsState.answered || tacticsState.hintUsed) return;
+    tacticsState.hintUsed = true;
+    const feedback = $("tacticsFeedback");
+    if (feedback) { feedback.className = "tactics-feedback"; feedback.textContent = "HINT · " + TACTICS_DEMOS[tacticsState.index].hint; }
+    const hint = $("tacticsHintBtn"); if (hint) { hint.disabled = true; hint.textContent = "Hint revealed"; }
+});
+$("tacticsNextBtn")?.addEventListener("click", () => {
+    if (!tacticsState.answered) return;
+    if (tacticsState.index >= TACTICS_DEMOS.length - 1) {
+        tacticsState = { index:0, solved:0, attempts:0, streak:0, bestStreak:0, answered:false, hintUsed:false };
+    } else {
+        tacticsState.index++;
+        tacticsState.answered = false;
+        tacticsState.hintUsed = false;
+    }
+    renderTacticsArena();
+});
+
 /* Player profile + account-scoped cloud progress */
 let profileCloudUserId = null;
 let profileCloudState = "local";
@@ -3663,7 +3780,7 @@ function showResults(newRecord, gained) {
 const VIEW_TITLES = {
     dashboard: ["Home","Dashboard"], training: ["Workspace","Training"],
     mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"],
-    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"],
+    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"], tactics: ["Training","Tactics Arena"],
     settings: ["Workspace","Settings"]
 };
 function routeFromHash(hash = window.location.hash) {
@@ -3717,6 +3834,7 @@ function setView(name, options = {}) {
     }
     if (name === "analytics") renderAnalytics();
     if (name === "profile") renderPlayerProfile();
+    if (name === "tactics") renderTacticsArena();
     if (name === "achievements") renderAchievements();
     if (name === "mindpalace") updateMindPalaceUI();
     if (name === "daily") renderDailyChallenge();
