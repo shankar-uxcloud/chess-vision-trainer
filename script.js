@@ -3453,7 +3453,7 @@ function showResults(newRecord, gained) {
 const VIEW_TITLES = {
     dashboard: ["Home","Dashboard"], training: ["Workspace","Training"],
     mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"],
-    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"],
+    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"],
     settings: ["Workspace","Settings"]
 };
 function routeFromHash(hash = window.location.hash) {
@@ -3506,6 +3506,7 @@ function setView(name, options = {}) {
         window.scrollTo({ top: 0, behavior: options.history === false ? "auto" : "smooth" });
     }
     if (name === "analytics") renderAnalytics();
+    if (name === "profile") renderPlayerProfile();
     if (name === "achievements") renderAchievements();
     if (name === "mindpalace") updateMindPalaceUI();
     if (name === "daily") renderDailyChallenge();
