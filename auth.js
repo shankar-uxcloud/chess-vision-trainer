@@ -175,6 +175,18 @@ const CVT_SUPABASE_KEY =
     return text;
   }
 
+  // Prefer the display name collected at sign-up. For older accounts without
+  // profile metadata, show a friendly username derived from the email prefix.
+  function getDisplayName(user) {
+    const metadata = user?.user_metadata || {};
+    const savedName = [metadata.display_name, metadata.full_name, metadata.name]
+      .find(value => typeof value === "string" && value.trim());
+    if (savedName) return savedName.trim().slice(0, 60);
+    const email = typeof user?.email === "string" ? user.email.trim() : "";
+    const prefix = email.includes("@") ? email.split("@")[0] : "";
+    return prefix || "Chess Player";
+  }
+
   // Enter the chess trainer after authentication or as a guest.
   function enterApp(user = null) {
     window.dispatchEvent(new CustomEvent("cvt:auth-state", {
@@ -194,7 +206,9 @@ const CVT_SUPABASE_KEY =
     }
 
     if (user && accountLabel) {
-      accountLabel.textContent = user.email || "Signed in";
+      accountLabel.textContent = getDisplayName(user);
+      accountLabel.title = user.email || "";
+      accountLabel.setAttribute("aria-label", "Signed in as " + getDisplayName(user));
     }
 
     if (user) {
