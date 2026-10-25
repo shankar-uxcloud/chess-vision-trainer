@@ -7049,3 +7049,41 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
     grid-row: auto !important;
   }
 }
+
+
+/* 12-week training consistency heatmap */
+.consistency-panel { margin: 28px 0; padding: 26px; overflow: hidden; }
+.consistency-head { align-items: flex-start; }
+.consistency-subtitle { margin-top: 7px; color: var(--text-2); font-size: var(--fs-sm); }
+.consistency-streak { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 8px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); white-space: nowrap; }
+.consistency-streak span { grid-row: span 2; font-size: 24px; }
+.consistency-streak strong { font-size: 16px; }
+.consistency-streak small { color: var(--muted); font-size: 11px; }
+.consistency-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 22px 0; }
+.consistency-summary > div { display: grid; gap: 3px; padding: 14px 16px; border-radius: 12px; background: var(--surface-2); }
+.consistency-summary strong { font-size: 24px; line-height: 1.2; color: var(--text); font-variant-numeric: tabular-nums; }
+.consistency-summary span { color: var(--muted); font-size: 12px; }
+.consistency-calendar-wrap { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 8px; align-items: stretch; }
+.consistency-weekdays { display: grid; grid-template-rows: repeat(12, 1fr); gap: 4px; align-items: center; color: var(--muted); font-size: 10px; }
+.consistency-calendar { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); grid-auto-columns: minmax(6px, 1fr); gap: 4px; overflow-x: auto; padding: 2px 1px 5px; }
+.consistency-day { display: block; min-width: 6px; border-radius: 3px; background: var(--surface-3); border: 1px solid transparent; }
+.consistency-day.level-1 { background: color-mix(in srgb, var(--accent) 28%, var(--surface)); }
+.consistency-day.level-2 { background: color-mix(in srgb, var(--accent) 48%, var(--surface)); }
+.consistency-day.level-3 { background: color-mix(in srgb, var(--accent) 70%, var(--surface)); }
+.consistency-day.level-4 { background: var(--accent); }
+.consistency-day.is-today { outline: 2px solid var(--gold); outline-offset: 1px; }
+.consistency-legend { display: flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--muted); font-size: 11px; }
+.consistency-legend i { width: 12px; height: 12px; border-radius: 3px; }
+.consistency-tip { margin-left: auto; text-align: right; }
+@media (max-width: 600px) {
+  .consistency-panel { padding: 18px; }
+  .consistency-head { flex-direction: column; align-items: stretch; }
+  .consistency-streak { align-self: flex-start; }
+  .consistency-summary { gap: 7px; }
+  .consistency-summary > div { padding: 11px 9px; }
+  .consistency-summary strong { font-size: 20px; }
+  .consistency-summary span { font-size: 10px; }
+  .consistency-calendar { grid-template-rows: repeat(7, 11px); gap: 3px; }
+  .consistency-legend { flex-wrap: wrap; }
+  .consistency-tip { flex-basis: 100%; margin: 6px 0 0; text-align: left; }
+}
