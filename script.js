@@ -2556,6 +2556,56 @@ $("tacticsNextBtn")?.addEventListener("click", () => {
     renderTacticsArena();
 });
 
+
+/* Advanced Blindfold Trainer UI prototype. Guided recall practice, not a chess engine. */
+const BLINDFOLD_DEMOS = {
+ beginner:{moves:["Nc3","Ne4","Nc5"],answer:"c5",options:["c5","e4","a4","d6"],title:"Knight journey",tip:"Name the square before each move, then picture the knight landing on its destination."},
+ intermediate:{moves:["Nf3","Ng5","Nxf7","Ne5","Nd3"],answer:"d3",options:["d3","e5","f7","g5"],title:"Extended knight journey",tip:"Chunk the route into two or three moves. Replay the chunks, then connect them."},
+ advanced:{moves:["Nc3","Nb5","Nd6+","Nxf7","Ng5","Ne4","Nc5"],answer:"c5",options:["c5","e4","g5","f7"],title:"Long-range recall",tip:"Track the knight's current square after every move; don't memorize the whole sequence at once."}
+};
+let blindfoldState={active:false,revealed:false,answered:false,difficulty:"beginner",exercise:"knight",sequences:0,attempts:0,correct:0,longest:0,currentMoves:[]};
+function renderBlindfoldTrainer(){
+ const set=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
+ const demo=BLINDFOLD_DEMOS[blindfoldState.difficulty],n=demo.moves.length;
+ set("blindfoldSequenceCount",blindfoldState.sequences);set("blindfoldRecallAccuracy",blindfoldState.attempts?Math.round(blindfoldState.correct/blindfoldState.attempts*100)+"%":"—");set("blindfoldLongestSequence",blindfoldState.longest+" moves");
+ set("blindfoldExerciseTitle",demo.title);set("blindfoldLevelLabel","LEVEL "+({beginner:"01",intermediate:"02",advanced:"03"}[blindfoldState.difficulty]));set("blindfoldMoveCounter",blindfoldState.currentMoves.length+" / "+n+" MOVES");
+ set("blindfoldPhaseText",!blindfoldState.active?"Ready when you are":blindfoldState.answered?"Recall complete":blindfoldState.revealed?"Reviewing the position":"Sequence ready · visualize it");
+ const sequence=$("blindfoldMoveSequence");if(sequence){sequence.innerHTML="";if(!blindfoldState.currentMoves.length){const e=document.createElement("span");e.className="blindfold-move-placeholder";e.textContent="Your sequence will appear here.";sequence.appendChild(e);}else blindfoldState.currentMoves.forEach((move,i)=>{const t=document.createElement("span");t.className="blindfold-move-token";t.textContent=(i+1)+". "+move;sequence.appendChild(t);});}
+ const start=$("blindfoldStartBtn"),reveal=$("blindfoldRevealBtn"),replay=$("blindfoldReplayBtn");
+ if(start){start.disabled=blindfoldState.active&&!blindfoldState.answered;start.textContent=blindfoldState.answered?"New exercise ↻":blindfoldState.active?"Exercise in progress":"Start exercise →";}
+ if(reveal){reveal.disabled=!blindfoldState.active||blindfoldState.answered;reveal.textContent=blindfoldState.revealed?"Hide board":"Reveal board";}
+ if(replay)replay.disabled=!blindfoldState.active||blindfoldState.answered;
+ const hidden=$("blindfoldHiddenBoard"),visible=$("blindfoldVisibleBoard");if(hidden)hidden.hidden=blindfoldState.revealed;if(visible){visible.hidden=!blindfoldState.revealed;if(blindfoldState.revealed)renderBlindfoldBoard(visible);}
+ const answerBox=$("blindfoldAnswerOptions");if(answerBox){answerBox.innerHTML="";const q=$("blindfoldQuestionText");if(q)q.textContent=blindfoldState.exercise==="coordinates"?"Which square did the knight finish on?":blindfoldState.exercise==="recall"?"What was the final square in the sequence?":"Where did the knight finish?";
+ if(!blindfoldState.active&&!blindfoldState.answered){const b=document.createElement("button");b.type="button";b.className="blindfold-answer-option";b.disabled=true;b.textContent="Start an exercise first";answerBox.appendChild(b);}else demo.options.forEach(option=>{const b=document.createElement("button");b.type="button";b.className="blindfold-answer-option";b.textContent=option;b.disabled=blindfoldState.answered;if(blindfoldState.answered&&option===demo.answer)b.classList.add("is-correct");b.addEventListener("click",()=>chooseBlindfoldAnswer(option));answerBox.appendChild(b);});}
+ const feedback=$("blindfoldFeedback");if(feedback&&!blindfoldState.answered){feedback.className="blindfold-feedback";feedback.textContent=blindfoldState.active?"Sequence ready. Recall the final square, then choose your answer.":"Focus on each move and picture the piece landing on its new square.";}
+ set("blindfoldQuestionType","RECALL CHECK · "+(blindfoldState.exercise==="coordinates"?"COORDINATES":blindfoldState.exercise==="recall"?"MOVE MEMORY":"FINAL SQUARE"));set("blindfoldTipText",demo.tip);
+}
+function renderBlindfoldBoard(container){
+ const glyphs={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+ container.innerHTML="";const board=Array(64).fill(".");board[60]="K";board[4]="k";
+ const fileRank={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};let square=57;
+ BLINDFOLD_DEMOS[blindfoldState.difficulty].moves.forEach(move=>{const m=/([a-h][1-8])$/.exec(move);if(m)square=(8-Number(m[1][1]))*8+fileRank[m[1][0]];});
+ if(square===57)square=42; if(square!==4&&square!==60)board[square]="N";
+ board.forEach((piece,i)=>{const el=document.createElement("div");el.className="blindfold-visible-square "+(((Math.floor(i/8)+i%8)%2===0)?"light":"dark");if(piece!==".")el.textContent=glyphs[piece];container.appendChild(el);});
+}
+function startBlindfoldExercise(){
+ if(blindfoldState.answered){blindfoldState.answered=false;}
+ blindfoldState.difficulty=$("blindfoldDifficulty")?.value||"beginner";blindfoldState.exercise=$("blindfoldExercise")?.value||"knight";
+ blindfoldState.active=true;blindfoldState.revealed=false;blindfoldState.answered=false;blindfoldState.currentMoves=BLINDFOLD_DEMOS[blindfoldState.difficulty].moves.slice();blindfoldState.longest=Math.max(blindfoldState.longest,blindfoldState.currentMoves.length);renderBlindfoldTrainer();toast("Sequence ready. Imagine each move before checking your recall.");
+}
+function chooseBlindfoldAnswer(answer){
+ if(!blindfoldState.active||blindfoldState.answered)return;const demo=BLINDFOLD_DEMOS[blindfoldState.difficulty];blindfoldState.attempts++;blindfoldState.answered=true;blindfoldState.sequences++;const correct=answer===demo.answer;if(correct)blindfoldState.correct++;blindfoldState.active=false;renderBlindfoldTrainer();
+ const feedback=$("blindfoldFeedback");if(feedback){feedback.className="blindfold-feedback "+(correct?"is-correct":"is-wrong");feedback.textContent=correct?"Excellent recall! You tracked the destination correctly.":"Not quite. The expected final square in this demo is "+demo.answer+". Review the route and try another sequence.";}
+ const buttons=$("blindfoldAnswerOptions");if(buttons)[...buttons.children].forEach(b=>{b.disabled=true;if(b.textContent===demo.answer)b.classList.add("is-correct");else if(b.textContent===answer)b.classList.add("is-wrong");});
+}
+$("blindfoldStartBtn")?.addEventListener("click",startBlindfoldExercise);
+$("blindfoldRevealBtn")?.addEventListener("click",()=>{if(!blindfoldState.active)return;blindfoldState.revealed=!blindfoldState.revealed;renderBlindfoldTrainer();});
+$("blindfoldResetBtn")?.addEventListener("click",()=>{blindfoldState.active=false;blindfoldState.revealed=false;blindfoldState.answered=false;blindfoldState.currentMoves=[];renderBlindfoldTrainer();});
+$("blindfoldReplayBtn")?.addEventListener("click",()=>{if(!blindfoldState.active)return;const f=$("blindfoldFeedback");if(f)f.textContent="Replay the sequence mentally: "+blindfoldState.currentMoves.join(" → ");});
+$("blindfoldDifficulty")?.addEventListener("change",()=>{if(!blindfoldState.active){blindfoldState.difficulty=$("blindfoldDifficulty").value;renderBlindfoldTrainer();}});
+$("blindfoldExercise")?.addEventListener("change",()=>{if(!blindfoldState.active){blindfoldState.exercise=$("blindfoldExercise").value;renderBlindfoldTrainer();}});
+
 /* Player profile + account-scoped cloud progress */
 let profileCloudUserId = null;
 let profileCloudState = "local";
@@ -3780,7 +3830,7 @@ function showResults(newRecord, gained) {
 const VIEW_TITLES = {
     dashboard: ["Home","Dashboard"], training: ["Workspace","Training"],
     mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"],
-    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"], tactics: ["Training","Tactics Arena"],
+    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"], tactics: ["Training","Tactics Arena"], blindfold: ["Training","Blindfold Trainer"],
     settings: ["Workspace","Settings"]
 };
 function routeFromHash(hash = window.location.hash) {
@@ -3835,6 +3885,7 @@ function setView(name, options = {}) {
     if (name === "analytics") renderAnalytics();
     if (name === "profile") renderPlayerProfile();
     if (name === "tactics") renderTacticsArena();
+    if (name === "blindfold") renderBlindfoldTrainer();
     if (name === "achievements") renderAchievements();
     if (name === "mindpalace") updateMindPalaceUI();
     if (name === "daily") renderDailyChallenge();
