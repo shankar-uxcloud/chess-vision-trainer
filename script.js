@@ -2438,6 +2438,209 @@ function calculateVisionRatingUpdate() {
     const delta = Math.round(clamp((performance - .5) * 84, -42, 42));
     return { delta, performance, accuracy: accuracyScore, averageReaction };
 }
+/* Player profile + account-scoped cloud progress */
+let profileCloudUserId = null;
+let profileCloudState = "local";
+let profileCloudBusy = false;
+let profileCloudGeneration = 0;
+let profileCloudTimer = null;
+let profileDisplayName = "Chess Player";
+function profileProgressKey(userId) { return userId ? "cvt-progress-user-" + userId : "cvt-progress-guest-v1"; }
+function profileSnapshot() {
+    return {
+        version: 1,
+        stats: { ...stats },
+        history: history.slice(0, 50),
+        answerRecords: answerRecords.slice(-5000),
+        visionRating: { current: visionRating.current, history: (visionRating.history || []).slice(-100) },
+        xp: Math.max(0, Number(xp) || 0),
+        unlocked: [...new Set(unlocked)],
+        dailyChallenge: dailyChallenge && typeof dailyChallenge === "object" ? dailyChallenge : null,
+        capturedAt: new Date().toISOString()
+    };
+}
+function safeProfileProgress(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value) || value.version !== 1) return null;
+    const safeStats = backupValidation?.validateStats(value.stats);
+    const safeHistory = backupValidation?.validateHistory(value.history);
+    const safeAnswers = backupValidation?.validateAnswerRecords(value.answerRecords);
+    if (!safeStats || !safeHistory || !safeAnswers || !Number.isSafeInteger(value.xp) || value.xp < 0 || value.xp > 1000000000) return null;
+    const rating = value.visionRating && Number.isFinite(Number(value.visionRating.current))
+        ? { current: clamp(Math.round(Number(value.visionRating.current)), 400, 2400), history: Array.isArray(value.visionRating.history) ? value.visionRating.history.filter(r => r && typeof r.date === "string" && Number.isFinite(Number(r.rating)) && Number.isFinite(Number(r.delta))).slice(-100) : [] }
+        : { current: 1000, history: [] };
+    const validIds = new Set(ACHIEVEMENTS.map(item => item.id));
+    return { version: 1, stats: safeStats, history: safeHistory.slice(0, 50), answerRecords: safeAnswers.slice(-5000),
+        visionRating: rating, xp: value.xp, unlocked: Array.isArray(value.unlocked) ? [...new Set(value.unlocked.filter(id => validIds.has(id)))] : [],
+        dailyChallenge: value.dailyChallenge && typeof value.dailyChallenge === "object" ? value.dailyChallenge : null,
+        capturedAt: typeof value.capturedAt === "string" ? value.capturedAt : "" };
+}
+function applyProfileProgress(progress) {
+    const safe = safeProfileProgress(progress);
+    if (!safe) return false;
+    stats = safe.stats;
+    history = safe.history;
+    answerRecords = safe.answerRecords;
+    visionRating = safe.visionRating;
+    xp = safe.xp;
+    unlocked = safe.unlocked;
+    if (safe.dailyChallenge) dailyChallenge = safe.dailyChallenge;
+    save(KEYS.stats, stats); save(KEYS.history, history); save(KEYS.answerRecords, answerRecords);
+    save(KEYS.rating, visionRating); save(KEYS.xp, xp); save(KEYS.achievements, unlocked);
+    if (safe.dailyChallenge) save(KEYS.dailyChallenge, dailyChallenge);
+    save(profileProgressKey(profileCloudUserId), safe);
+    updateDashboard(); updateLevelUI(); updateDailyUI(); renderAchievements(); renderHistory(); renderAnalytics();
+    if (typeof updateMindPalaceUI === "function") updateMindPalaceUI();
+    return true;
+}
+function profileSetCloudState(state, message) {
+    profileCloudState = state;
+    const badge = $("profileSyncBadge"), label = $("profileSyncStatus"), description = $("profileSyncDescription");
+    if (badge) badge.dataset.state = state;
+    if (label) label.textContent = ({ local:"LOCAL ONLY", syncing:"SYNCING…", synced:"CLOUD SYNCED", error:"SYNC ISSUE", signedout:"SIGN IN TO SYNC" })[state] || state.toUpperCase();
+    if (description && message) description.textContent = message;
+}
+function renderPlayerProfile() {
+    const set = (id, value) => { const el = $(id); if (el) el.textContent = String(value); };
+    const displayName = profileDisplayName || "Chess Player";
+    set("playerProfileName", displayName);
+    set("playerProfileEmail", profileCloudUserId ? "Signed-in account · progress sync enabled when configured" : "Guest profile · sign in to sync across devices");
+    set("playerProfileAvatar", (displayName.trim()[0] || "♞").toUpperCase());
+    const input = $("playerDisplayName");
+    if (input && document.activeElement !== input) input.value = displayName === "Chess Player" ? "" : displayName;
+    const rating = Math.round(visionRating.current || 1000);
+    const info = levelInfo(xp);
+    set("profileVisionRating", rating); set("profileTotalSessions", stats.totalSessions || 0);
+    const attempts = (stats.totalCorrect || 0) + (stats.totalMistakes || 0);
+    set("profileAccuracy", attempts ? Math.round(stats.totalCorrect / attempts * 100) + "%" : "—");
+    set("profileTotalXp", (xp || 0) + " XP"); set("profileLevelCaption", "Level " + info.level);
+    set("profilePlayerRank", visionRankInfo(rating).name);
+    set("playerProfileRank", visionRankInfo(rating).name.toUpperCase() + " · LEVEL " + info.level);
+    const recent = $("profileRecentSessions");
+    if (recent) {
+        recent.innerHTML = "";
+        if (!history.length) recent.innerHTML = '<div class="empty-state"><span>♞</span><p>Complete a training session to see it here.</p></div>';
+        history.slice(0, 4).forEach(session => {
+            const item = document.createElement("div"); item.className = "history-item";
+            const icon = document.createElement("div"); icon.className = "history-item-icon"; icon.textContent = "♞";
+            const infoBox = document.createElement("div"); infoBox.className = "history-item-info";
+            const title = document.createElement("strong"); title.textContent = MODE_INFO[session.mode]?.label || "Training";
+            const meta = document.createElement("span"); const d = new Date(session.date);
+            meta.textContent = (Number.isNaN(d.getTime()) ? "Saved session" : d.toLocaleDateString()) + " · " + (session.accuracy || 0) + "% accuracy";
+            infoBox.append(title, meta);
+            const score = document.createElement("div"); score.className = "history-item-score";
+            const n = document.createElement("strong"); n.textContent = String(session.correct || 0);
+            const label = document.createElement("span"); label.textContent = "correct";
+            score.append(n, label); item.append(icon, infoBox, score); recent.appendChild(item);
+        });
+    }
+    const achievementBox = $("profileAchievementSummary");
+    if (achievementBox) {
+        achievementBox.innerHTML = "";
+        const earned = ACHIEVEMENTS.filter(item => unlocked.includes(item.id)).slice(0, 4);
+        if (!earned.length) achievementBox.innerHTML = '<div class="empty-state"><span>✦</span><p>Your first milestone is waiting. Start training!</p></div>';
+        earned.forEach(item => {
+            const row = document.createElement("div"); row.className = "profile-achievement-item";
+            const icon = document.createElement("div"); icon.className = "profile-achievement-icon"; icon.textContent = item.icon;
+            const copy = document.createElement("div"); const title = document.createElement("strong"); title.textContent = item.title;
+            const desc = document.createElement("span"); desc.textContent = item.desc; copy.append(title, desc); row.append(icon, copy); achievementBox.appendChild(row);
+        });
+    }
+    if (profileCloudUserId && profileCloudState === "local") profileSetCloudState("syncing", "Your account is signed in. Preparing your cloud progress.");
+    else if (!profileCloudUserId) profileSetCloudState("signedout", "Sign in to save your profile, training sessions, achievements and experience to your account.");
+}
+async function syncPlayerProfile(options = {}) {
+    const client = window.CVT_SUPABASE_CLIENT, userId = profileCloudUserId, generation = profileCloudGeneration;
+    if (!client || !userId) {
+        profileSetCloudState("signedout", "Sign in to sync progress across devices. Guest progress stays in this browser.");
+        return false;
+    }
+    if (profileCloudBusy) return false;
+    profileCloudBusy = true;
+    profileSetCloudState("syncing", "Syncing your profile and training progress securely to your account…");
+    try {
+        const progress = profileSnapshot();
+        const { error } = await client.from("cvt_player_profiles").upsert({
+            user_id: userId, display_name: profileDisplayName, progress, updated_at: new Date().toISOString()
+        }, { onConflict: "user_id" });
+        if (error) throw error;
+        if (generation !== profileCloudGeneration || userId !== profileCloudUserId) return false;
+        save(profileProgressKey(userId), progress);
+        profileSetCloudState("synced", "Cloud sync is up to date. Your profile, sessions, achievements and XP are saved to this account.");
+        return true;
+    } catch (error) {
+        if (generation === profileCloudGeneration) {
+            profileSetCloudState("error", "Cloud sync could not complete. Local progress is preserved. Apply the Supabase SQL migration in supabase/migrations to enable cloud profiles.");
+            console.warn("Player profile cloud sync failed:", error);
+        }
+        return false;
+    } finally { profileCloudBusy = false; }
+}
+function schedulePlayerProfileSync() {
+    if (!profileCloudUserId) return;
+    clearTimeout(profileCloudTimer);
+    profileCloudTimer = setTimeout(() => { void syncPlayerProfile(); }, 1200);
+}
+async function loadPlayerProfileFromCloud(user) {
+    const client = window.CVT_SUPABASE_CLIENT, userId = user?.id;
+    if (!client || !userId) return;
+    const generation = profileCloudGeneration;
+    try {
+        const { data, error } = await client.from("cvt_player_profiles")
+            .select("display_name,progress,updated_at").eq("user_id", userId).maybeSingle();
+        if (error) throw error;
+        if (generation !== profileCloudGeneration || userId !== profileCloudUserId) return;
+        if (data && safeProfileProgress(data.progress)) {
+            profileDisplayName = (typeof data.display_name === "string" && data.display_name.trim()) || profileDisplayName;
+            applyProfileProgress(data.progress);
+            profileSetCloudState("synced", "Loaded your saved progress from the cloud.");
+        } else {
+            // First sign-in: preserve the progress already on this device and create the initial cloud snapshot.
+            await syncPlayerProfile();
+        }
+        renderPlayerProfile();
+    } catch (error) {
+        if (generation !== profileCloudGeneration) return;
+        profileSetCloudState("error", "Cloud profile table is not available yet. Your local progress remains safe; apply the Supabase migration to enable sync.");
+        console.warn("Could not load cloud player profile:", error);
+    }
+}
+window.addEventListener("cvt:auth-state", event => {
+    const user = event.detail?.user || null;
+    profileCloudGeneration++;
+    profileCloudUserId = user && typeof user.id === "string" ? user.id : null;
+    profileDisplayName = user && typeof user.display_name === "string" && user.display_name.trim()
+        ? user.display_name.trim() : (user?.email?.split("@")[0] || "Chess Player");
+    if (!profileCloudUserId) {
+        profileSetCloudState("signedout", "Guest progress remains on this device. Sign in to sync across devices.");
+        renderPlayerProfile();
+        return;
+    }
+    save(profileProgressKey(profileCloudUserId), profileSnapshot());
+    void loadPlayerProfileFromCloud(user);
+    renderPlayerProfile();
+});
+$("savePlayerProfile")?.addEventListener("click", async () => {
+    const input = $("playerDisplayName"), name = input?.value.trim();
+    if (!name || name.length > 60) { toast("Enter a display name between 1 and 60 characters."); return; }
+    profileDisplayName = name;
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (client && profileCloudUserId) {
+        const { error } = await client.auth.updateUser({ data: { display_name: name } });
+        if (error) { toast("Name updated locally, but account metadata could not be saved."); console.warn(error); }
+        else {
+            const label = $("authAccountLabel"); if (label) label.textContent = name;
+            void syncPlayerProfile();
+        }
+    } else {
+        save("cvt-profile-display-name-guest", name);
+        toast("Display name saved on this device. Sign in to sync it.");
+    }
+    renderPlayerProfile();
+    toast("Player profile updated.");
+});
+$("syncProfileNow")?.addEventListener("click", () => { void syncPlayerProfile(); });
+$("exportProfileBackup")?.addEventListener("click", exportData);
+
 let ratingCloudUserId = null;
 let ratingCloudReady = false;
 let ratingCloudAvailable = false;
