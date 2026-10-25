@@ -190,7 +190,7 @@ const CVT_SUPABASE_KEY =
   // Enter the chess trainer after authentication or as a guest.
   function enterApp(user = null) {
     window.dispatchEvent(new CustomEvent("cvt:auth-state", {
-      detail: { user: user ? { id: user.id, email: user.email || "" } : null }
+      detail: { user: user ? { id: user.id, email: user.email || "", display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || "" } : null }
     }));
     screen.hidden = true;
     if (guestWelcome) guestWelcome.hidden = true;
