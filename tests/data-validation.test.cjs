@@ -82,6 +82,9 @@ test("rejects answer records with missing session IDs and malformed timestamps",
   };
   assert.equal(validateAnswerRecords([missingSession]), null);
 
+  const whitespaceSession = { ...missingSession, sessionId: "   " };
+  assert.equal(validateAnswerRecords([whitespaceSession]), null);
+
   const malformedTimestamp = {
     targetSquare: "h8", correct: false, reactionTime: 250, mode: "square",
     perspectiveSide: "white", sessionId: "session-3", timestamp: "not-a-date"
