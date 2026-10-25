@@ -253,6 +253,7 @@
     <a href="#cvt-daily" class="nav-link" data-nav="daily"><span class="nav-icon">◆</span><span>Daily Challenge</span></a>
     <a href="#cvt-mindpalace" class="nav-link" data-nav="mindpalace"><span class="nav-icon">🧠</span><span>Mind Palace</span></a>
     <a href="#cvt-analytics" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
+    <a href="#cvt-profile" class="nav-link" data-nav="profile"><span class="nav-icon">♙</span><span>Player Profile</span></a>
     <a href="#cvt-achievements" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
     <a href="#cvt-settings" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
   </nav>
@@ -849,6 +850,33 @@
       <div><div class="section-kicker">MILESTONES</div><h2>Achievements</h2><p class="section-sub" id="achievementSummary">0 of 12 unlocked</p></div>
     </div>
     <div class="achievements-grid" id="achievementsGrid"></div>
+  </section>
+
+  <section class="view view-profile" data-view="profile">
+    <div class="section-head">
+      <div><div class="section-kicker">PLAYER IDENTITY</div><h2>Player Profile</h2><p class="section-sub">Your chess journey, saved across devices.</p></div>
+      <span class="status-pill" id="profileSyncBadge"><span class="status-dot"></span><span id="profileSyncStatus">LOCAL PROFILE</span></span>
+    </div>
+    <div class="profile-hero panel">
+      <div class="profile-avatar profile-avatar-large" id="playerProfileAvatar" aria-hidden="true">♞</div>
+      <div class="profile-hero-copy"><div class="section-kicker">CHESS VISION PLAYER</div><h1 id="playerProfileName">Chess Player</h1><p id="playerProfileEmail">Sign in to sync your progress across devices.</p><span class="profile-rank-chip" id="playerProfileRank">NOVICE · LEVEL 1</span></div>
+      <div class="profile-edit-form">
+        <label for="playerDisplayName">Display name</label>
+        <input id="playerDisplayName" type="text" maxlength="60" placeholder="Your chess name" autocomplete="nickname">
+        <button class="primary-button" id="savePlayerProfile" type="button">Save profile</button>
+      </div>
+    </div>
+    <div class="stats-grid profile-stats-grid">
+      <div class="stat-card"><div class="stat-head"><span>VISION RATING</span><span class="stat-icon blue">◈</span></div><div class="stat-value" id="profileVisionRating">1000</div><div class="stat-foot"><span>Board vision skill</span><span class="stat-tag">RATING</span></div></div>
+      <div class="stat-card"><div class="stat-head"><span>TOTAL SESSIONS</span><span class="stat-icon violet">◷</span></div><div class="stat-value" id="profileTotalSessions">0</div><div class="stat-foot"><span>Training completed</span><span class="stat-tag">TOTAL</span></div></div>
+      <div class="stat-card"><div class="stat-head"><span>ACCURACY</span><span class="stat-icon emerald">◎</span></div><div class="stat-value" id="profileAccuracy">—</div><div class="stat-foot"><span>Lifetime answers</span><span class="stat-tag">AVG</span></div></div>
+      <div class="stat-card"><div class="stat-head"><span>EXPERIENCE</span><span class="stat-icon amber">✦</span></div><div class="stat-value" id="profileTotalXp">0 XP</div><div class="stat-foot"><span id="profileLevelCaption">Level 1</span><span class="stat-tag">LEVEL</span></div></div>
+    </div>
+    <div class="dashboard-grid profile-content-grid">
+      <div class="panel"><div class="panel-head"><div><div class="section-kicker">RECENT ACTIVITY</div><h3>Latest sessions</h3></div><button class="text-button" data-nav="analytics">Analytics →</button></div><div class="history-list" id="profileRecentSessions"></div></div>
+      <div class="panel"><div class="panel-head"><div><div class="section-kicker">ACHIEVEMENTS</div><h3>Your milestones</h3></div><button class="text-button" data-nav="achievements">All achievements →</button></div><div class="profile-achievements" id="profileAchievementSummary"></div></div>
+    </div>
+    <div class="panel profile-sync-panel"><div><div class="section-kicker">CLOUD BACKUP</div><h3>Keep your progress with you</h3><p id="profileSyncDescription">Sign in to save your profile, training sessions, achievements and experience to your account.</p></div><div class="profile-sync-actions"><button class="ghost-button" id="syncProfileNow" type="button">Sync now</button><button class="text-button" id="exportProfileBackup" type="button">Export backup ↓</button></div></div>
   </section>
 
   <section class="view view-settings" data-view="settings">
