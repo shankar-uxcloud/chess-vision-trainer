@@ -255,6 +255,7 @@
     <a href="#cvt-analytics" class="nav-link" data-nav="analytics"><span class="nav-icon">▤</span><span>Analytics</span></a>
     <a href="#cvt-profile" class="nav-link" data-nav="profile"><span class="nav-icon">♙</span><span>Player Profile</span></a>
     <a href="#cvt-tactics" class="nav-link" data-nav="tactics"><span class="nav-icon">♟</span><span>Tactics Arena</span></a>
+    <a href="#cvt-blindfold" class="nav-link" data-nav="blindfold"><span class="nav-icon">◉</span><span>Blindfold Trainer</span></a>
     <a href="#cvt-achievements" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
     <a href="#cvt-settings" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
   </nav>
@@ -908,6 +909,44 @@
         <div class="tactics-feedback" id="tacticsFeedback" role="status" aria-live="polite">Take your time. Look for checks, captures, and threats.</div>
         <div class="tactics-action-row"><button class="ghost-button" id="tacticsHintBtn" type="button">✦ Reveal a hint</button><button class="primary-button" id="tacticsNextBtn" type="button" disabled>Next puzzle →</button></div>
         <div class="tactics-session-note"><span>♧</span><span>Prototype mode: sample positions and answer choices demonstrate the experience; engine-validated puzzle data will be added in the next stage.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view view-blindfold" data-view="blindfold">
+    <div class="section-head blindfold-page-head">
+      <div><div class="section-kicker">VISUALIZE · REMEMBER · RECONSTRUCT</div><h2>Advanced Blindfold Trainer</h2><p class="section-sub">Build a stronger mental board by tracking every move without seeing the pieces.</p></div>
+      <span class="blindfold-mode-chip"><span class="blindfold-mode-dot"></span> MIND PALACE LAB</span>
+    </div>
+    <div class="blindfold-hero panel">
+      <div class="blindfold-hero-copy"><div class="section-kicker">SEE BEYOND THE BOARD</div><h1>Close your eyes.<br/><span>See every square.</span></h1><p>Follow a sequence of moves, hold the position in your mind, then reconstruct it from memory. Start simple and gradually train your visualization stamina.</p><div class="blindfold-hero-tags"><span>♞ Spatial memory</span><span>◈ Move tracking</span><span>✦ Recall practice</span></div></div>
+      <div class="blindfold-hero-visual" aria-hidden="true"><div class="blindfold-visual-orbit"></div><div class="blindfold-visual-board"><span>♜</span><span>♞</span><span>♝</span><span>♛</span><span>♚</span><span>♝</span><span>♞</span><span>♜</span></div><div class="blindfold-visual-center">◉</div><div class="blindfold-visual-label">MENTAL BOARD / 003</div></div>
+    </div>
+    <div class="blindfold-stats-grid">
+      <div class="blindfold-stat panel"><span class="blindfold-stat-icon">◷</span><span class="blindfold-stat-label">SEQUENCES PRACTICED</span><strong id="blindfoldSequenceCount">0</strong><small>This session</small></div>
+      <div class="blindfold-stat panel"><span class="blindfold-stat-icon">✧</span><span class="blindfold-stat-label">RECALL ACCURACY</span><strong id="blindfoldRecallAccuracy">—</strong><small>Answers checked</small></div>
+      <div class="blindfold-stat panel"><span class="blindfold-stat-icon">♜</span><span class="blindfold-stat-label">LONGEST SEQUENCE</span><strong id="blindfoldLongestSequence">0 moves</strong><small>Move memory record</small></div>
+    </div>
+    <div class="blindfold-workspace">
+      <div class="panel blindfold-session-panel">
+        <div class="blindfold-session-head"><div><div class="section-kicker">FOCUSED EXERCISE</div><h3 id="blindfoldExerciseTitle">Knight journey</h3></div><span class="blindfold-level-chip" id="blindfoldLevelLabel">LEVEL 01</span></div>
+        <div class="blindfold-setup-grid">
+          <div class="blindfold-field"><label for="blindfoldDifficulty">Training difficulty</label><select id="blindfoldDifficulty"><option value="beginner">Beginner · 3 moves</option><option value="intermediate">Intermediate · 5 moves</option><option value="advanced">Advanced · 7 moves</option></select></div>
+          <div class="blindfold-field"><label for="blindfoldExercise">Exercise type</label><select id="blindfoldExercise"><option value="knight">Knight journey</option><option value="coordinates">Square coordinates</option><option value="recall">Move-sequence recall</option></select></div>
+        </div>
+        <div class="blindfold-board-stage" id="blindfoldBoardStage">
+          <div class="blindfold-hidden-board" id="blindfoldHiddenBoard" aria-label="Board hidden during blindfold exercise"><div class="blindfold-eye-icon">◉</div><strong>Board hidden</strong><span>Visualize the position in your mind</span></div>
+          <div class="blindfold-visible-board" id="blindfoldVisibleBoard" hidden></div>
+        </div>
+        <div class="blindfold-turn-status"><span class="blindfold-status-pulse"></span><span id="blindfoldPhaseText">Ready when you are</span><span id="blindfoldMoveCounter">0 / 3 MOVES</span></div>
+        <div class="blindfold-sequence-box"><div class="blindfold-sequence-heading"><span>MOVE SEQUENCE</span><button type="button" class="text-button" id="blindfoldReplayBtn" disabled>↻ Replay</button></div><div class="blindfold-moves" id="blindfoldMoveSequence"><span class="blindfold-move-placeholder">Your sequence will appear here.</span></div></div>
+        <div class="blindfold-controls"><button type="button" class="primary-button" id="blindfoldStartBtn">Start exercise →</button><button type="button" class="ghost-button" id="blindfoldRevealBtn" disabled>Reveal board</button><button type="button" class="ghost-button" id="blindfoldResetBtn">Reset</button></div>
+      </div>
+      <div class="panel blindfold-recall-panel">
+        <div class="section-kicker">MEMORY CHECKPOINT</div><h3>Reconstruct what you saw</h3><p class="blindfold-recall-description">After the sequence, answer a quick question about the final position.</p>
+        <div class="blindfold-question-card"><span class="blindfold-question-kicker" id="blindfoldQuestionType">QUESTION 01</span><strong id="blindfoldQuestionText">Where did the knight finish?</strong><div class="blindfold-answer-grid" id="blindfoldAnswerOptions"><button type="button" class="blindfold-answer-option" disabled>Start an exercise first</button></div><div id="blindfoldFeedback" class="blindfold-feedback" role="status" aria-live="polite">Focus on each move and picture the piece landing on its new square.</div></div>
+        <div class="blindfold-memory-tip"><span>✦</span><div><strong>Visualization tip</strong><p id="blindfoldTipText">Name the starting square, imagine the path, and mentally mark the destination after every move.</p></div></div>
+        <div class="blindfold-prototype-note">Prototype exercise: move sequences and recall choices are guided demonstrations, not a full legal-position chess engine.</div>
       </div>
     </div>
   </section>
