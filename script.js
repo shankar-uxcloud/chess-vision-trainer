@@ -2764,7 +2764,64 @@ function updateLive() {
     if (a) { a.innerHTML = accuracy() + "<small>%</small>"; a.style.color = accuracy() >= 80 ? "var(--green)" : "var(--gold)"; }
     if (s) s.textContent = String(game.streak).padStart(2,"0");
 }
+function renderConsistencyCalendar() {
+    const calendar = $("consistencyCalendar");
+    if (!calendar) return;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setDate(start.getDate() - 83);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const keyFor = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const counts = new Map();
+    let totalSessions = 0, totalCorrect = 0;
+    history.forEach(session => {
+        const date = new Date(session.date);
+        if (!Number.isFinite(date.getTime())) return;
+        date.setHours(0, 0, 0, 0);
+        if (date < new Date(now.getTime() - 83 * 86400000) || date > end) return;
+        const key = keyFor(date);
+        const item = counts.get(key) || { sessions: 0, correct: 0 };
+        item.sessions += 1;
+        item.correct += Number.isFinite(Number(session.correct)) ? Math.max(0, Number(session.correct)) : 0;
+        counts.set(key, item);
+        totalSessions += 1;
+        totalCorrect += Number.isFinite(Number(session.correct)) ? Math.max(0, Number(session.correct)) : 0;
+    });
+    calendar.innerHTML = "";
+    let activeDays = 0;
+    const todayKey = keyFor(now);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = keyFor(d), item = counts.get(key) || { sessions: 0, correct: 0 };
+        if (item.sessions) activeDays++;
+        const level = item.sessions === 0 ? 0 : item.correct >= 40 ? 4 : item.correct >= 20 ? 3 : item.correct >= 8 ? 2 : 1;
+        const cell = document.createElement("span");
+        cell.className = "consistency-day level-" + level + (key === todayKey ? " is-today" : "");
+        cell.setAttribute("role", "img");
+        cell.setAttribute("aria-label", key + ": " + item.sessions + " sessions, " + item.correct + " correct answers");
+        cell.title = key + " · " + item.sessions + " session(s) · " + item.correct + " correct";
+        calendar.appendChild(cell);
+    }
+    const set = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+    set("consistencyActiveDays", activeDays);
+    set("consistencySessions", totalSessions);
+    set("consistencyAnswers", totalCorrect);
+    let streak = 0;
+    const cursor = new Date(now);
+    if (!counts.has(todayKey)) cursor.setDate(cursor.getDate() - 1);
+    while (counts.has(keyFor(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1); }
+    set("consistencyCurrentStreak", streak + (streak === 1 ? " day" : " days"));
+    const insight = $("consistencyInsight");
+    if (insight) insight.textContent = activeDays === 0
+        ? "Start a session to light up your calendar."
+        : activeDays >= 30
+            ? "Excellent consistency — keep your momentum going."
+            : "You trained on " + activeDays + " of the last 84 days. One focused session counts.";
+}
+
 function updateDashboard() {
+    renderConsistencyCalendar();
     const totalAtt = stats.totalCorrect + (stats.totalMistakes || 0);
     const acc = totalAtt > 0 ? Math.round(stats.totalCorrect / totalAtt * 100) + "%" : "—";
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
