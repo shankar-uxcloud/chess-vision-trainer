@@ -256,6 +256,7 @@
     <a href="#cvt-profile" class="nav-link" data-nav="profile"><span class="nav-icon">♙</span><span>Player Profile</span></a>
     <a href="#cvt-tactics" class="nav-link" data-nav="tactics"><span class="nav-icon">♟</span><span>Tactics Arena</span></a>
     <a href="#cvt-blindfold" class="nav-link" data-nav="blindfold"><span class="nav-icon">◉</span><span>Blindfold Trainer</span></a>
+    <a href="#cvt-weekly" class="nav-link" data-nav="weekly"><span class="nav-icon">🏆</span><span>Weekly Challenges</span></a>
     <a href="#cvt-achievements" class="nav-link" data-nav="achievements"><span class="nav-icon">✦</span><span>Achievements</span></a>
     <a href="#cvt-settings" class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
   </nav>
@@ -951,6 +952,15 @@
     </div>
   </section>
 
+  <section class="view view-weekly" data-view="weekly">
+    <div class="section-head weekly-page-head"><div><div class="section-kicker">COMPETE · IMPROVE · REPEAT</div><h2>Weekly Challenges</h2><p class="section-sub">A fresh goal every week. Practice consistently and climb the board.</p></div><span class="weekly-live-chip"><span></span> WEEKLY SEASON</span></div>
+    <div class="weekly-hero panel"><div class="weekly-hero-copy"><div class="section-kicker" id="weeklySeasonLabel">CURRENT SEASON</div><h1>Small steps.<br/><span>Big checkmates.</span></h1><p id="weeklyChallengeDescription">Complete training sessions and build your weekly score. Every correct answer moves you closer to the top.</p><div class="weekly-countdown"><span>SEASON ENDS IN</span><strong id="weeklyTimeRemaining">—</strong></div></div><div class="weekly-hero-art" aria-hidden="true"><div class="weekly-orbit"></div><div class="weekly-trophy">♛</div><span class="weekly-art-caption">YOUR NEXT PERSONAL BEST</span></div></div>
+    <div class="weekly-stats-grid"><div class="weekly-stat panel"><span class="weekly-stat-label">WEEKLY POINTS</span><strong id="weeklyMyPoints">0</strong><small>Earned this season</small></div><div class="weekly-stat panel"><span class="weekly-stat-label">SESSIONS</span><strong id="weeklyMySessions">0</strong><small>Completed this week</small></div><div class="weekly-stat panel"><span class="weekly-stat-label">WEEKLY RANK</span><strong id="weeklyMyRank">—</strong><small id="weeklyRankCaption">Sign in to join the global board</small></div></div>
+    <div class="weekly-content-grid"><div class="panel weekly-challenge-panel"><div class="panel-head"><div><div class="section-kicker">THIS WEEK'S MISSION</div><h3 id="weeklyMissionTitle">The Consistency Run</h3></div><span class="weekly-mission-badge">+ BONUS</span></div><p id="weeklyMissionText">Complete 5 training sessions this week to unlock the consistency bonus.</p><div class="weekly-mission-progress"><div class="weekly-progress-meta"><span id="weeklyMissionProgressLabel">0 / 5 sessions</span><strong id="weeklyMissionPercent">0%</strong></div><div class="weekly-progress-track"><span id="weeklyMissionProgressFill"></span></div></div><div class="weekly-reward-row"><span>✦ Completion reward</span><strong id="weeklyMissionReward">+250 XP</strong></div><button class="primary-button" type="button" id="weeklyStartTraining">Start training →</button><p class="weekly-mission-footnote">Points are calculated from completed sessions on this device. Global rankings require sign-in and the Supabase migration.</p></div>
+    <div class="panel weekly-leaderboard-panel"><div class="panel-head"><div><div class="section-kicker">SEASON RANKINGS</div><h3>Leaderboard</h3></div><span class="weekly-secure-label">◈ ACCOUNT-BASED</span></div><div class="weekly-leaderboard-controls"><label for="weeklyLeaderboardScope">Show</label><select id="weeklyLeaderboardScope"><option value="global">Global players</option><option value="local">This device</option></select><button class="text-button" type="button" id="weeklyRefreshBoard">↻ Refresh</button></div><div class="weekly-leaderboard-list" id="weeklyLeaderboardList"><div class="weekly-empty-state"><span>♟</span><strong>Ready for your first challenge?</strong><p>Complete a session to earn weekly points.</p></div></div><div class="weekly-board-footer" id="weeklyBoardFooter">Global leaderboard loads after cloud setup.</div></div></div>
+    <div class="panel weekly-how-panel"><div class="weekly-how-icon">✦</div><div><h3>How scoring works</h3><p>Earn 10 points per correct answer, plus accuracy and streak bonuses. Complete at least five sessions to earn the weekly consistency reward. Only completed sessions count.</p></div><button class="ghost-button" type="button" id="weeklySyncNow">Sync score ↗</button></div>
+  </section>
+
   <section class="view view-settings" data-view="settings">
     <div class="section-head">
       <div><div class="section-kicker">PREFERENCES</div><h2>Settings</h2><p class="section-sub">Customize your training environment.</p></div>
@@ -1121,6 +1131,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./data-validation.js"></script>
+<script src="./weekly-challenges.js?v=weekly-challenges-20261026"></script>
 <script src="./script.js?v=blindfold-trainer-final-20261025"></script>
 <script src="./auth.js?v=player-profile-cloud-20261025"></script>
 </body>
