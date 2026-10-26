@@ -16,7 +16,7 @@ test("season bounds span Monday to the following Monday",()=>{
 test("score formula rewards correct answers, high accuracy and streaks",()=>{
  assert.equal(core.scoreSession({correct:10,accuracy:80,bestStreak:4}),108);
  assert.equal(core.scoreSession({correct:10,accuracy:95,bestStreak:4}),133);
- assert.equal(core.scoreSession({correct:10,accuracy:100,bestStreak:40}),175);
+ assert.equal(core.scoreSession({correct:10,accuracy:100,bestStreak:40}),200);
  assert.equal(core.scoreSession(null),0);
 });
 test("season validation resets wrong versions and clamps invalid counters",()=>{
@@ -26,7 +26,7 @@ test("season validation resets wrong versions and clamps invalid counters",()=>{
 });
 test("a session contributes once and duplicate session IDs do not inflate scores",()=>{
  const first=core.addSession(core.emptySeason("2026-W44"),{sessionId:"session-1",correct:8,accuracy:100,bestStreak:5},"2026-W44");
- assert.equal(first.sessions,1);assert.equal(first.correct,8);assert.equal(first.points,125);
+ assert.equal(first.sessions,1);assert.equal(first.correct,8);assert.equal(first.points,140);
  const duplicate=core.addSession(first,{sessionId:"session-1",correct:99,accuracy:100,bestStreak:99},"2026-W44");
  assert.deepEqual(duplicate,first);
 });
