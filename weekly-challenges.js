@@ -48,6 +48,7 @@
  }
  const api={weekKey,seasonBounds,scoreSession,emptySeason,validateSeason,addSession,rankRows};
  root.CVTWeeklyChallengeCore=api;
+ if(typeof module==="object"&&module.exports)module.exports=api;
  if(typeof document==="undefined")return;
  let userId=null,displayName="Chess Player",busy=false;
  function getLocal(key=weekKey()){
