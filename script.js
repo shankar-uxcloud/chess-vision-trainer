@@ -3659,6 +3659,7 @@ function finishSession() {
 
     history.unshift(result);
     history = history.slice(0, 50);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
 
     save(KEYS.stats, stats);
     save(KEYS.history, history);
@@ -3737,6 +3738,7 @@ function finishDailyChallenge() {
     };
     history.unshift(result);
     history = history.slice(0, 50);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
     save(KEYS.stats, stats);
     save(KEYS.history, history);
     schedulePlayerProfileSync();
@@ -3830,7 +3832,7 @@ function showResults(newRecord, gained) {
 const VIEW_TITLES = {
     dashboard: ["Home","Dashboard"], training: ["Workspace","Training"],
     mindpalace: ["Signature","Mind Palace"], daily: ["Challenge","Daily Challenge"],
-    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"], tactics: ["Training","Tactics Arena"], blindfold: ["Training","Blindfold Trainer"],
+    analytics: ["Workspace","Analytics"], achievements: ["Workspace","Achievements"], profile: ["Player","Profile"], tactics: ["Training","Tactics Arena"], blindfold: ["Training","Blindfold Trainer"], weekly: ["Competition","Weekly Challenges"],
     settings: ["Workspace","Settings"]
 };
 function routeFromHash(hash = window.location.hash) {
@@ -3886,6 +3888,7 @@ function setView(name, options = {}) {
     if (name === "profile") renderPlayerProfile();
     if (name === "tactics") renderTacticsArena();
     if (name === "blindfold") renderBlindfoldTrainer();
+    if (name === "weekly" && typeof renderWeeklyChallenges === "function") renderWeeklyChallenges();
     if (name === "achievements") renderAchievements();
     if (name === "mindpalace") updateMindPalaceUI();
     if (name === "daily") renderDailyChallenge();
