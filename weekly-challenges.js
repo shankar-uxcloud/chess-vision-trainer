@@ -33,7 +33,7 @@
  }
  function addSession(season,session,key=weekKey()){
   const current=validateSeason(season,key);
-  const id=String(session?.sessionId||session?.id||"");
+  const id=String(session?.sessionId||session?.id||session?.date||session?.completedAt||"");
   if(!session||!id||current.sessionIds.includes(id))return current;
   const points=scoreSession(session);
   current.points+=points;current.sessions++;current.correct+=Math.max(0,Math.floor(Number(session.correct)||0));
@@ -105,7 +105,6 @@
   if(busy)return false;busy=true;
   try{
    const season=getLocal();
-   if(season.sessions>=5&&!season.bonusClaimed){season.points+=250;season.bonusClaimed=true;saveLocal(season);}
    const row={user_id:userId,week_key:season.week,display_name:displayName||"Chess Player",points:season.points,sessions:season.sessions,correct:season.correct,updated_at:new Date().toISOString()};
    const {error}=await client.from(BOARD_TABLE).upsert(row,{onConflict:"user_id,week_key"});
    if(error)throw error;
@@ -116,7 +115,7 @@
  }
  function recordSession(session){
   const key=weekKey(),before=getLocal(key),after=addSession(before,session,key);
-  if(after.sessions!==before.sessions){saveLocal(after);render();if(userId)sync();}
+  if(after.sessions!==before.sessions){if(after.sessions>=5&&!after.bonusClaimed){after.points+=250;after.bonusClaimed=true;}saveLocal(after);render();if(userId)sync();}
  }
  root.renderWeeklyChallenges=render;
  root.refreshWeeklyLeaderboard=refreshBoard;
