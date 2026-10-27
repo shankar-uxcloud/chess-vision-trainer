@@ -4046,6 +4046,7 @@ function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
 function setBoardSize(pct) {
     pct = Math.max(60, Math.min(130, Math.round(Number(pct) / 5) * 5));
+    document.documentElement.style.setProperty("--board-user-max", (660 * pct / 100) + "px");
     const w = $("boardWrapper");
     if (w) {
         w.style.maxWidth = (660 * pct / 100) + "px";
