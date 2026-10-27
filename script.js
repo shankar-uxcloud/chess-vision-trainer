@@ -4046,17 +4046,33 @@ function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
 function setBoardSize(pct) {
     pct = Math.max(60, Math.min(130, Math.round(Number(pct) / 5) * 5));
-    document.documentElement.style.setProperty("--board-user-max", (660 * pct / 100) + "px");
-    const w = $("boardWrapper");
-    if (w) {
-        w.style.maxWidth = (660 * pct / 100) + "px";
-        w.style.width = "min(100%, " + (660 * pct / 100) + "px)";
+    const base = 480;
+    const target = Math.round(base * pct / 100);
+    const wrapper = $("boardWrapper");
+    const board = $("chessboard");
+    const panel = wrapper?.closest(".training-board-panel");
+    // Override legacy, later-loaded CSS rules on the actual board element.
+    // The parent remains fluid, so the board never forces horizontal overflow.
+    if (wrapper) {
+        wrapper.style.setProperty("width", "100%", "important");
+        wrapper.style.setProperty("max-width", target + "px", "important");
+        wrapper.style.setProperty("padding", "0", "important");
+        wrapper.style.setProperty("margin-left", "auto", "important");
+        wrapper.style.setProperty("margin-right", "auto", "important");
     }
+    if (board) {
+        board.style.setProperty("width", "100%", "important");
+        board.style.setProperty("max-width", target + "px", "important");
+        board.style.setProperty("height", "auto", "important");
+        board.style.setProperty("aspect-ratio", "1 / 1", "important");
+        board.style.setProperty("margin-left", "auto", "important");
+        board.style.setProperty("margin-right", "auto", "important");
+    }
+    if (panel) panel.style.setProperty("min-width", "0", "important");
     const slider = $("boardSize");
     if (slider) slider.value = String(pct);
     const output = $("boardSizeValue");
-    if (output) output.value = pct + "%";
-    if (output) output.textContent = pct + "%";
+    if (output) { output.value = pct + "%"; output.textContent = pct + "%"; }
     document.body.dataset.boardScale = pct >= 125 ? "focus" : pct >= 110 ? "large" : pct <= 85 ? "compact" : "balanced";
     document.querySelectorAll("[data-board-preset]").forEach(button => {
         const selected = button.dataset.boardPreset === document.body.dataset.boardScale;
