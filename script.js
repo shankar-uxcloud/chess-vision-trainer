@@ -4045,13 +4045,34 @@ function setBoardTheme(t) {
 function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $("labelsToggle").checked = on; save(KEYS.labels, on); }
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
 function setBoardSize(pct) {
-    const w = $("boardWrapper"); if (w) w.style.maxWidth = (660 * pct/100) + "px";
-    $("boardSize").value = pct; save(KEYS.boardSize, pct);
+    pct = Math.max(60, Math.min(130, Math.round(Number(pct) / 5) * 5));
+    const w = $("boardWrapper");
+    if (w) {
+        w.style.maxWidth = (660 * pct / 100) + "px";
+        w.style.width = "min(100%, " + (660 * pct / 100) + "px)";
+    }
+    const slider = $("boardSize");
+    if (slider) slider.value = String(pct);
+    const output = $("boardSizeValue");
+    if (output) output.value = pct + "%";
+    if (output) output.textContent = pct + "%";
+    document.body.dataset.boardScale = pct >= 125 ? "focus" : pct >= 110 ? "large" : pct <= 85 ? "compact" : "balanced";
+    document.querySelectorAll("[data-board-preset]").forEach(button => {
+        const selected = button.dataset.boardPreset === document.body.dataset.boardScale;
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+    });
+    save(KEYS.boardSize, pct);
 }
 function setupSettings() {
     $("appearanceTheme").addEventListener("change", e => { setTheme(e.target.value); toast("Theme: " + e.target.options[e.target.selectedIndex].text); });
     $("boardTheme").addEventListener("change", e => { setBoardTheme(e.target.value); toast("Board theme updated."); });
     $("boardSize").addEventListener("input", e => setBoardSize(Number(e.target.value)));
+    const boardPresets = { compact: 80, balanced: 100, large: 115, focus: 130 };
+    document.querySelectorAll("[data-board-preset]").forEach(button => button.addEventListener("click", () => {
+        setBoardSize(boardPresets[button.dataset.boardPreset] || 100);
+        toast("Board size: " + boardPresets[button.dataset.boardPreset] + "%");
+    }));
     $("labelsToggle").addEventListener("change", e => { setLabels(e.target.checked); toast(e.target.checked ? "Labels shown." : "Labels hidden."); });
     $("coordsToggle").addEventListener("change", e => { setCoords(e.target.checked); toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden."); });
     $("piecesToggle").addEventListener("change", e => { setPiecesEnabled(e.target.checked); toast(e.target.checked ? "Pieces shown." : "Pieces hidden."); });
