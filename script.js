@@ -4055,14 +4055,14 @@ function setBoardSize(pct) {
     // The parent remains fluid, so the board never forces horizontal overflow.
     if (wrapper) {
         wrapper.style.setProperty("width", "100%", "important");
-        wrapper.style.setProperty("max-width", target + "px", "important");
+        wrapper.style.setProperty("max-width", "min(100%, " + target + "px)", "important");
         wrapper.style.setProperty("padding", "0", "important");
         wrapper.style.setProperty("margin-left", "auto", "important");
         wrapper.style.setProperty("margin-right", "auto", "important");
     }
     if (board) {
         board.style.setProperty("width", "100%", "important");
-        board.style.setProperty("max-width", target + "px", "important");
+        board.style.setProperty("max-width", "min(100%, " + target + "px)", "important");
         board.style.setProperty("height", "auto", "important");
         board.style.setProperty("aspect-ratio", "1 / 1", "important");
         board.style.setProperty("margin-left", "auto", "important");
