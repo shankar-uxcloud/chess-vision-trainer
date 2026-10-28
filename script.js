@@ -4059,68 +4059,58 @@ let settingsResizeObserver = null;
 let settingsResizeHandlerBound = false;
 function measureBoardMax() {
     const board = $("chessboard");
-    const section = board?.closest(".training-board-panel")?.querySelector(".board-section");
-    const rect = section?.getBoundingClientRect();
+    const panel = board?.closest(".training-board-panel");
+    const stage = panel?.closest(".gameplay-stage");
+    const section = panel?.querySelector(".board-section");
     const viewportWidth = Math.max(280, document.documentElement.clientWidth || window.innerWidth || 1024);
     const viewportHeight = Math.max(360, window.innerHeight || 800);
-    const mobile = viewportWidth <= 760;
-    const width = rect?.width || Math.max(180, viewportWidth - (mobile ? 32 : 64));
-    const heightRoom = Math.max(180, viewportHeight - (mobile ? 330 : 230));
-    // The coordinate gutters live beside the board, so reserve their total width.
-    return Math.max(160, Math.floor(Math.min(width - 56, viewportWidth - (mobile ? 24 : 48), heightRoom, 760)));
+    const mobile = viewportWidth <= 720;
+    // Measure the board column's containing stage, not the board's own wrapper.
+    // On hidden views, fallback to viewport width and recalculate when training opens.
+    const stageRect = stage?.getBoundingClientRect();
+    const panelRect = panel?.getBoundingClientRect();
+    const measured = stageRect?.width > 0
+        ? Math.min(stageRect.width * (mobile ? 0.94 : 0.52), panelRect?.width || stageRect.width)
+        : Math.min(viewportWidth - (mobile ? 28 : 520), viewportWidth * (mobile ? 0.92 : 0.40));
+    const heightLimit = Math.max(180, viewportHeight - (mobile ? 330 : 240));
+    return Math.max(160, Math.floor(Math.min(measured - (mobile ? 10 : 8), heightLimit, mobile ? 560 : 680)));
 }
 function applyBoardSize(pct, options = {}) {
     const requested = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
     const fit = options.fit === true;
     const available = measureBoardMax();
     const target = Math.max(160, Math.min(available, Math.round(fit ? available : available * requested / 100)));
-    const wrapper = $("boardWrapper");
-    const middle = wrapper?.querySelector(".board-middle");
     const board = $("chessboard");
+    const wrapper = $("boardWrapper");
     const slider = $("boardSize");
     const output = $("boardSizeValue");
-
     if (slider) slider.value = String(requested);
     if (output) {
         output.value = requested + "%";
         output.textContent = requested + "%";
-        output.title = "Requested scale " + requested + "%; rendered board " + target + " px";
+        output.title = "Requested " + requested + "%; board target " + target + " px";
     }
 
-    // Wrapper owns the measured outer width; the actual grid owns the square board.
-    // Never observe wrapper mutations to calculate a new requested size.
-    if (wrapper) {
-        wrapper.style.width = Math.min(target + 56, available + 56) + "px";
-        wrapper.style.maxWidth = "100%";
-        wrapper.style.padding = "0";
-        wrapper.style.marginInline = "auto";
-        wrapper.style.boxSizing = "border-box";
-    }
-    if (middle) {
-        middle.style.width = "100%";
-        middle.style.gridTemplateColumns = "22px minmax(0, 1fr) 22px";
-        middle.style.boxSizing = "border-box";
-    }
-    if (board) {
-        // Set an explicit square on #chessboard, not just the wrapper or CSS variable.
-        board.style.width = target + "px";
-        board.style.height = target + "px";
-        board.style.minWidth = "0";
-        board.style.maxWidth = "100%";
-        board.style.aspectRatio = "1 / 1";
-        board.style.boxSizing = "border-box";
-        board.style.marginInline = "auto";
-        board.style.gridTemplateColumns = "repeat(8, minmax(0, 1fr))";
-        board.style.gridTemplateRows = "repeat(8, minmax(0, 1fr))";
-        // Let the square grid stay within the available width on narrow screens.
-        const renderedWidth = board.getBoundingClientRect().width;
-        if (renderedWidth > target + 1) {
-            board.style.width = "100%";
-            board.style.height = "auto";
-        }
-    }
-
+    // CSS owns the width through one variable. Writing pixel !important inline
+    // values here was ineffective against the later !important rules in style.css.
     document.documentElement.style.setProperty("--cvt-board-target", target + "px");
+    if (board) {
+        board.style.removeProperty("width");
+        board.style.removeProperty("height");
+        board.style.removeProperty("max-width");
+        board.style.removeProperty("aspect-ratio");
+        board.style.removeProperty("grid-template-columns");
+        board.style.removeProperty("grid-template-rows");
+        board.style.setAttribute("data-rendered-size", String(target));
+    }
+    if (wrapper) {
+        wrapper.style.removeProperty("width");
+        wrapper.style.removeProperty("max-width");
+        wrapper.style.removeProperty("min-width");
+        wrapper.style.removeProperty("padding");
+        wrapper.style.removeProperty("margin-inline");
+    }
+
     const scaleName = requested >= 125 ? "maximum" : requested >= 110 ? "extra-large" : requested >= 95 ? "large" : requested >= 80 ? "medium" : "small";
     document.body.dataset.boardScale = scaleName;
     document.querySelectorAll("[data-board-preset]").forEach(button => {
@@ -4129,11 +4119,8 @@ function applyBoardSize(pct, options = {}) {
         button.setAttribute("aria-pressed", String(selected));
     });
     if (!options.transient) save(KEYS.boardSize, requested);
-    if (options.profile !== false) {
-        activeSettingsProfile = options.profileName || (fit ? "custom" : activeSettingsProfile);
-    }
     const actual = Math.round(board?.getBoundingClientRect().width || target);
-    return { percent: requested, pixels: actual, available };
+    return { percent: requested, pixels: actual, target, available };
 }
 function setBoardSize(pct, options = {}) {
     return applyBoardSize(pct, options);
