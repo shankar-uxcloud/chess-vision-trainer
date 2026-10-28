@@ -3863,6 +3863,9 @@ function setView(name, options = {}) {
 
     document.body.dataset.view = name;
     document.body.style.overflowY = name === "training" ? "auto" : "";
+    // The board is often hidden while settings are edited. Re-measure only after
+    // the training view is visible so its real layout width, not viewport guesses, is used.
+    if (name === "training") requestAnimationFrame(() => applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, { transient: true, fit: load("cvt-board-fit-v1", false) === true, profile: false }));
     document.querySelectorAll(".view").forEach(view => {
         view.classList.toggle("active", view.dataset.view === name);
         if (view.dataset.view === name) view.setAttribute("aria-current", "page");
