@@ -52,3 +52,9 @@ test("recommended balanced and focus sizes differ and performance uses fit",()=>
  assert.match(app,/applyBoardSize\(chosenSize, \{ fit: name === "performance"/);
  assert.match(app,/load\("cvt-board-fit-v1", false\) === true/);
 });
+
+test("training view activation re-measures the board after a previously hidden layout becomes visible",()=>{
+ const fs=require("node:fs");
+ const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
+ assert.match(app,/if \(name === "training"\) requestAnimationFrame\(\(\) => applyBoardSize\(/);
+});
