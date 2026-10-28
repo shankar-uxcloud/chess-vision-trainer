@@ -4060,29 +4060,25 @@ let settingsResizeHandlerBound = false;
 function measureBoardMax() {
     const board = $("chessboard");
     const panel = board?.closest(".training-board-panel");
+    const section = panel?.querySelector(".board-section");
     const stage = panel?.closest(".gameplay-stage");
-    const middle = board?.closest(".board-middle");
-    const wrapper = board?.closest(".board-wrapper");
     const viewportWidth = Math.max(280, document.documentElement.clientWidth || window.innerWidth || 1024);
     const viewportHeight = Math.max(360, window.innerHeight || 800);
     const mobile = viewportWidth <= 720;
 
-    // The board column can be much narrower than .gameplay-stage because the
-    // target card occupies the first grid column. Measure the actual board's
-    // available column and subtract coordinate gutters before computing a size.
-    const middleRect = middle?.getBoundingClientRect();
+    // Never measure the target-sized wrapper itself: doing so would make a
+    // previously selected Small board shrink the "available" width permanently.
+    // The section is the stable content column that constrains every board size.
+    const sectionRect = section?.getBoundingClientRect();
     const panelRect = panel?.getBoundingClientRect();
-    const wrapperRect = wrapper?.getBoundingClientRect();
     const stageRect = stage?.getBoundingClientRect();
-    const measuredWidth = middleRect?.width > 0
-        ? middleRect.width - 56
-        : wrapperRect?.width > 0
-            ? wrapperRect.width - (mobile ? 42 : 56)
-            : panelRect?.width > 0
-                ? Math.min(panelRect.width - 32, mobile ? viewportWidth - 28 : panelRect.width - 36)
-                : stageRect?.width > 0
-                    ? stageRect.width - (mobile ? 28 : 300)
-                    : viewportWidth - (mobile ? 28 : 520);
+    const measuredWidth = sectionRect?.width > 0
+        ? sectionRect.width - (mobile ? 44 : 56)
+        : panelRect?.width > 0
+            ? panelRect.width - (mobile ? 44 : 56)
+            : stageRect?.width > 0
+                ? stageRect.width - (mobile ? 28 : 300)
+                : viewportWidth - (mobile ? 28 : 520);
     const heightLimit = Math.max(180, viewportHeight - (mobile ? 330 : 240));
     const widthLimit = Math.max(160, Math.min(measuredWidth, viewportWidth - (mobile ? 24 : 40), mobile ? 560 : 680));
     return Math.max(160, Math.floor(Math.min(widthLimit, heightLimit)));
@@ -4170,8 +4166,10 @@ function applyRecommendedProfile(name, options = {}) {
     save(KEYS.sound, game.sound);
     save(KEYS.ticks, game.ticks);
     document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
-    const chosenSize = name === "performance" ? 100 : profile.size;
-    applyBoardSize(chosenSize, { fit: name === "performance", profileName: name });
+    const shouldFitBoard = name === "performance";
+    const chosenSize = name === "balanced" ? 85 : profile.size;
+    save("cvt-board-fit-v1", shouldFitBoard);
+    applyBoardSize(chosenSize, { fit: shouldFitBoard, profileName: name });
     save(KEYS.boardSize, chosenSize);
     save("cvt-settings-profile-v1", name);
     renderSettingsProfile();
@@ -4200,6 +4198,7 @@ function markSettingsCustomized() {
     if (status) status.textContent = "Custom settings — your manual changes are saved.";
 }
 function fitBoardToScreen() {
+    // Save the fit flag alongside the percentage so training navigation and refresh restore the same layout.
     const result = applyBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true });
     save("cvt-board-fit-v1", true);
     markSettingsCustomized();
