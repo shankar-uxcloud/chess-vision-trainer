@@ -1012,8 +1012,18 @@
           <label for="boardSize">Board size <span class="setting-hint">Visual scale</span></label>
           <div class="board-size-control"><input type="range" id="boardSize" min="60" max="130" step="5" value="100"><output id="boardSizeValue" for="boardSize">100%</output></div>
           <p class="board-setting-help">Increase the board up to 130% when you want a larger training target. The layout adapts to your screen.</p>
-          <div class="board-presets" role="group" aria-label="Recommended board sizes"><button type="button" data-board-preset="compact">Compact <small>80%</small></button><button type="button" data-board-preset="balanced" class="is-active">Balanced <small>100%</small></button><button type="button" data-board-preset="large">Large <small>115%</small></button><button type="button" data-board-preset="focus">Focus <small>130%</small></button></div>
+          <div class="board-presets" role="group" aria-label="Board size presets"><button type="button" data-board-preset="small">Small <small>70%</small></button><button type="button" data-board-preset="medium" class="is-active">Medium <small>85%</small></button><button type="button" data-board-preset="large">Large <small>100%</small></button><button type="button" data-board-preset="extra-large">Extra Large <small>115%</small></button><button type="button" data-board-preset="maximum">Maximum <small>130%</small></button></div>
         </div>
+      </div>
+      <div class="panel recommended-settings-panel" id="recommendedSettings">
+        <div class="panel-head"><div><div class="section-kicker">SMART SETUP</div><h3>Recommended Settings</h3><p class="panel-sub">Apply a complete, practical setup. You can still customize every setting afterwards.</p></div></div>
+        <div class="settings-profile-grid" role="group" aria-label="Recommended settings profiles">
+          <button type="button" class="settings-profile is-active" data-settings-profile="balanced" aria-pressed="true"><strong>Balanced</strong><small>Comfortable daily training</small></button>
+          <button type="button" class="settings-profile" data-settings-profile="focus" aria-pressed="false"><strong>Focus Mode</strong><small>Large board, fewer distractions</small></button>
+          <button type="button" class="settings-profile" data-settings-profile="performance" aria-pressed="false"><strong>Performance</strong><small>Lean effects, responsive layout</small></button>
+        </div>
+        <div class="settings-actions-row"><button type="button" class="ghost-button" id="fitBoardBtn">↔ Fit to Screen</button><button type="button" class="ghost-button" id="resetRecommendedBtn">↺ Reset to Recommended Size</button></div>
+        <p class="profile-status" id="settingsProfileStatus" role="status">Balanced profile selected.</p>
       </div>
       <div class="panel">
         <div class="panel-head"><div><div class="section-kicker">EXPERIENCE</div><h3>Replay introduction</h3><p class="panel-sub">Watch the chess pieces arrange themselves and revisit the training quotes.</p></div></div>
@@ -1041,6 +1051,7 @@
         <div class="panel-head"><div><div class="section-kicker">DATA</div><h3>Backup & restore</h3></div></div>
         <div class="setting-row"><button class="primary-button full" id="exportBtn">Export data</button></div>
         <div class="setting-row"><button class="ghost-button full" id="importBtn">Import data</button><input type="file" id="importFile" accept="application/json" hidden></div>
+        <div class="setting-row"><button class="ghost-button full" id="restoreSettingsDefaults" type="button">Restore settings defaults</button></div>
         <div class="setting-row"><button class="ghost-button full danger" id="resetBtn">Reset progress</button></div>
       </div>
     </div>
