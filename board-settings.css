@@ -15,3 +15,11 @@ body[data-settings-profile="focus"] .training-board-panel{border-color:var(--acc
 body[data-settings-profile="focus"] #chessboard{border-width:3px}
 body[data-settings-profile="focus"] .target-panel .target-hint{opacity:.72}
 @media(max-width:800px){.settings-profile-grid{grid-template-columns:1fr}.settings-profile{min-height:70px}.settings-actions-row button{min-width:0;width:100%}}
+
+/* Responsive sizing uses a flexible board column; 8x8 aspect ratio stays invariant. */
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel,
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-stage,
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-section { min-width:0!important; max-width:100%!important; }
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper { width:min(var(--cvt-board-target, 480px),100%)!important; max-width:100%!important; }
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-middle { grid-template-columns:22px minmax(0,1fr) 22px!important; width:100%!important; }
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel #chessboard { width:100%!important; max-width:100%!important; aspect-ratio:1!important; height:auto!important; }
