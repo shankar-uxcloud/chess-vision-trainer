@@ -4194,17 +4194,20 @@ function restoreSettingsDefaults() {
     if (typeof toast === "function") toast("Settings restored. Training history is unchanged.");
 }
 function setupSettings() {
-    $("appearanceTheme").addEventListener("change", e => { setTheme(e.target.value); toast("Theme: " + e.target.options[e.target.selectedIndex].text); });
-    $("boardTheme").addEventListener("change", e => { setBoardTheme(e.target.value); toast("Board theme updated."); });
-    $("boardSize").addEventListener("input", e => setBoardSize(Number(e.target.value)));
-    const boardPresets = { compact: 80, balanced: 100, large: 115, focus: 130 };
+    $("appearanceTheme").addEventListener("change", e => { setTheme(e.target.value); markSettingsCustomized(); toast("Theme: " + e.target.options[e.target.selectedIndex].text); });
+    $("boardTheme").addEventListener("change", e => { setBoardTheme(e.target.value); markSettingsCustomized(); toast("Board theme updated."); });
+    $("boardSize").addEventListener("input", e => { setBoardSize(Number(e.target.value)); markSettingsCustomized(); });
     document.querySelectorAll("[data-board-preset]").forEach(button => button.addEventListener("click", () => {
-        setBoardSize(boardPresets[button.dataset.boardPreset] || 100);
-        toast("Board size: " + boardPresets[button.dataset.boardPreset] + "%");
+        const pct = BOARD_SIZE_PRESETS[button.dataset.boardPreset];
+        if (pct) { setBoardSize(pct); markSettingsCustomized(); toast("Board size: " + pct + "%"); }
     }));
-    $("labelsToggle").addEventListener("change", e => { setLabels(e.target.checked); toast(e.target.checked ? "Labels shown." : "Labels hidden."); });
-    $("coordsToggle").addEventListener("change", e => { setCoords(e.target.checked); toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden."); });
-    $("piecesToggle").addEventListener("change", e => { setPiecesEnabled(e.target.checked); toast(e.target.checked ? "Pieces shown." : "Pieces hidden."); });
+    document.querySelectorAll("[data-settings-profile]").forEach(button => button.addEventListener("click", () => applyRecommendedProfile(button.dataset.settingsProfile)));
+    $("fitBoardBtn")?.addEventListener("click", fitBoardToScreen);
+    $("resetRecommendedBtn")?.addEventListener("click", () => applyRecommendedProfile("balanced"));
+    $("restoreSettingsDefaults")?.addEventListener("click", restoreSettingsDefaults);
+    $("labelsToggle").addEventListener("change", e => { setLabels(e.target.checked); markSettingsCustomized(); toast(e.target.checked ? "Labels shown." : "Labels hidden."); });
+    $("coordsToggle").addEventListener("change", e => { setCoords(e.target.checked); markSettingsCustomized(); toast(e.target.checked ? "Coordinates shown." : "Coordinates hidden."); });
+    $("piecesToggle").addEventListener("change", e => { setPiecesEnabled(e.target.checked); markSettingsCustomized(); toast(e.target.checked ? "Pieces shown." : "Pieces hidden."); });
     $("flipToggle").addEventListener("change", e => {
         const on = e.target.checked;
         if (game.running) { e.target.checked = document.body.dataset.flip === "true"; toast("Finish the current session first."); return; }
@@ -4214,9 +4217,9 @@ function setupSettings() {
         setPerspective(on ? "black" : "white");
         toast(on ? "Black view." : "White view.");
     });
-    $("soundToggle").addEventListener("change", e => { game.sound = e.target.checked; save(KEYS.sound, game.sound); if (game.sound) playSound("correct"); toast(game.sound ? "Sound on." : "Sound off."); });
-    $("volumeRange").addEventListener("input", e => { game.volume = Number(e.target.value)/100; save(KEYS.volume, game.volume); });
-    $("ticksToggle").addEventListener("change", e => { game.ticks = e.target.checked; save(KEYS.ticks, game.ticks); toast(game.ticks ? "Ticks on." : "Ticks off."); });
+    $("soundToggle").addEventListener("change", e => { game.sound = e.target.checked; save(KEYS.sound, game.sound); markSettingsCustomized(); if (game.sound) playSound("correct"); toast(game.sound ? "Sound on." : "Sound off."); });
+    $("volumeRange").addEventListener("input", e => { game.volume = Number(e.target.value)/100; save(KEYS.volume, game.volume); markSettingsCustomized(); });
+    $("ticksToggle").addEventListener("change", e => { game.ticks = e.target.checked; save(KEYS.ticks, game.ticks); markSettingsCustomized(); toast(game.ticks ? "Ticks on." : "Ticks off."); });
     $("adaptiveToggle").addEventListener("change", e => {
         adaptiveEnabled = e.target.checked;
         save(KEYS.adaptive, adaptiveEnabled);
