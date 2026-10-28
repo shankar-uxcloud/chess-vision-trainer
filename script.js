@@ -4069,6 +4069,7 @@ function measureBoardMax() {
 }
 function setBoardSize(pct, options = {}) {
     pct = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
+    const fit = options.fit === true;
     const maxFit = measureBoardMax();
     const target = Math.max(160, Math.round(window.CVTBoardSettingsCore?.computeTarget(maxFit, pct, fit) ?? (fit ? maxFit : maxFit * 0.78 * pct / 100)));
     const wrapper = $("boardWrapper");
@@ -4076,7 +4077,6 @@ function setBoardSize(pct, options = {}) {
     const board = $("chessboard");
     const slider = $("boardSize");
     const output = $("boardSizeValue");
-    const fit = options.fit === true;
     if (slider) slider.value = String(pct);
     if (output) {
         output.value = pct + "%";
