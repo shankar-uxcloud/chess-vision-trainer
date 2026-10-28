@@ -62,3 +62,23 @@ test("training view activation re-measures the board after a previously hidden l
  const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
  assert.match(app,/if \(name === "training"\) requestAnimationFrame\(\(\) => applyBoardSize\(/);
 });
+
+test("render-size correction is based on actual layout measurements and live board column", () => {
+ const fs = require("node:fs");
+ const path = require("node:path");
+ const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+ const css = fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8");
+ assert.match(app, /board\?\.getBoundingClientRect\(\)\.width/);
+ assert.match(app, /board\.style\.setProperty\("width", target \+ "px", "important"\)/);
+ assert.match(app, /const middle = board\?\.closest\("\.board-middle"\)/);
+ assert.match(css, /BOARD SIZE CASCADE FIX v2/);
+ assert.match(css, /\.gameplay-stage \.training-board-panel \.chessboard \{\s*width: var\(--cvt-board-target/);
+});
+test("fit mode has a distinct persisted mode bit and presets do not overwrite training history", () => {
+ const fs = require("node:fs");
+ const path = require("node:path");
+ const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+ assert.match(app, /save\("cvt-board-fit-v1", true\)/);
+ assert.match(app, /save\(KEYS\.boardSize, requested\)/);
+ assert.match(app, /markSettingsCustomized\(\)/);
+});
