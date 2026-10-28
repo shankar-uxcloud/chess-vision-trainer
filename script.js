@@ -4046,47 +4046,57 @@ function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
 const BOARD_SIZE_PRESETS = { small: 70, medium: 85, large: 100, "extra-large": 115, maximum: 130 };
 const BOARD_PROFILES = {
-    balanced: { size: 100, theme: "emerald", labels: false, coords: true, pieces: false, sound: true, ticks: true, animations: true, interfaceTheme: "dark" },
+    balanced: { size: 100, theme: "emerald", labels: false, coords: true, pieces: false, sound: true, ticks: true, animations: true, interfaceTheme: "light" },
     focus: { size: 115, theme: "midnight", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" },
-    performance: { size: "fit", theme: "classic", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" }
+    performance: { size: 100, theme: "classic", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" }
 };
 let activeSettingsProfile = load("cvt-settings-profile-v1", "balanced");
 if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)) activeSettingsProfile = "balanced";
 let settingsResizeObserver = null;
 let settingsResizeHandlerBound = false;
 function measureBoardMax() {
-    const boardPanel = $("chessboard")?.closest(".training-board-panel");
-    const wrapper = $("boardWrapper");
-    const rect = boardPanel?.getBoundingClientRect();
+    const panel = $("chessboard")?.closest(".training-board-panel");
+    const section = panel?.querySelector(".board-section");
+    const sectionRect = section?.getBoundingClientRect();
     const viewportWidth = Math.max(280, document.documentElement.clientWidth || window.innerWidth || 1024);
-    const viewportHeight = Math.max(420, window.innerHeight || 800);
-    const style = boardPanel ? getComputedStyle(boardPanel) : null;
-    const panelPadding = style ? parseFloat(style.paddingLeft || 0) + parseFloat(style.paddingRight || 0) : 32;
-    const panelWidth = rect?.width ? Math.max(180, rect.width - panelPadding) : viewportWidth - 48;
+    const viewportHeight = Math.max(360, window.innerHeight || 800);
     const mobile = viewportWidth <= 760;
-    const heightRoom = Math.max(180, viewportHeight - (mobile ? 330 : 240));
-    return Math.max(160, Math.floor(Math.min(panelWidth, viewportWidth - (mobile ? 28 : 64), heightRoom, 760)));
-}
-function updateFitButtonLabel() {
-    const button = $("fitBoardBtn");
-    if (button) button.setAttribute("aria-label", "Fit board to the current screen size");
+    const sectionWidth = sectionRect?.width ? sectionRect.width : Math.max(180, viewportWidth - (mobile ? 32 : 64));
+    const heightRoom = Math.max(180, viewportHeight - (mobile ? 370 : 270));
+    // Base size is computed from the available board column, not the full panel,
+    // preventing profile sizes from forcing overlaps with the target panel.
+    return Math.max(160, Math.floor(Math.min(sectionWidth, viewportWidth - (mobile ? 28 : 64), heightRoom, 760)));
 }
 function setBoardSize(pct, options = {}) {
-    const fit = options.fit === true;
-    pct = fit ? Math.max(60, Math.min(130, Number(pct) || 100)) : Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
-    const target = measureBoardMax() * pct / 100;
+    pct = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
+    const maxFit = measureBoardMax();
+    const target = Math.max(160, Math.round(maxFit * pct / 100));
     const wrapper = $("boardWrapper");
+    const middle = wrapper?.querySelector(".board-middle");
     const board = $("chessboard");
     const slider = $("boardSize");
     const output = $("boardSizeValue");
+    const fit = options.fit === true;
     if (slider) slider.value = String(pct);
-    if (output) { output.value = pct + "%"; output.textContent = pct + "%"; output.title = Math.round(target) + " px target"; }
+    if (output) {
+        output.value = pct + "%";
+        output.textContent = pct + "%";
+        output.title = "Requested board width " + target + " px before viewport constraints";
+    }
+    // Older styles cap the wrapper at 460px and the board at --training-board-size.
+    // Set one measured target on wrapper/middle/board, while retaining max-width:100%
+    // at every level so all 64 click targets remain inside the responsive column.
     if (wrapper) {
-        wrapper.style.setProperty("width", "100%", "important");
-        wrapper.style.setProperty("max-width", Math.round(target) + "px", "important");
+        wrapper.style.setProperty("width", target + "px", "important");
+        wrapper.style.setProperty("max-width", "100%", "important");
         wrapper.style.setProperty("padding", "0", "important");
         wrapper.style.setProperty("margin-inline", "auto", "important");
         wrapper.style.setProperty("box-sizing", "border-box", "important");
+    }
+    if (middle) {
+        middle.style.setProperty("width", "100%", "important");
+        middle.style.setProperty("grid-template-columns", "22px minmax(0, 1fr) 22px", "important");
+        middle.style.setProperty("box-sizing", "border-box", "important");
     }
     if (board) {
         board.style.setProperty("width", "100%", "important");
@@ -4096,16 +4106,20 @@ function setBoardSize(pct, options = {}) {
         board.style.setProperty("box-sizing", "border-box", "important");
         board.style.setProperty("margin-inline", "auto", "important");
     }
-    document.documentElement.style.setProperty("--cvt-board-target", Math.round(target) + "px");
-    document.body.dataset.boardScale = fit ? "fit" : pct >= 125 ? "maximum" : pct >= 110 ? "extra-large" : pct >= 95 ? "large" : pct >= 80 ? "medium" : "small";
+    document.documentElement.style.setProperty("--cvt-board-target", target + "px");
+    document.body.dataset.boardScale = pct >= 125 ? "maximum" : pct >= 110 ? "extra-large" : pct >= 95 ? "large" : pct >= 80 ? "medium" : "small";
     document.querySelectorAll("[data-board-preset]").forEach(button => {
-        const selected = !fit && button.dataset.boardPreset === document.body.dataset.boardScale;
+        const selected = button.dataset.boardPreset === document.body.dataset.boardScale;
         button.classList.toggle("is-active", selected);
         button.setAttribute("aria-pressed", String(selected));
     });
     if (!options.transient) save(KEYS.boardSize, pct);
-    updateFitButtonLabel();
-    return { percent: pct, pixels: Math.round(target) };
+    if (output && fit) {
+        const actual = Math.round(board?.getBoundingClientRect().width || Math.min(target, maxFit));
+        output.textContent = actual + " px";
+        output.title = "Board currently rendered at approximately " + actual + " pixels";
+    }
+    return { percent: pct, pixels: Math.round(Math.min(target, maxFit)) };
 }
 function applyRecommendedProfile(name, options = {}) {
     const profile = BOARD_PROFILES[name];
@@ -4114,28 +4128,33 @@ function applyRecommendedProfile(name, options = {}) {
     document.body.dataset.settingsProfile = name;
     document.body.dataset.reduceMotion = profile.animations ? "false" : "true";
     save("cvt-settings-animations-v1", profile.animations);
-    const themeSelect = $("appearanceTheme");
-    if (themeSelect) setTheme(profile.interfaceTheme);
+    setTheme(profile.interfaceTheme);
     setBoardTheme(profile.theme);
     setLabels(profile.labels);
     setCoords(profile.coords);
     setPiecesEnabled(profile.pieces);
     game.sound = profile.sound;
     game.ticks = profile.ticks;
-    const soundToggle = $("soundToggle"), ticksToggle = $("ticksToggle");
-    if (soundToggle) soundToggle.checked = game.sound;
-    if (ticksToggle) ticksToggle.checked = game.ticks;
-    save(KEYS.sound, game.sound); save(KEYS.ticks, game.ticks);
-    setBoardSize(profile.size === "fit" ? 100 : profile.size, { transient: true });
-    if (name === "performance") setBoardSize(100, { fit: true, transient: true });
-    if (profile.animations) document.body.classList.remove("cvt-reduced-effects"); else document.body.classList.add("cvt-reduced-effects");
+    $("soundToggle").checked = game.sound;
+    $("ticksToggle").checked = game.ticks;
+    save(KEYS.sound, game.sound);
+    save(KEYS.ticks, game.ticks);
+    document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
+    if (name === "performance") {
+        // Fit is a layout calculation, while the user's saved slider preference remains reset to 100%.
+        setBoardSize(100, { fit: true, transient: true });
+        save(KEYS.boardSize, 100);
+    } else {
+        setBoardSize(profile.size);
+    }
     save("cvt-settings-profile-v1", name);
-    if (name === "performance") { save(KEYS.boardSize, 100); }
-    else save(KEYS.boardSize, profile.size);
-    save("cvt-settings-animations-v1", profile.animations);
     renderSettingsProfile();
     const status = $("settingsProfileStatus");
-    if (status) status.textContent = name === "balanced" ? "Balanced applied: comfortable board, standard effects and everyday settings." : name === "focus" ? "Focus Mode applied: larger board, reduced motion and quieter training." : "Performance applied: fit-to-screen board and reduced effects for responsive play.";
+    if (status) status.textContent = name === "balanced"
+        ? "Balanced applied: comfortable board, standard effects and everyday settings."
+        : name === "focus"
+          ? "Focus Mode applied: larger board, quieter training and reduced motion."
+          : "Performance applied: fit the board to available space and reduce effects.";
     if (!options.silent && typeof toast === "function") toast(name === "focus" ? "Focus Mode applied." : name === "performance" ? "Performance Mode applied." : "Balanced settings applied.");
     return true;
 }
@@ -4155,49 +4174,63 @@ function markSettingsCustomized() {
     if (status) status.textContent = "Custom settings — your manual changes are saved.";
 }
 function fitBoardToScreen() {
-    const max = measureBoardMax();
-    const baseline = 480;
-    const pct = 100;
-    const result = setBoardSize(pct, { fit: true });
+    // The profile's scale cannot exceed the measured board column; fit therefore
+    // selects 100%, and the target is clipped to the real available section width.
+    const result = setBoardSize(100, { fit: true });
     markSettingsCustomized();
     const output = $("boardSizeValue");
-    if (output) { output.title = result.pixels + " px available board width"; output.textContent = result.pixels + " px"; }
+    if (output) {
+        const actual = Math.round($("chessboard")?.getBoundingClientRect().width || result.pixels);
+        output.textContent = actual + " px";
+        output.title = "Board rendered at " + actual + " pixels";
+    }
     if (typeof toast === "function") toast("Board fitted to available screen space.");
 }
 function bindBoardAutoFit() {
     if (settingsResizeHandlerBound) return;
     settingsResizeHandlerBound = true;
-    const rerender = () => {
-        const current = Number(load(KEYS.boardSize, 100)) || 100;
-        setBoardSize(current, { fit: true, transient: true });
-    };
+    const rerender = () => setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true, transient: true });
     window.addEventListener("resize", rerender, { passive: true });
     window.addEventListener("orientationchange", () => window.setTimeout(rerender, 120), { passive: true });
     if ("ResizeObserver" in window) {
-        const panel = $("chessboard")?.closest(".training-board-panel");
-        if (panel) {
+        const section = $("boardWrapper");
+        if (section) {
             settingsResizeObserver = new ResizeObserver(() => {
                 if (document.body.dataset.view === "training") {
-                    const current = Number(load(KEYS.boardSize, 100)) || 100;
-                    setBoardSize(current, { fit: true, transient: true });
+                    // Avoid observer loops: update from stored scale only when not already at a fit measurement.
+                    const pct = Number(load(KEYS.boardSize, 100)) || 100;
+                    const desired = Math.round(measureBoardMax() * pct / 100);
+                    const current = Math.round($("chessboard")?.getBoundingClientRect().width || 0);
+                    if (Math.abs(desired - current) > 2) setBoardSize(pct, { fit: true, transient: true });
                 }
             });
-            settingsResizeObserver.observe(panel);
+            settingsResizeObserver.observe(section);
         }
     }
 }
 function restoreSettingsDefaults() {
-    setTheme("light"); setBoardTheme("emerald"); setLabels(false); setCoords(true); setPiecesEnabled(false);
-    game.sound = true; game.ticks = true;
-    $("soundToggle").checked = true; $("ticksToggle").checked = true; $("volumeRange").value = 60;
-    game.volume = 0.6; save(KEYS.volume, game.volume); save(KEYS.sound, true); save(KEYS.ticks, true);
+    setTheme("light");
+    setBoardTheme("emerald");
+    setLabels(false);
+    setCoords(true);
+    setPiecesEnabled(false);
+    game.sound = true;
+    game.ticks = true;
+    $("soundToggle").checked = true;
+    $("ticksToggle").checked = true;
+    $("volumeRange").value = 60;
+    game.volume = 0.6;
+    save(KEYS.volume, game.volume);
+    save(KEYS.sound, true);
+    save(KEYS.ticks, true);
     if (!game.running) setPerspective("white");
     $("flipToggle").checked = false;
     document.body.classList.remove("cvt-reduced-effects");
     document.body.dataset.reduceMotion = "false";
     save("cvt-settings-animations-v1", true);
-    save("cvt-settings-profile-v1", "balanced");
     activeSettingsProfile = "balanced";
+    document.body.dataset.settingsProfile = "balanced";
+    save("cvt-settings-profile-v1", "balanced");
     setBoardSize(100);
     renderSettingsProfile();
     if (typeof toast === "function") toast("Settings restored. Training history is unchanged.");
@@ -4775,7 +4808,10 @@ function init() {
     } else {
         activeSettingsProfile = "balanced";
         save("cvt-settings-profile-v1", "balanced");
-        applyRecommendedProfile("balanced", { silent: true });
+        activeSettingsProfile = "balanced";
+        document.body.dataset.settingsProfile = "balanced";
+        save("cvt-settings-profile-v1", "balanced");
+        renderSettingsProfile();
     }
     bindBoardAutoFit();
     setupKeyboard();
