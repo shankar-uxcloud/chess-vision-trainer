@@ -4698,7 +4698,7 @@ function init() {
     setBoardTheme(load(KEYS.board, "emerald"));
     setLabels(load(KEYS.labels, false));
     setCoords(load(KEYS.coords, true) !== false);
-    setBoardSize(Number(load(KEYS.boardSize, 100)) || 100);
+    setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true, transient: true });
 
     game.piecesEnabled = load(KEYS.pieces, false) === true;
     const pt = $("piecesToggle"); if (pt) pt.checked = game.piecesEnabled;
@@ -4756,6 +4756,18 @@ function init() {
 
     setupNav();
     setupSettings();
+    if (load("cvt-settings-profile-v1", null) !== null) {
+        activeSettingsProfile = load("cvt-settings-profile-v1", "balanced");
+        if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)) activeSettingsProfile = "balanced";
+        document.body.dataset.settingsProfile = activeSettingsProfile;
+        document.body.dataset.reduceMotion = load("cvt-settings-animations-v1", true) ? "false" : "true";
+        renderSettingsProfile();
+    } else {
+        activeSettingsProfile = "balanced";
+        save("cvt-settings-profile-v1", "balanced");
+        applyRecommendedProfile("balanced", { silent: true });
+    }
+    bindBoardAutoFit();
     setupKeyboard();
     initMindPalace();
 
