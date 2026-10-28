@@ -25,7 +25,7 @@ test("saved setting validation rejects invalid names and preserves safe defaults
  assert.equal(p.size,130);assert.equal(p.profile,"balanced");assert.equal(p.interfaceTheme,"light");assert.equal(p.boardTheme,"emerald");assert.equal(p.coords,false);assert.equal(p.sound,false);
 });
 
-test("production board sizing uses one winning CSS variable and removes conflicting inline widths",()=>{
+test("production board sizing uses the winning CSS variable instead of inline width overrides",()=>{
  const fs=require("node:fs");
  const path=require("node:path");
  const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
@@ -35,8 +35,8 @@ test("production board sizing uses one winning CSS variable and removes conflict
  assert.match(app,/document\.documentElement\.style\.setProperty\("\-\-cvt-board-target", target \+ "px"\)/);
  assert.match(app,/board\.style\.removeProperty\("width"\)/);
  assert.match(app,/board\.style\.removeProperty\("height"\)/);
- assert.match(css,/The board itself gets an explicit square size/);
- assert.match(css,/#chessboard \{[\s\S]*?width: var\(--cvt-board-target/);
+ assert.match(css,/training-board-panel #chessboard \{width:var\(--cvt-board-target/);
+ assert.match(css,/training-board-panel \.board-wrapper \{width: calc\(var\(--cvt-board-target/);
  assert.match(mainCss,/\.training-layout \.training-board-panel \.chessboard \{[\s\S]*?width: 100% !important/);
 });
 
