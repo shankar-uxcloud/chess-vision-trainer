@@ -4113,6 +4113,7 @@ function applyRecommendedProfile(name, options = {}) {
     activeSettingsProfile = name;
     document.body.dataset.settingsProfile = name;
     document.body.dataset.reduceMotion = profile.animations ? "false" : "true";
+    save("cvt-settings-animations-v1", profile.animations);
     const themeSelect = $("appearanceTheme");
     if (themeSelect) setTheme(profile.interfaceTheme);
     setBoardTheme(profile.theme);
@@ -4127,8 +4128,10 @@ function applyRecommendedProfile(name, options = {}) {
     save(KEYS.sound, game.sound); save(KEYS.ticks, game.ticks);
     setBoardSize(profile.size === "fit" ? 100 : profile.size, { transient: true });
     if (name === "performance") setBoardSize(100, { fit: true, transient: true });
+    if (profile.animations) document.body.classList.remove("cvt-reduced-effects"); else document.body.classList.add("cvt-reduced-effects");
     save("cvt-settings-profile-v1", name);
-    save(KEYS.boardSize, name === "performance" ? 100 : profile.size);
+    if (name !== "performance") save(KEYS.boardSize, profile.size);
+    save("cvt-settings-animations-v1", profile.animations);
     renderSettingsProfile();
     const status = $("settingsProfileStatus");
     if (status) status.textContent = name === "balanced" ? "Balanced applied: comfortable board, standard effects and everyday settings." : name === "focus" ? "Focus Mode applied: larger board, reduced motion and quieter training." : "Performance applied: fit-to-screen board and reduced effects for responsive play.";
@@ -4761,6 +4764,7 @@ function init() {
         if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)) activeSettingsProfile = "balanced";
         document.body.dataset.settingsProfile = activeSettingsProfile;
         document.body.dataset.reduceMotion = load("cvt-settings-animations-v1", true) ? "false" : "true";
+        document.body.classList.toggle("cvt-reduced-effects", document.body.dataset.reduceMotion === "true");
         renderSettingsProfile();
     } else {
         activeSettingsProfile = "balanced";
