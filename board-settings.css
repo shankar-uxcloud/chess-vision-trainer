@@ -1,25 +1,35 @@
-/* Board sizing controls and sensible responsive training layout. */
-.board-size-control{display:flex;align-items:center;gap:12px;width:100%}.board-size-control input[type=range]{flex:1;min-width:0}.board-size-control output{min-width:52px;text-align:right;color:var(--accent);font:600 13px 'DM Mono',monospace}.board-setting-help{color:var(--text-2);font-size:12px;line-height:1.6;margin-top:8px}.board-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}.board-presets button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 5px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2);color:var(--text);font-size:11px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}.board-presets button small{font-size:10px;color:var(--muted)}.board-presets button:hover{border-color:var(--accent);transform:translateY(-1px)}.board-presets button.is-active{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 20%,transparent)}.board-presets button.is-active small{color:var(--accent)}
-body[data-view=training] #boardWrapper{max-width:min(var(--board-user-max,660px),100%)}body[data-view=training] .training-layout,body[data-view=training] .gameplay-stage{min-width:0}body[data-view=training] .training-board-panel{min-width:0}body[data-view=training] .training-board-panel .board-wrapper{max-width:100%;overflow:visible}body[data-view=training] .training-board-panel .chessboard{max-width:100%;height:auto;aspect-ratio:1}
-@media(max-width:560px){.board-presets{gap:5px}.board-presets button{font-size:10px;padding:9px 2px}.board-presets button small{font-size:9px}}
-
-/* Last-resort layout guard: board scales inside its panel instead of overflowing it. */
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel { min-width:0!important; }
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper { width:100%!important; max-width:100%!important; padding:0!important; margin-inline:auto!important; }
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel #chessboard { width:100%!important; max-width:100%!important; aspect-ratio:1!important; height:auto!important; }
-
-/* Smart settings profile styling and motion preferences */
-.settings-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0 14px}.settings-profile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;min-height:88px;padding:14px;border:1px solid var(--border);border-radius:13px;background:var(--surface-2);color:var(--text);text-align:left;cursor:pointer;transition:border-color .18s,background .18s}.settings-profile strong{font-size:13px}.settings-profile small{color:var(--text-2);font-size:11px;line-height:1.45}.settings-profile:hover,.settings-profile.is-active{border-color:var(--accent);background:var(--accent-soft)}.settings-profile.is-active{box-shadow:inset 0 0 0 1px var(--accent)}.settings-actions-row{display:flex;flex-wrap:wrap;gap:9px}.settings-actions-row button{flex:1;min-width:180px}.profile-status{font-size:12px;line-height:1.6;color:var(--text-2);margin-top:12px;min-height:1.6em}
+/* Board sizing controls and responsive training layout. */
+.board-size-control{display:flex;align-items:center;gap:12px;width:100%}
+.board-size-control input[type=range]{flex:1;min-width:0}
+.board-size-control output{min-width:52px;text-align:right;color:var(--accent);font:600 13px 'DM Mono',monospace}
+.board-setting-help{color:var(--text-2);font-size:12px;line-height:1.6;margin-top:8px}
+.board-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.board-presets button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 5px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2);color:var(--text);font-size:11px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.board-presets button small{font-size:10px;color:var(--muted)}
+.board-presets button:hover{border-color:var(--accent);transform:translateY(-1px)}
+.board-presets button.is-active{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 20%,transparent)}
+.board-presets button.is-active small{color:var(--accent)}
+.settings-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0 14px}
+.settings-profile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;min-height:88px;padding:14px;border:1px solid var(--border);border-radius:13px;background:var(--surface-2);color:var(--text);text-align:left;cursor:pointer;transition:border-color .18s,background .18s}
+.settings-profile strong{font-size:13px}
+.settings-profile small{color:var(--text-2);font-size:11px;line-height:1.45}
+.settings-profile:hover,.settings-profile.is-active{border-color:var(--accent);background:var(--accent-soft)}
+.settings-profile.is-active{box-shadow:inset 0 0 0 1px var(--accent)}
+.settings-actions-row{display:flex;flex-wrap:wrap;gap:9px}
+.settings-actions-row button{flex:1;min-width:180px}
+.profile-status{font-size:12px;line-height:1.6;color:var(--text-2);margin-top:12px;min-height:1.6em}
 body.cvt-reduced-effects *,body.cvt-reduced-effects *::before,body.cvt-reduced-effects *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important;caret-color:auto}
 body[data-settings-profile="focus"] .training-board-panel{border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent),0 16px 45px rgba(0,0,0,.14)}
-body[data-settings-profile="focus"] #chessboard{border-width:3px}
 body[data-settings-profile="focus"] .target-panel .target-hint{opacity:.72}
 @media(max-width:800px){.settings-profile-grid{grid-template-columns:1fr}.settings-profile{min-height:70px}.settings-actions-row button{min-width:0;width:100%}}
-
-/* Responsive sizing uses a flexible board column; 8x8 aspect ratio stays invariant. */
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel,
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-stage,
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-section { min-width:0!important; max-width:100%!important; }
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper { width:min(var(--cvt-board-target, 480px),100%)!important; max-width:100%!important; }
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-middle { grid-template-columns:22px minmax(0,1fr) 22px!important; width:100%!important; }
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel #chessboard { width:100%!important; max-width:100%!important; aspect-ratio:1!important; height:auto!important; }
+@media(max-width:560px){.board-presets{gap:5px}.board-presets button{font-size:10px;padding:9px 2px}.board-presets button small{font-size:9px}}
+/* The board itself gets an explicit square size from applyBoardSize(); do not override it with 100%-width !important rules. */
+body[data-view="training"] .training-layout,
+body[data-view="training"] .gameplay-stage,
+body[data-view="training"] .training-board-panel,
+body[data-view="training"] .training-board-panel .board-stage,
+body[data-view="training"] .training-board-panel .board-section {min-width:0;max-width:100%}
+body[data-view="training"] .training-board-panel .board-section {width:100%;padding-inline:0;justify-content:center}
+body[data-view="training"] .training-board-panel .board-wrapper {width:auto;max-width:100%;padding:0;overflow:visible;flex:0 1 auto}
+body[data-view="training"] .training-board-panel .board-middle {width:100%;grid-template-columns:22px minmax(0,1fr) 22px;gap:6px}
+body[data-view="training"] .training-board-panel #chessboard {width:var(--cvt-board-target, 480px);height:var(--cvt-board-target, 480px);max-width:100%;aspect-ratio:1/1;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr))}
