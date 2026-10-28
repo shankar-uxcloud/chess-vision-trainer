@@ -25,19 +25,21 @@ test("saved setting validation rejects invalid names and preserves safe defaults
  assert.equal(p.size,130);assert.equal(p.profile,"balanced");assert.equal(p.interfaceTheme,"light");assert.equal(p.boardTheme,"emerald");assert.equal(p.coords,false);assert.equal(p.sound,false);
 });
 
-test("production board sizing source applies requested size to the actual chessboard",()=>{
+test("production board sizing uses one winning CSS variable and removes conflicting inline widths",()=>{
  const fs=require("node:fs");
- const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
- const css=fs.readFileSync(require("node:path").join(__dirname,"..","board-settings.css"),"utf8");
+ const path=require("node:path");
+ const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
+ const css=fs.readFileSync(path.join(__dirname,"..","board-settings.css"),"utf8");
+ const mainCss=fs.readFileSync(path.join(__dirname,"..","style.css"),"utf8");
  assert.match(app,/function applyBoardSize\(pct, options = \{\}\)/);
- assert.match(app,/board\.style\.width = target \+ "px"/);
- assert.match(app,/board\.style\.height = target \+ "px"/);
- assert.match(app,/board\.style\.gridTemplateColumns = "repeat\(8, minmax\(0, 1fr\)\)"/);
- assert.doesNotMatch(app,/new ResizeObserver\(/);
+ assert.match(app,/document\.documentElement\.style\.setProperty\("\-\-cvt-board-target", target \+ "px"\)/);
+ assert.match(app,/board\.style\.removeProperty\("width"\)/);
+ assert.match(app,/board\.style\.removeProperty\("height"\)/);
  assert.match(css,/BOARD SIZE CONTROL CASCADE OVERRIDE/);
  assert.match(css,/#chessboard \{[\s\S]*?width: var\(--cvt-board-target/);
- assert.match(css,/board-wrapper \{[\s\S]*?width: calc\(var\(--cvt-board-target/);
+ assert.match(mainCss,/\.training-layout \.training-board-panel \.chessboard \{[\s\S]*?width: 100% !important/);
 });
+
 test("presets map to visibly increasing target widths on the same available column",()=>{
  const available=640;
  const sizes=[70,85,100,115,130].map(p=>Math.min(available,Math.round(available*p/100)));
