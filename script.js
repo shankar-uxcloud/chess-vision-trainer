@@ -4061,19 +4061,31 @@ function measureBoardMax() {
     const board = $("chessboard");
     const panel = board?.closest(".training-board-panel");
     const stage = panel?.closest(".gameplay-stage");
-    const section = panel?.querySelector(".board-section");
+    const middle = board?.closest(".board-middle");
+    const wrapper = board?.closest(".board-wrapper");
     const viewportWidth = Math.max(280, document.documentElement.clientWidth || window.innerWidth || 1024);
     const viewportHeight = Math.max(360, window.innerHeight || 800);
     const mobile = viewportWidth <= 720;
-    // Measure the board column's containing stage, not the board's own wrapper.
-    // On hidden views, fallback to viewport width and recalculate when training opens.
-    const stageRect = stage?.getBoundingClientRect();
+
+    // The board column can be much narrower than .gameplay-stage because the
+    // target card occupies the first grid column. Measure the actual board's
+    // available column and subtract coordinate gutters before computing a size.
+    const middleRect = middle?.getBoundingClientRect();
     const panelRect = panel?.getBoundingClientRect();
-    const measured = stageRect?.width > 0
-        ? Math.min(stageRect.width * (mobile ? 0.94 : 0.52), panelRect?.width || stageRect.width)
-        : Math.min(viewportWidth - (mobile ? 28 : 520), viewportWidth * (mobile ? 0.92 : 0.40));
+    const wrapperRect = wrapper?.getBoundingClientRect();
+    const stageRect = stage?.getBoundingClientRect();
+    const measuredWidth = middleRect?.width > 0
+        ? middleRect.width - 56
+        : wrapperRect?.width > 0
+            ? wrapperRect.width - (mobile ? 42 : 56)
+            : panelRect?.width > 0
+                ? Math.min(panelRect.width - 32, mobile ? viewportWidth - 28 : panelRect.width - 36)
+                : stageRect?.width > 0
+                    ? stageRect.width - (mobile ? 28 : 300)
+                    : viewportWidth - (mobile ? 28 : 520);
     const heightLimit = Math.max(180, viewportHeight - (mobile ? 330 : 240));
-    return Math.max(160, Math.floor(Math.min(measured - (mobile ? 10 : 8), heightLimit, mobile ? 560 : 680)));
+    const widthLimit = Math.max(160, Math.min(measuredWidth, viewportWidth - (mobile ? 24 : 40), mobile ? 560 : 680));
+    return Math.max(160, Math.floor(Math.min(widthLimit, heightLimit)));
 }
 function applyBoardSize(pct, options = {}) {
     const requested = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
@@ -4091,9 +4103,9 @@ function applyBoardSize(pct, options = {}) {
         output.title = "Requested " + requested + "%; board target " + target + " px";
     }
 
-    // CSS owns the width through one variable. Writing pixel !important inline
-    // values here was ineffective against the later !important rules in style.css.
+    // This custom property is the sole CSS input for the rendered board size.
     document.documentElement.style.setProperty("--cvt-board-target", target + "px");
+    document.documentElement.style.setProperty("--cvt-board-wrapper-target", (target + 56) + "px");
     if (board) {
         board.style.removeProperty("width");
         board.style.removeProperty("height");
@@ -4119,8 +4131,21 @@ function applyBoardSize(pct, options = {}) {
         button.setAttribute("aria-pressed", String(selected));
     });
     if (!options.transient) save(KEYS.boardSize, requested);
-    const actual = Math.round(board?.getBoundingClientRect().width || target);
-    return { percent: requested, pixels: actual, target, available };
+
+    // Validate what the browser actually laid out, then correct once after the
+    // cascade/layout pass. The returned pixels always come from the rendered box.
+    const readActual = () => Math.round(board?.getBoundingClientRect().width || 0);
+    const actualBefore = readActual();
+    if (board && actualBefore > 0 && Math.abs(actualBefore - target) > 2) {
+        board.style.setProperty("width", target + "px", "important");
+        board.style.setProperty("height", target + "px", "important");
+    }
+    const actual = readActual();
+    if (output) {
+        output.dataset.renderedPixels = String(actual || target);
+        output.title = "Requested " + requested + "%; rendered board " + (actual || target) + " px";
+    }
+    return { percent: requested, pixels: actual || target, target, available, actualBefore };
 }
 function setBoardSize(pct, options = {}) {
     return applyBoardSize(pct, options);
