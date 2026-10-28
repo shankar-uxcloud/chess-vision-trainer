@@ -82,3 +82,13 @@ test("fit mode has a distinct persisted mode bit and presets do not overwrite tr
  assert.match(app, /save\(KEYS\.boardSize, requested\)/);
  assert.match(app, /markSettingsCustomized\(\)/);
 });
+
+test("available size is measured from the stable board section instead of the self-sizing wrapper", () => {
+ const fs = require("node:fs");
+ const path = require("node:path");
+ const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+ const measure = app.slice(app.indexOf("function measureBoardMax"), app.indexOf("function applyBoardSize"));
+ assert.match(measure, /section\?\.getBoundingClientRect\(\)/);
+ assert.doesNotMatch(measure, /middleRect\?\.width/);
+ assert.match(app, /save\("cvt-board-fit-v1", shouldFitBoard\)/);
+});
