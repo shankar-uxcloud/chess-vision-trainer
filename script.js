@@ -4156,7 +4156,7 @@ function markSettingsCustomized() {
 function fitBoardToScreen() {
     const max = measureBoardMax();
     const baseline = 480;
-    const pct = Math.max(60, Math.min(130, Math.floor((max / baseline * 100) / 5) * 5));
+    const pct = 100;
     const result = setBoardSize(pct, { fit: true });
     markSettingsCustomized();
     const output = $("boardSizeValue");
