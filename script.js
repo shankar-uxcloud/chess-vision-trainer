@@ -4130,7 +4130,8 @@ function applyRecommendedProfile(name, options = {}) {
     if (name === "performance") setBoardSize(100, { fit: true, transient: true });
     if (profile.animations) document.body.classList.remove("cvt-reduced-effects"); else document.body.classList.add("cvt-reduced-effects");
     save("cvt-settings-profile-v1", name);
-    if (name !== "performance") save(KEYS.boardSize, profile.size);
+    if (name === "performance") { save(KEYS.boardSize, 100); }
+    else save(KEYS.boardSize, profile.size);
     save("cvt-settings-animations-v1", profile.animations);
     renderSettingsProfile();
     const status = $("settingsProfileStatus");
@@ -4192,8 +4193,13 @@ function restoreSettingsDefaults() {
     game.volume = 0.6; save(KEYS.volume, game.volume); save(KEYS.sound, true); save(KEYS.ticks, true);
     if (!game.running) setPerspective("white");
     $("flipToggle").checked = false;
+    document.body.classList.remove("cvt-reduced-effects");
+    document.body.dataset.reduceMotion = "false";
+    save("cvt-settings-animations-v1", true);
+    save("cvt-settings-profile-v1", "balanced");
+    activeSettingsProfile = "balanced";
     setBoardSize(100);
-    applyRecommendedProfile("balanced", { silent: true });
+    renderSettingsProfile();
     if (typeof toast === "function") toast("Settings restored. Training history is unchanged.");
 }
 function setupSettings() {
