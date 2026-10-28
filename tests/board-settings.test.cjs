@@ -35,7 +35,7 @@ test("production board sizing uses one winning CSS variable and removes conflict
  assert.match(app,/document\.documentElement\.style\.setProperty\("\-\-cvt-board-target", target \+ "px"\)/);
  assert.match(app,/board\.style\.removeProperty\("width"\)/);
  assert.match(app,/board\.style\.removeProperty\("height"\)/);
- assert.match(css,/BOARD SIZE CONTROL CASCADE OVERRIDE/);
+ assert.match(css,/The board itself gets an explicit square size/);
  assert.match(css,/#chessboard \{[\s\S]*?width: var\(--cvt-board-target/);
  assert.match(mainCss,/\.training-layout \.training-board-panel \.chessboard \{[\s\S]*?width: 100% !important/);
 });
