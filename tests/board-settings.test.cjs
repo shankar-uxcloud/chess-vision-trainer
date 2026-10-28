@@ -34,8 +34,9 @@ test("production board sizing source applies requested size to the actual chessb
  assert.match(app,/board\.style\.height = target \+ "px"/);
  assert.match(app,/board\.style\.gridTemplateColumns = "repeat\(8, minmax\(0, 1fr\)\)"/);
  assert.doesNotMatch(app,/new ResizeObserver\(/);
- assert.doesNotMatch(css,/training-board-panel #chessboard \{ width:100% !important/);
- assert.doesNotMatch(css,/training-board-panel \.board-wrapper \{ width:100% !important/);
+ assert.match(css,/BOARD SIZE CONTROL CASCADE OVERRIDE/);
+ assert.match(css,/#chessboard \{[\s\S]*?width: var\(--cvt-board-target/);
+ assert.match(css,/board-wrapper \{[\s\S]*?width: calc\(var\(--cvt-board-target/);
 });
 test("presets map to visibly increasing target widths on the same available column",()=>{
  const available=640;
