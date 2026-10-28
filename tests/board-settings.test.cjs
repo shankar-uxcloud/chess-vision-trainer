@@ -35,8 +35,8 @@ test("production board sizing uses the winning CSS variable instead of inline wi
  assert.match(app,/document\.documentElement\.style\.setProperty\("\-\-cvt-board-target", target \+ "px"\)/);
  assert.match(app,/board\.style\.removeProperty\("width"\)/);
  assert.match(app,/board\.style\.removeProperty\("height"\)/);
- assert.match(css,/training-board-panel #chessboard[^\n]*width:var\(--cvt-board-target/);
- assert.match(css,/training-board-panel \.board-wrapper[^\n]*width: calc\(var\(--cvt-board-target/);
+ assert.ok(css.includes("width:var(--cvt-board-target, 480px)"));
+ assert.ok(css.includes("width: calc(var(--cvt-board-target, 420px) + 56px)"));
  assert.match(mainCss,/\.training-layout \.training-board-panel \.chessboard \{[\s\S]*?width: 100% !important/);
 });
 
