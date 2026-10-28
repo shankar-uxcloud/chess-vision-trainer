@@ -4044,7 +4044,7 @@ function setBoardTheme(t) {
 }
 function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $("labelsToggle").checked = on; save(KEYS.labels, on); }
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
-const BOARD_SIZE_PRESETS = { small: 70, medium: 85, large: 100, "extra-large": 115, maximum: 130 };
+const BOARD_SIZE_PRESETS = window.CVTBoardSettingsCore?.PRESETS || { small: 70, medium: 85, large: 100, "extra-large": 115, maximum: 130 };
 const BOARD_PROFILES = {
     balanced: { size: 100, theme: "emerald", labels: false, coords: true, pieces: false, sound: true, ticks: true, animations: true, interfaceTheme: "light" },
     focus: { size: 115, theme: "midnight", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" },
@@ -4070,7 +4070,7 @@ function measureBoardMax() {
 function setBoardSize(pct, options = {}) {
     pct = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
     const maxFit = measureBoardMax();
-    const target = Math.max(160, Math.round(maxFit * pct / 100));
+    const target = Math.max(160, Math.round(window.CVTBoardSettingsCore?.computeTarget(maxFit, pct, fit) ?? (fit ? maxFit : maxFit * 0.78 * pct / 100)));
     const wrapper = $("boardWrapper");
     const middle = wrapper?.querySelector(".board-middle");
     const board = $("chessboard");
@@ -4127,6 +4127,7 @@ function applyRecommendedProfile(name, options = {}) {
     activeSettingsProfile = name;
     document.body.dataset.settingsProfile = name;
     document.body.dataset.reduceMotion = profile.animations ? "false" : "true";
+    const animationToggle = $("animationsToggle"); if (animationToggle) animationToggle.checked = profile.animations;
     save("cvt-settings-animations-v1", profile.animations);
     setTheme(profile.interfaceTheme);
     setBoardTheme(profile.theme);
@@ -4142,8 +4143,8 @@ function applyRecommendedProfile(name, options = {}) {
     document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
     if (name === "performance") {
         // Fit is a layout calculation, while the user's saved slider preference remains reset to 100%.
-        setBoardSize(100, { fit: true, transient: true });
-        save(KEYS.boardSize, 100);
+        setBoardSize(130, { fit: true, transient: true });
+        save(KEYS.boardSize, 130);
     } else {
         setBoardSize(profile.size);
     }
@@ -4176,7 +4177,7 @@ function markSettingsCustomized() {
 function fitBoardToScreen() {
     // The profile's scale cannot exceed the measured board column; fit therefore
     // selects 100%, and the target is clipped to the real available section width.
-    const result = setBoardSize(100, { fit: true });
+    const result = setBoardSize(130, { fit: true });
     markSettingsCustomized();
     const output = $("boardSizeValue");
     if (output) {
@@ -4189,7 +4190,7 @@ function fitBoardToScreen() {
 function bindBoardAutoFit() {
     if (settingsResizeHandlerBound) return;
     settingsResizeHandlerBound = true;
-    const rerender = () => setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true, transient: true });
+    const rerender = () => setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: document.body.dataset.settingsProfile === "performance", transient: true });
     window.addEventListener("resize", rerender, { passive: true });
     window.addEventListener("orientationchange", () => window.setTimeout(rerender, 120), { passive: true });
     if ("ResizeObserver" in window) {
@@ -4201,7 +4202,7 @@ function bindBoardAutoFit() {
                     const pct = Number(load(KEYS.boardSize, 100)) || 100;
                     const desired = Math.round(measureBoardMax() * pct / 100);
                     const current = Math.round($("chessboard")?.getBoundingClientRect().width || 0);
-                    if (Math.abs(desired - current) > 2) setBoardSize(pct, { fit: true, transient: true });
+                    if (Math.abs(desired - current) > 2) setBoardSize(pct, { fit: document.body.dataset.settingsProfile === "performance", transient: true });
                 }
             });
             settingsResizeObserver.observe(section);
@@ -4227,6 +4228,7 @@ function restoreSettingsDefaults() {
     $("flipToggle").checked = false;
     document.body.classList.remove("cvt-reduced-effects");
     document.body.dataset.reduceMotion = "false";
+    const animationToggle = $("animationsToggle"); if (animationToggle) animationToggle.checked = true;
     save("cvt-settings-animations-v1", true);
     activeSettingsProfile = "balanced";
     document.body.dataset.settingsProfile = "balanced";
@@ -4262,6 +4264,7 @@ function setupSettings() {
     $("soundToggle").addEventListener("change", e => { game.sound = e.target.checked; save(KEYS.sound, game.sound); markSettingsCustomized(); if (game.sound) playSound("correct"); toast(game.sound ? "Sound on." : "Sound off."); });
     $("volumeRange").addEventListener("input", e => { game.volume = Number(e.target.value)/100; save(KEYS.volume, game.volume); markSettingsCustomized(); });
     $("ticksToggle").addEventListener("change", e => { game.ticks = e.target.checked; save(KEYS.ticks, game.ticks); markSettingsCustomized(); toast(game.ticks ? "Ticks on." : "Ticks off."); });
+    $("animationsToggle")?.addEventListener("change", e => { const enabled = e.target.checked; document.body.classList.toggle("cvt-reduced-effects", !enabled); document.body.dataset.reduceMotion = enabled ? "false" : "true"; save("cvt-settings-animations-v1", enabled); markSettingsCustomized(); toast(enabled ? "Animations on." : "Animations reduced."); });
     $("adaptiveToggle").addEventListener("change", e => {
         adaptiveEnabled = e.target.checked;
         save(KEYS.adaptive, adaptiveEnabled);
@@ -4740,7 +4743,7 @@ function init() {
     setBoardTheme(load(KEYS.board, "emerald"));
     setLabels(load(KEYS.labels, false));
     setCoords(load(KEYS.coords, true) !== false);
-    setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true, transient: true });
+    setBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { transient: true });
 
     game.piecesEnabled = load(KEYS.pieces, false) === true;
     const pt = $("piecesToggle"); if (pt) pt.checked = game.piecesEnabled;
@@ -4804,6 +4807,7 @@ function init() {
         document.body.dataset.settingsProfile = activeSettingsProfile;
         document.body.dataset.reduceMotion = load("cvt-settings-animations-v1", true) ? "false" : "true";
         document.body.classList.toggle("cvt-reduced-effects", document.body.dataset.reduceMotion === "true");
+        const animationToggle = $("animationsToggle"); if (animationToggle) animationToggle.checked = document.body.dataset.reduceMotion !== "true";
         renderSettingsProfile();
     } else {
         activeSettingsProfile = "balanced";
