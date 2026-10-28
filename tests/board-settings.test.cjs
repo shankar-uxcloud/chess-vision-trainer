@@ -24,3 +24,31 @@ test("saved setting validation rejects invalid names and preserves safe defaults
  const p=core.validatePreferences({size:999,profile:"hacker",interfaceTheme:"bad",boardTheme:"bad",coords:false,sound:false});
  assert.equal(p.size,130);assert.equal(p.profile,"balanced");assert.equal(p.interfaceTheme,"light");assert.equal(p.boardTheme,"emerald");assert.equal(p.coords,false);assert.equal(p.sound,false);
 });
+
+test("production board sizing source applies requested size to the actual chessboard",()=>{
+ const fs=require("node:fs");
+ const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
+ const css=fs.readFileSync(require("node:path").join(__dirname,"..","board-settings.css"),"utf8");
+ assert.match(app,/function applyBoardSize\(pct, options = \{\}\)/);
+ assert.match(app,/board\.style\.width = target \+ "px"/);
+ assert.match(app,/board\.style\.height = target \+ "px"/);
+ assert.match(app,/board\.style\.gridTemplateColumns = "repeat\(8, minmax\(0, 1fr\)\)"/);
+ assert.doesNotMatch(app,/new ResizeObserver\(/);
+ assert.doesNotMatch(css,/training-board-panel #chessboard \{ width:100% !important/);
+ assert.doesNotMatch(css,/training-board-panel \.board-wrapper \{ width:100% !important/);
+});
+test("presets map to visibly increasing target widths on the same available column",()=>{
+ const available=640;
+ const sizes=[70,85,100,115,130].map(p=>Math.min(available,Math.round(available*p/100)));
+ assert.deepEqual(sizes,[448,544,640,640,640]);
+ assert.ok(sizes[1]>sizes[0]);
+ assert.ok(sizes[2]>sizes[1]);
+});
+test("recommended balanced and focus sizes differ and performance uses fit",()=>{
+ const fs=require("node:fs");
+ const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
+ assert.match(app,/balanced: \{ size: 85/);
+ assert.match(app,/focus: \{ size: 115/);
+ assert.match(app,/applyBoardSize\(chosenSize, \{ fit: name === "performance"/);
+ assert.match(app,/load\("cvt-board-fit-v1", false\) === true/);
+});
