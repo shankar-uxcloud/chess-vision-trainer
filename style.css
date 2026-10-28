@@ -7314,3 +7314,38 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
 .weekly-how-panel p{margin:0;color:var(--text-2);font-size:11px;line-height:1.7}
 @media(max-width:1000px){.weekly-content-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.weekly-hero{grid-template-columns:1fr;padding:22px}.weekly-hero-art{min-height:150px}.weekly-orbit{width:145px;height:145px}.weekly-trophy{font-size:90px}.weekly-stats-grid{gap:8px}.weekly-stat{padding:12px}.weekly-stat strong{font-size:22px}.weekly-stat-label{font-size:8px}.weekly-stat small{font-size:9px}.weekly-challenge-panel,.weekly-leaderboard-panel{padding:15px}.weekly-how-panel{align-items:flex-start;flex-wrap:wrap;padding:15px}.weekly-how-panel>div:nth-child(2){flex-basis:calc(100% - 60px)}.weekly-how-panel>button{width:100%}.weekly-leader-row{grid-template-columns:22px 32px minmax(0,1fr);gap:8px}.weekly-player-avatar{width:32px;height:32px}.weekly-player-points{grid-column:3;justify-self:start}}
+
+
+/* ===== BOARD SIZE CONTROL CASCADE OVERRIDE (single source: applyBoardSize) ===== */
+body[data-view="training"] .training-layout .training-board-panel .board-wrapper {
+    width: calc(var(--cvt-board-target, 420px) + 56px) !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    flex: 0 1 auto !important;
+}
+body[data-view="training"] .training-layout .training-board-panel .board-middle {
+    width: 100% !important;
+    grid-template-columns: 22px minmax(0, 1fr) 22px !important;
+    gap: 6px !important;
+}
+body[data-view="training"] .training-layout .training-board-panel #chessboard {
+    width: var(--cvt-board-target, 420px) !important;
+    height: var(--cvt-board-target, 420px) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(8, minmax(0, 1fr)) !important;
+    flex: 0 1 auto !important;
+}
+@media (max-width: 720px) {
+    body[data-view="training"] .training-layout .training-board-panel .board-wrapper {
+        width: min(calc(var(--cvt-board-target, 420px) + 56px), 100%) !important;
+    }
+    body[data-view="training"] .training-layout .training-board-panel #chessboard {
+        width: min(var(--cvt-board-target, 420px), 100%) !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
+    }
+}
