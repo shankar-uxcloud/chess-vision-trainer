@@ -130,7 +130,7 @@ test("responsive viewports keep the board square and inside the viewport", async
 });
 
 test("orientation changes recalculate Fit to Screen without distorting the board", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await enterTraining(page);
   await navigateTo(page, "settings");
   await page.locator("#fitBoardBtn").click();
