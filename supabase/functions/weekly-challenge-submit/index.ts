@@ -161,6 +161,7 @@ Deno.serve(async (request: Request) => {
     points: totals.points,
     sessions: totals.sessions,
     correct: totals.correct,
+    score_version: 1,
     updated_at: new Date().toISOString()
   }, { onConflict: "user_id,week_key" });
   if (boardError) return json({ ok: false, message: "Could not update the leaderboard." }, 500);
