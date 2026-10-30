@@ -43,11 +43,11 @@
   const mode=["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom";
   const answers=Array.isArray(answerEvents)?answerEvents.filter(event=>
    event&&typeof event==="object"&&event.sessionId===id&&event.mode===mode&&
-   typeof event.correct==="boolean"&&typeof event.targetSquare==="string"&&/^[a-h][1-8]$/.test(event.targetSquare)&&
+   typeof event.correct==="boolean"&&typeof event.countsForScore==="boolean"&&typeof event.targetSquare==="string"&&/^[a-h][1-8]$/.test(event.targetSquare)&&
    Number.isFinite(Number(event.reactionTime))&&Number(event.reactionTime)>=0&&
    typeof event.timestamp==="string"&&Number.isFinite(Date.parse(event.timestamp))
   ).slice(-10000).map(event=>({
-   sessionId:id,mode,targetSquare:event.targetSquare,correct:event.correct,
+   sessionId:id,mode,targetSquare:event.targetSquare,correct:event.correct,countsForScore:event.countsForScore,
    reactionTime:Math.min(3600000,Math.round(Number(event.reactionTime))),timestamp:event.timestamp
   })):[];
   if(answers.length)current.pendingSessions.push({sessionId:id,mode,answers});
