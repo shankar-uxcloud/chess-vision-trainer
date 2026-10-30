@@ -82,6 +82,9 @@ test("all four interface themes remain selectable", async ({ page }) => {
     await page.locator("#appearanceTheme").selectOption(theme);
     await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
   }
+  await activateTrainingAndWait(page);
+  const size = await measureBoard(page);
+  expect(size.width).toBe(size.height);
 });
 
 test("all eight core training modes remain selectable", async ({ page }) => {
@@ -93,8 +96,12 @@ test("all eight core training modes remain selectable", async ({ page }) => {
     ["custom", "Custom Practice"], ["mindpalace", "Mind Palace"]
   ];
   for (const [mode, title] of modes) {
+    await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
     await page.locator(`.mode-btn[data-mode="${mode}"]`).click();
+    await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
     await expect(page.locator("#trainingTitle")).toHaveText(title);
+    const size = await measureBoard(page);
+    expect(size.width).toBe(size.height);
   }
 });
 
@@ -175,4 +182,26 @@ test("primary application sections remain routable in guest mode", async ({ page
     await expect(page.locator("body")).toHaveAttribute("data-view", view);
     await expect(page.locator(`.view[data-view="${view}"]`)).toHaveClass(/active/);
   }
+});
+
+test("board size and Fit to Screen preference survive a browser reload", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await enterTraining(page);
+  await page.evaluate(() => window.setView("settings"));
+  await page.locator('[data-board-preset="maximum"]').click();
+  await activateTrainingAndWait(page);
+  const presetBefore = await measureBoard(page);
+  await page.evaluate(() => window.setView("settings"));
+  await page.locator("#fitBoardBtn").click();
+  await activateTrainingAndWait(page);
+  const fitBefore = await measureBoard(page);
+  expect(fitBefore.width).toBeGreaterThanOrEqual(presetBefore.width);
+
+  await page.reload();
+  await page.waitForSelector("#chessboard");
+  await activateTrainingAndWait(page);
+  const fitAfter = await measureBoard(page);
+  expect(fitAfter.width).toBe(fitBefore.width);
+  expect(fitAfter.height).toBe(fitBefore.height);
+  expect(await page.evaluate(() => localStorage.getItem("cvt-board-fit-v1"))).toBe("true");
 });
