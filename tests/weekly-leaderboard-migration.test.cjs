@@ -30,6 +30,7 @@ test("security migration removes authenticated client write policies and grants 
  assert.match(secureSql,/drop policy if exists "Players can update their own weekly score"/i);
  assert.match(secureSql,/revoke insert, update, delete on public\.cvt_weekly_leaderboard from anon, authenticated/i);
  assert.match(secureSql,/grant select on public\.cvt_weekly_leaderboard to authenticated/i);
+ assert.match(secureSql,/add column if not exists score_version integer not null default 0/i);
 });
 
 test("weekly session ledger deduplicates by user and session and is not client writable",()=>{
