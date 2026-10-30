@@ -144,10 +144,13 @@
                 ADAPTIVE.has(s.adaptiveIntensity), "Backup contains invalid settings.");
             const widget = s.musicWidget === undefined ? { x: 0, y: 0 } : s.musicWidget;
             assert(isObject(widget) && finite(widget.x) && finite(widget.y), "Backup contains invalid music widget position.");
+            if (s.boardFit !== undefined) assert(typeof s.boardFit === "boolean", "Backup contains invalid Fit to Screen preference.");
+            if (s.settingsProfile !== undefined) assert(["balanced", "focus", "performance", "custom"].includes(s.settingsProfile), "Backup contains invalid recommended profile.");
+            if (s.animations !== undefined) assert(typeof s.animations === "boolean", "Backup contains invalid animation preference.");
             result.settings = { ...s,
                 volume: Math.min(1, Math.max(0, s.volume)),
                 musicVolume: Math.min(1, Math.max(0, s.musicVolume)),
-                boardSize: Math.min(150, Math.max(60, s.boardSize)),
+                boardSize: Math.min(130, Math.max(60, s.boardSize)),
                 musicWidget: { x: Math.min(10000, Math.max(-10000, widget.x)), y: Math.min(10000, Math.max(-10000, widget.y)) }
             };
         }
