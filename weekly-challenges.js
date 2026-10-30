@@ -40,8 +40,6 @@
   const points=scoreSession(session);
   current.points+=points;current.sessions++;current.correct+=Math.max(0,Math.floor(Number(session.correct)||0));
   current.sessionIds.push(id);current.sessionIds=current.sessionIds.slice(-100);
-  const accuracy=Number(session.accuracy);
-  const duration=Number(session.duration);
   const completedAt=session.date||session.completedAt||new Date().toISOString();
   const mode=["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom";
   const answers=Array.isArray(answerEvents)?answerEvents.filter(event=>
