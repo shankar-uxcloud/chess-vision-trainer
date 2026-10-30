@@ -36,7 +36,7 @@ test("clamps bounded settings to safe ranges", () => {
   const clean = validateBackup(data);
   assert.equal(clean.settings.volume, 1);
   assert.equal(clean.settings.musicVolume, 0);
-  assert.equal(clean.settings.boardSize, 150);
+  assert.equal(clean.settings.boardSize, 130);
 });
 test("preserves a valid exported daily challenge structure", () => {
   const data = baseBackup();
@@ -100,4 +100,30 @@ test("keeps optional history flags strictly boolean", () => {
   const invalid = baseBackup();
   invalid.history[0].official = "true";
   assert.throws(() => validateBackup(invalid), /invalid session history/i);
+});
+
+test("preserves and validates optional board sizing preferences in backup files", () => {
+  const data = baseBackup();
+  data.settings.boardFit = true;
+  data.settings.settingsProfile = "performance";
+  data.settings.animations = false;
+  const clean = validateBackup(data);
+  assert.equal(clean.settings.boardFit, true);
+  assert.equal(clean.settings.settingsProfile, "performance");
+  assert.equal(clean.settings.animations, false);
+
+  const invalid = baseBackup();
+  invalid.settings.settingsProfile = "unknown";
+  assert.throws(() => validateBackup(invalid), /recommended profile/i);
+
+  const invalidFit = baseBackup();
+  invalidFit.settings.boardFit = "yes";
+  assert.throws(() => validateBackup(invalidFit), /Fit to Screen/i);
+});
+
+test("keeps legacy backup settings compatible when new optional fields are absent", () => {
+  const clean = validateBackup(baseBackup());
+  assert.equal(Object.hasOwn(clean.settings, "boardFit"), false);
+  assert.equal(Object.hasOwn(clean.settings, "settingsProfile"), false);
+  assert.equal(Object.hasOwn(clean.settings, "animations"), false);
 });
