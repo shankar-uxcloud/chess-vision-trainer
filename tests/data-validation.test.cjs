@@ -127,3 +127,12 @@ test("keeps legacy backup settings compatible when new optional fields are absen
   assert.equal(Object.hasOwn(clean.settings, "settingsProfile"), false);
   assert.equal(Object.hasOwn(clean.settings, "animations"), false);
 });
+
+test("preserves and validates scored versus intermediate answer event flags", () => {
+  const data = baseBackup();
+  data.answerRecords[0].countsForScore = false;
+  assert.equal(validateBackup(data).answerRecords[0].countsForScore, false);
+  const invalid = baseBackup();
+  invalid.answerRecords[0].countsForScore = "false";
+  assert.throws(() => validateBackup(invalid), /invalid answer records/i);
+});
