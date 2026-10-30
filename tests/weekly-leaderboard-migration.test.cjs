@@ -40,8 +40,10 @@ test("weekly session ledger deduplicates by user and session and is not client w
 
 test("Edge Function derives the authenticated user and calculates points on the server",()=>{
  assert.match(edgeFunction,/auth\.getUser\(token\)/);
- assert.match(edgeFunction,/function calculatePoints\(session: any\)/);
+ assert.match(edgeFunction,/function calculateMetrics\(session: any\)/);
+ assert.match(edgeFunction,/answers\.filter\(answer => answer\.correct\)\.length/);
+ assert.match(edgeFunction,/function calculatePoints\(metrics: any\)/);
  assert.match(edgeFunction,/SUPABASE_SERVICE_ROLE_KEY/);
  assert.match(edgeFunction,/ignoreDuplicates: true/);
- assert.doesNotMatch(edgeFunction,/body\.user_id|body\.points/);
+ assert.doesNotMatch(edgeFunction,/body\.user_id|body\.points|body\.correct|body\.accuracy|body\.bestStreak|body\.durationSeconds/);
 });
