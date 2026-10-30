@@ -47,14 +47,14 @@ function validSession(value: any) {
       typeof answer.targetSquare === "string" && /^[a-h][1-8]$/.test(answer.targetSquare) &&
       typeof answer.reactionTime === "number" && Number.isFinite(answer.reactionTime) &&
       answer.reactionTime >= 0 && answer.reactionTime <= 3600000 &&
-      Number.isFinite(timestamp) && timestamp <= now + 300000 && timestamp >= now - 86400000;
+      Number.isFinite(timestamp) && timestamp <= now + 300000 && timestamp >= now - 8 * 86400000;
   });
 }
 
 function calculateMetrics(session: any) {
   const answers = [...session.answers].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const correct = answers.filter(answer => answer.correct).length;
-  const accuracy = Math.round(correct / answers.length * 10000) / 100;
+  const accuracy = Math.round(correct / answers.length * 100);
   let streak = 0;
   let bestStreak = 0;
   for (const answer of answers) {
