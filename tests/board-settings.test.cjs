@@ -92,3 +92,17 @@ test("available size is measured from the stable board section instead of the se
  assert.doesNotMatch(measure, /middleRect\?\.width/);
  assert.match(app, /save\("cvt-board-fit-v1", shouldFitBoard\)/);
 });
+
+test("board sizing calculation reserves coordinate columns and always constrains the square to available viewport",()=>{
+ const fs=require("node:fs"),path=require("node:path");
+ const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
+ const css=fs.readFileSync(path.join(__dirname,"..","style.css"),"utf8");
+ const measure=app.slice(app.indexOf("function measureBoardMax"),app.indexOf("function applyBoardSize"));
+ assert.match(measure,/panel\?\.getBoundingClientRect\(\)/);
+ assert.match(measure,/const gutters = 22 \+ 22 \+ 12/);
+ assert.match(app,/renderedWidth/);
+ assert.match(app,/renderedHeight/);
+ assert.match(app,/new CustomEvent\("cvt:board-size-applied"/);
+ assert.match(css,/SINGLE SOURCE OF TRUTH: RESPONSIVE TRAINING BOARD DIMENSIONS/);
+ assert.match(css,/min-width: var\(--cvt-board-target, 420px\) !important/);
+});
