@@ -124,3 +124,49 @@ test("orientation changes recalculate Fit to Screen without distorting the board
   const portrait = await measureBoard(page);
   expect(portrait.width).toBe(portrait.height);
 });
+
+test("backup export and import preserve board, theme and recommended settings", async ({ page }) => {
+  await enterTraining(page);
+  await page.evaluate(() => window.setView("settings"));
+  await page.locator("#appearanceTheme").selectOption("neon");
+  await page.locator("#boardTheme").selectOption("ice");
+  await page.locator("#boardSize").evaluate(el => { el.value = "115"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+  await page.locator("#animationsToggle").uncheck();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#exportBtn").click()
+  ]);
+  const filePath = await download.path();
+  const fs = require("node:fs");
+  const backup = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  expect(backup.settings.theme).toBe("neon");
+  expect(backup.settings.board).toBe("ice");
+  expect(backup.settings.boardSize).toBe(115);
+  expect(backup.settings.boardFit).toBe(false);
+  expect(backup.settings.settingsProfile).toBe("custom");
+  expect(backup.settings.animations).toBe(false);
+
+  await page.locator("#importFile").setInputFiles(filePath);
+  await expect(page.locator("#toastMessage")).toContainText("Backup imported successfully.");
+  const saved = await page.evaluate(() => ({
+    theme: localStorage.getItem("cvt-theme-v3"),
+    board: localStorage.getItem("cvt-board-v3"),
+    size: localStorage.getItem("cvt-boardsize-v3"),
+    fit: localStorage.getItem("cvt-board-fit-v1"),
+    profile: localStorage.getItem("cvt-settings-profile-v1"),
+    animations: localStorage.getItem("cvt-settings-animations-v1")
+  }));
+  expect(saved).toEqual({
+    theme: "neon", board: "ice", size: "115", fit: "false",
+    profile: "custom", animations: "false"
+  });
+});
+
+test("primary application sections remain routable in guest mode", async ({ page }) => {
+  await enterTraining(page);
+  for (const view of ["dashboard", "journey", "training", "mindpalace", "achievements", "daily", "analytics", "profile", "tactics", "blindfold", "weekly", "coach", "settings"]) {
+    await page.evaluate(name => window.setView(name), view);
+    await expect(page.locator("body")).toHaveAttribute("data-view", view);
+    await expect(page.locator(`.view[data-view="${view}"]`)).toHaveClass(/active/);
+  }
+});
