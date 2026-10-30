@@ -23,6 +23,10 @@ alter table public.cvt_weekly_challenge_sessions enable row level security;
 revoke all on public.cvt_weekly_challenge_sessions from anon, authenticated;
 grant select, insert, update, delete on public.cvt_weekly_challenge_sessions to service_role;
 
+-- Keep old aggregate rows for compatibility, but do not rank them until rebuilt from answer events.
+alter table public.cvt_weekly_leaderboard
+  add column if not exists score_version integer not null default 0 check (score_version in (0, 1));
+
 -- Authenticated users may read public leaderboard rows, but cannot write their own totals.
 drop policy if exists "Players can insert their own weekly score" on public.cvt_weekly_leaderboard;
 drop policy if exists "Players can update their own weekly score" on public.cvt_weekly_leaderboard;
