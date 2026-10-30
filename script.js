@@ -3449,6 +3449,7 @@ function startDailySession(practice) {
             const dateKey = dailyDateKey();
             dailyStateFor(dateKey);
             resetSession();
+            game.sessionId = "daily-" + dateKey + "-" + Math.random().toString(36).slice(2, 10);
             game.mode = "daily";
             game.dailyActive = true;
             game.dailyPractice = !!practice;
@@ -3654,7 +3655,7 @@ function finishSession() {
 
     history.unshift(result);
     history = history.slice(0, 50);
-    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result, answerRecords.filter(record => record.sessionId === result.sessionId));
 
     save(KEYS.stats, stats);
     save(KEYS.history, history);
@@ -3725,6 +3726,7 @@ function finishDailyChallenge() {
     const gained = game.correct * 4 + (official ? 20 : 0);
     addXp(gained);
     const result = {
+        sessionId: game.sessionId,
         correct: game.correct, mistakes: game.mistakes, accuracy: attempt.accuracy,
         bestStreak: game.bestStreak, duration: completionTime, mode: "daily",
         perspective: "white", xp: gained, score: attempt.score,
