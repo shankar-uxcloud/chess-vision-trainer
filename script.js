@@ -319,11 +319,6 @@ function renderMPPosition(position) {
         el.setAttribute("aria-hidden", "true");
         sqEl.appendChild(el);
     });
-    $("adaptiveIntensity").addEventListener("change", e => {
-        adaptiveIntensity = e.target.value;
-        save(KEYS.adaptiveIntensity, adaptiveIntensity);
-        toast("Adaptive intensity: " + e.target.options[e.target.selectedIndex].text + ".");
-    });
 }
 
 /* ---------- UI updaters ---------- */
@@ -4047,12 +4042,10 @@ function setBoardTheme(t) {
 }
 function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $("labelsToggle").checked = on; save(KEYS.labels, on); }
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
-const BOARD_SIZE_PRESETS = window.CVTBoardSettingsCore?.PRESETS || { small: 70, medium: 85, large: 100, "extra-large": 115, maximum: 130 };
-const BOARD_PROFILES = {
-    balanced: { size: 85, theme: "emerald", labels: false, coords: true, pieces: false, sound: true, ticks: true, animations: true, interfaceTheme: "light" },
-    focus: { size: 115, theme: "midnight", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" },
-    performance: { size: 100, theme: "classic", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" }
-};
+const BOARD_SETTINGS_CORE = window.CVTBoardSettingsCore;
+if (!BOARD_SETTINGS_CORE) throw new Error("Board settings core failed to load.");
+const BOARD_SIZE_PRESETS = BOARD_SETTINGS_CORE.PRESETS;
+const BOARD_PROFILES = BOARD_SETTINGS_CORE.PROFILES;
 let activeSettingsProfile = load("cvt-settings-profile-v1", "balanced");
 if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)) activeSettingsProfile = "balanced";
 let settingsResizeObserver = null;
@@ -4093,7 +4086,7 @@ function applyBoardSize(pct, options = {}) {
     const requested = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
     const fit = options.fit === true;
     const available = measureBoardMax();
-    const target = Math.max(160, Math.min(available, Math.round(fit ? available : available * requested / 100)));
+    const target = BOARD_SETTINGS_CORE.computeTarget(available, requested, fit);
     const board = $("chessboard");
     const wrapper = $("boardWrapper");
     const middle = wrapper?.querySelector(".board-middle");
@@ -4142,7 +4135,7 @@ function applyBoardSize(pct, options = {}) {
         available,
         renderedWidth,
         renderedHeight,
-        fits: renderedWidth > 0 && renderedWidth === renderedHeight && renderedWidth <= available
+        fits: renderedWidth > 0 && Math.abs(renderedWidth - target) <= 1 && Math.abs(renderedHeight - target) <= 1 && renderedWidth === renderedHeight && renderedWidth <= available
     };
     if (output) {
         output.dataset.renderedWidth = String(renderedWidth);
@@ -4179,8 +4172,8 @@ function applyRecommendedProfile(name, options = {}) {
     save(KEYS.ticks, game.ticks);
     document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
 
-    const shouldFitBoard = name === "performance";
-    const chosenSize = name === "balanced" ? 85 : profile.size;
+    const shouldFitBoard = profile.fit === true;
+    const chosenSize = profile.size;
     save("cvt-board-fit-v1", shouldFitBoard);
     applyBoardSize(chosenSize, { fit: shouldFitBoard, profileName: name });
     save(KEYS.boardSize, chosenSize);
@@ -4292,6 +4285,12 @@ function setupSettings() {
     $("volumeRange").addEventListener("input", e => { game.volume = Number(e.target.value)/100; save(KEYS.volume, game.volume); markSettingsCustomized(); });
     $("ticksToggle").addEventListener("change", e => { game.ticks = e.target.checked; save(KEYS.ticks, game.ticks); markSettingsCustomized(); toast(game.ticks ? "Ticks on." : "Ticks off."); });
     $("animationsToggle")?.addEventListener("change", e => { const enabled = e.target.checked; document.body.classList.toggle("cvt-reduced-effects", !enabled); document.body.dataset.reduceMotion = enabled ? "false" : "true"; save("cvt-settings-animations-v1", enabled); markSettingsCustomized(); toast(enabled ? "Animations on." : "Animations reduced."); });
+    $("adaptiveIntensity").addEventListener("change", e => {
+        if (!["balanced", "focus", "aggressive"].includes(e.target.value)) return;
+        adaptiveIntensity = e.target.value;
+        save(KEYS.adaptiveIntensity, adaptiveIntensity);
+        toast("Adaptive intensity: " + e.target.options[e.target.selectedIndex].text + ".");
+    });
     $("adaptiveToggle").addEventListener("change", e => {
         adaptiveEnabled = e.target.checked;
         save(KEYS.adaptive, adaptiveEnabled);
