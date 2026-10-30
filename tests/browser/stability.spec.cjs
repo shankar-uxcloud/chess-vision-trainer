@@ -49,8 +49,7 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
 
   await page.evaluate(() => window.setView("settings"));
   await page.locator("#boardSize").evaluate(el => { el.value = "130"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-  await page.evaluate(() => window.setView("training"));
-  await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+  await activateTrainingAndWait(page);
   const large = await measureBoard(page);
   expect(large.width).toBeGreaterThan(small.width);
   expect(large.width).toBe(large.height);
@@ -69,8 +68,7 @@ test("recommended profiles apply their declared preferences and retain a square 
   await enterTraining(page);
   for (const profile of ["balanced", "focus", "performance"]) {
     await page.evaluate(name => window.applyRecommendedProfile(name, { silent: true }), profile);
-    await page.evaluate(() => window.setView("training"));
-    await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+    await activateTrainingAndWait(page);
     const size = await measureBoard(page);
     expect(size.width).toBe(size.height);
     expect(await page.locator("body").getAttribute("data-settings-profile")).toBe(profile);
