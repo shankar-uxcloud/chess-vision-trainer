@@ -216,3 +216,24 @@ test("board size and Fit to Screen preference survive a browser reload", async (
   expect(fitAfter.height).toBe(fitBefore.height);
   expect(await page.evaluate(() => localStorage.getItem("cvt-board-fit-v1"))).toBe("true");
 });
+
+test("training timer starts, pauses, resumes and finishes a session", async ({ page }) => {
+  await enterTraining(page);
+  await page.locator("#startBtn").click();
+  await expect(page.locator("#sessionStateText")).toHaveText("LIVE", { timeout: 10000 });
+  await page.locator("#pauseBtn").click();
+  await expect(page.locator("#pauseBtn")).toHaveText("Resume");
+  await page.locator("#pauseBtn").click();
+  await expect(page.locator("#pauseBtn")).toHaveText("Pause");
+  await page.locator("#startBtn").click();
+  await expect(page.locator("#resultsPanel")).toBeVisible();
+  await expect(page.locator("#resultXp")).toBeVisible();
+});
+
+test("daily challenge official attempt opens the seeded training flow", async ({ page }) => {
+  await enterTraining(page);
+  await navigateTo(page, "daily");
+  await page.locator("#dailyViewStartBtn").click();
+  await expect(page.locator("#trainingTitle")).toHaveText("ChessVision Daily");
+  await expect(page.locator("#countdownOverlay")).toBeVisible();
+});
