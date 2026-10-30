@@ -136,7 +136,7 @@ const squareBag = {
         function correctFlip(sq) {
             if (game.flipStep === 0) {
                 game.flipStep = 1;
-                recordAnswer(game.target, true, Date.now() - game.questionStartTime);
+                recordAnswer(game.target, true, Date.now() - game.questionStartTime, false);
                 sq.classList.add("last-correct");
                 $("targetPanel").classList.add("correct");
                 $("targetFeedback").textContent = "✓ " + game.flipStartSide.toUpperCase() + " SIDE · NOW FIND IT FROM " + (game.flipStartSide === "white" ? "BLACK" : "WHITE");
@@ -2198,12 +2198,13 @@ function answerDifficulty() {
     if (duration >= 120) return "endurance";
     return "standard";
 }
-function recordAnswer(targetSquare, correct, reactionTime) {
+function recordAnswer(targetSquare, correct, reactionTime, countsForScore = true) {
     if (!targetSquare || !FILES.includes(targetSquare[0]) || !RANKS.includes(Number(targetSquare[1]))) return;
     answerRecords.push({
         targetSquare,
         square: targetSquare,
         correct: !!correct,
+        countsForScore: countsForScore !== false,
         reactionTime: Math.max(0, Math.round(reactionTime)),
         mode: game.mode,
         perspectiveSide: getCurrentSide(),
@@ -2241,7 +2242,7 @@ function handleSquare(coord, sq) {
 function correctDual(sq) {
     if (game.dualStep === 0) {
         game.dualStep = 1;
-        recordAnswer(game.target, true, Date.now() - game.questionStartTime);
+        recordAnswer(game.target, true, Date.now() - game.questionStartTime, false);
         sq.classList.add("last-correct");
         $("targetPanel").classList.add("correct");
         $("targetFeedback").textContent = "✓ WHITE SIDE · NOW FIND IT FROM BLACK";
