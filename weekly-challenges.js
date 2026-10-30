@@ -108,10 +108,10 @@
   if(!client||!userId){renderBoard([],"Sign in and apply the leaderboard migration to enable shared rankings.");return;}
   setText("weeklyBoardFooter","Loading current season rankings…");
   try{
-   const {data,error}=await client.from(BOARD_TABLE).select("user_id,display_name,points,sessions,correct").eq("week_key",weekKey()).order("points",{ascending:false}).limit(100);
+   const {data,error}=await client.from(BOARD_TABLE).select("user_id,display_name,points,sessions,correct").eq("week_key",weekKey()).eq("score_version",1).order("points",{ascending:false}).limit(100);
    if(error)throw error;
    renderBoard(api.rankRows(data),data?.length?"Weekly rankings · "+weekKey():"No scores synced for this season yet.");
-  }catch(error){console.warn("Weekly leaderboard load failed",error);renderBoard([],"Cloud leaderboard unavailable. Apply supabase/migrations/20261026_weekly_leaderboard.sql and retry.");}
+  }catch(error){console.warn("Weekly leaderboard load failed",error);renderBoard([],"Cloud leaderboard unavailable. Apply the weekly leaderboard migrations and deploy the weekly-challenge-submit Edge Function, then retry.");}
  }
  async function sync(){
   const client=root.CVT_SUPABASE_CLIENT;
