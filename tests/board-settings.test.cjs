@@ -88,8 +88,8 @@ test("the board CSS keeps a square target and reserves coordinate gutters", () =
   const boardCss = fs.readFileSync(path.join(__dirname, "..", "board-settings.css"), "utf8");
   assert.match(css, /aspect-ratio: 1 \/ 1 !important/);
   assert.match(css, /grid-template-columns: repeat\(8, minmax\(0, 1fr\)\)/);
-  assert.match(css, /grid-template-columns: 22px minmax\\(0, var\\(--cvt-board-target/);
-  assert.doesNotMatch(boardCss, /\\.training-board-panel #chessboard/);
+  assert.match(css, /grid-template-columns: 22px minmax\(0, var\(--cvt-board-target/);
+  assert.doesNotMatch(boardCss, /\.training-board-panel #chessboard/);
 });
 
 test("backup export includes board fit, recommended profile and animation preferences", () => {
