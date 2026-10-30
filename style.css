@@ -7321,6 +7321,11 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
    Earlier layout patches are intentionally superseded here. The live board
    receives its own square width/height; its wrapper reserves coordinate gutters.
 */
+body[data-view="training"] .training-layout,
+body[data-view="training"] .training-layout .gameplay-stage {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
 body[data-view="training"] .training-layout .gameplay-stage .training-board-panel {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -7333,6 +7338,7 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
     min-width: 0 !important;
     max-width: 100% !important;
     justify-content: center !important;
+    padding-inline: 0 !important;
     box-sizing: border-box !important;
 }
 body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper {
@@ -7343,6 +7349,7 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
     min-width: 0 !important;
     margin-inline: auto !important;
     padding: 0 !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
 }
 body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-middle {
