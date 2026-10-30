@@ -53,7 +53,7 @@ test("new weekly sessions retain a bounded pending server-submission record",()=
   sessionId:"server-session-1",mode:"square",answers:[
    {sessionId:"server-session-1",mode:"square",targetSquare:"e4",correct:true,reactionTime:400,timestamp:"2026-10-26T12:00:00.000Z"},
    {sessionId:"server-session-1",mode:"square",targetSquare:"d4",correct:false,reactionTime:600,timestamp:"2026-10-26T12:00:01.000Z"}
-  ],completedAt:"2026-10-26T12:00:00.000Z"
+  ]
  });
 });
 
