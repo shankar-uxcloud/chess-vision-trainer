@@ -3865,7 +3865,7 @@ function setView(name, options = {}) {
     document.body.style.overflowY = name === "training" ? "auto" : "";
     // The board is often hidden while settings are edited. Re-measure only after
     // the training view is visible so its real layout width, not viewport guesses, is used.
-    if (name === "training") requestAnimationFrame(() => applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, { transient: true, fit: load("cvt-board-fit-v1", false) === true, profile: false }));
+    if (name === "training") requestAnimationFrame(() => requestAnimationFrame(() => applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, { transient: true, fit: load("cvt-board-fit-v1", false) === true, profile: false })));
     document.querySelectorAll(".view").forEach(view => {
         view.classList.toggle("active", view.dataset.view === name);
         if (view.dataset.view === name) view.setAttribute("aria-current", "page");
@@ -4058,30 +4058,36 @@ if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)
 let settingsResizeObserver = null;
 let settingsResizeHandlerBound = false;
 function measureBoardMax() {
-    const board = $("chessboard");
-    const panel = board?.closest(".training-board-panel");
+    const panel = $("chessboard")?.closest(".training-board-panel");
     const section = panel?.querySelector(".board-section");
     const stage = panel?.closest(".gameplay-stage");
     const viewportWidth = Math.max(280, document.documentElement.clientWidth || window.innerWidth || 1024);
     const viewportHeight = Math.max(360, window.innerHeight || 800);
     const mobile = viewportWidth <= 720;
 
-    // Never measure the target-sized wrapper itself: doing so would make a
-    // previously selected Small board shrink the "available" width permanently.
-    // The section is the stable content column that constrains every board size.
-    const sectionRect = section?.getBoundingClientRect();
+    // The board panel is the stable layout allocation in every training mode.
+    // Measure its content box; never measure #boardWrapper or a requested-size element.
     const panelRect = panel?.getBoundingClientRect();
+    const sectionRect = section?.getBoundingClientRect();
     const stageRect = stage?.getBoundingClientRect();
-    const measuredWidth = sectionRect?.width > 0
-        ? sectionRect.width - (mobile ? 44 : 56)
-        : panelRect?.width > 0
-            ? panelRect.width - (mobile ? 44 : 56)
+    const panelStyle = panel ? getComputedStyle(panel) : null;
+    const horizontalPadding = panelStyle
+        ? (parseFloat(panelStyle.paddingLeft) || 0) + (parseFloat(panelStyle.paddingRight) || 0)
+        : 0;
+    const panelContentWidth = panelRect?.width > 0
+        ? panelRect.width - horizontalPadding
+        : sectionRect?.width > 0
+            ? sectionRect.width
             : stageRect?.width > 0
-                ? stageRect.width - (mobile ? 28 : 300)
-                : viewportWidth - (mobile ? 28 : 520);
-    const heightLimit = Math.max(180, viewportHeight - (mobile ? 330 : 240));
-    const widthLimit = Math.max(160, Math.min(measuredWidth, viewportWidth - (mobile ? 24 : 40), mobile ? 560 : 680));
-    return Math.max(160, Math.floor(Math.min(widthLimit, heightLimit)));
+                ? stageRect.width
+                : viewportWidth - (mobile ? 24 : 48);
+
+    // Coordinate columns: 22px + 22px plus the two 6px gaps.
+    const gutters = 22 + 22 + 12;
+    const boardWidthRoom = Math.max(160, panelContentWidth - gutters);
+    const heightChrome = mobile ? 300 : 230;
+    const boardHeightRoom = Math.max(160, viewportHeight - heightChrome);
+    return Math.floor(Math.min(boardWidthRoom, boardHeightRoom, mobile ? 560 : 680));
 }
 function applyBoardSize(pct, options = {}) {
     const requested = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
@@ -4090,33 +4096,31 @@ function applyBoardSize(pct, options = {}) {
     const target = Math.max(160, Math.min(available, Math.round(fit ? available : available * requested / 100)));
     const board = $("chessboard");
     const wrapper = $("boardWrapper");
+    const middle = wrapper?.querySelector(".board-middle");
     const slider = $("boardSize");
     const output = $("boardSizeValue");
+
     if (slider) slider.value = String(requested);
     if (output) {
         output.value = requested + "%";
         output.textContent = requested + "%";
-        output.title = "Requested " + requested + "%; board target " + target + " px";
     }
 
-    // This custom property is the sole CSS input for the rendered board size.
+    // Both CSS variables are consumed by the single final board layout rule.
     document.documentElement.style.setProperty("--cvt-board-target", target + "px");
-    document.documentElement.style.setProperty("--cvt-board-wrapper-target", (target + 56) + "px");
+    document.documentElement.style.setProperty("--cvt-board-wrapper-target", (target + 62) + "px");
+    document.documentElement.style.setProperty("--cvt-board-middle-target", (target + 56) + "px");
+
+    // Do not leave legacy inline dimensions from older sizing implementations.
     if (board) {
-        board.style.removeProperty("width");
-        board.style.removeProperty("height");
-        board.style.removeProperty("max-width");
-        board.style.removeProperty("aspect-ratio");
-        board.style.removeProperty("grid-template-columns");
-        board.style.removeProperty("grid-template-rows");
-        board.style.setAttribute("data-rendered-size", String(target));
+        ["width", "height", "max-width", "min-width", "aspect-ratio", "grid-template-columns", "grid-template-rows"].forEach(name => board.style.removeProperty(name));
+        board.dataset.requestedSize = String(requested);
     }
     if (wrapper) {
-        wrapper.style.removeProperty("width");
-        wrapper.style.removeProperty("max-width");
-        wrapper.style.removeProperty("min-width");
-        wrapper.style.removeProperty("padding");
-        wrapper.style.removeProperty("margin-inline");
+        ["width", "height", "max-width", "min-width", "padding", "margin-inline"].forEach(name => wrapper.style.removeProperty(name));
+    }
+    if (middle) {
+        ["width", "max-width", "min-width", "grid-template-columns"].forEach(name => middle.style.removeProperty(name));
     }
 
     const scaleName = requested >= 125 ? "maximum" : requested >= 110 ? "extra-large" : requested >= 95 ? "large" : requested >= 80 ? "medium" : "small";
@@ -4128,20 +4132,28 @@ function applyBoardSize(pct, options = {}) {
     });
     if (!options.transient) save(KEYS.boardSize, requested);
 
-    // Validate what the browser actually laid out, then correct once after the
-    // cascade/layout pass. The returned pixels always come from the rendered box.
-    const readActual = () => Math.round(board?.getBoundingClientRect().width || 0);
-    const actualBefore = readActual();
-    if (board && actualBefore > 0 && Math.abs(actualBefore - target) > 2) {
-        board.style.setProperty("width", target + "px", "important");
-        board.style.setProperty("height", target + "px", "important");
-    }
-    const actual = readActual();
+    // Read the actual rendered grid after forcing style/layout calculation.
+    const rect = board?.getBoundingClientRect();
+    const renderedWidth = rect ? Math.round(rect.width) : 0;
+    const renderedHeight = rect ? Math.round(rect.height) : 0;
+    const result = {
+        percent: requested,
+        target,
+        available,
+        renderedWidth,
+        renderedHeight,
+        fits: renderedWidth > 0 && renderedWidth === renderedHeight && renderedWidth <= available
+    };
     if (output) {
-        output.dataset.renderedPixels = String(actual || target);
-        output.title = "Requested " + requested + "%; rendered board " + (actual || target) + " px";
+        output.dataset.renderedWidth = String(renderedWidth);
+        output.dataset.renderedHeight = String(renderedHeight);
+        output.title = renderedWidth
+            ? "Rendered board: " + renderedWidth + " × " + renderedHeight + " px"
+            : "Board size will be measured when Training is visible";
     }
-    return { percent: requested, pixels: actual || target, target, available, actualBefore };
+    document.body.dataset.boardSizeVerified = result.fits ? "true" : "false";
+    document.body.dispatchEvent(new CustomEvent("cvt:board-size-applied", { detail: result }));
+    return result;
 }
 function setBoardSize(pct, options = {}) {
     return applyBoardSize(pct, options);
@@ -4166,6 +4178,7 @@ function applyRecommendedProfile(name, options = {}) {
     save(KEYS.sound, game.sound);
     save(KEYS.ticks, game.ticks);
     document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
+
     const shouldFitBoard = name === "performance";
     const chosenSize = name === "balanced" ? 85 : profile.size;
     save("cvt-board-fit-v1", shouldFitBoard);
@@ -4198,16 +4211,12 @@ function markSettingsCustomized() {
     if (status) status.textContent = "Custom settings — your manual changes are saved.";
 }
 function fitBoardToScreen() {
-    // Save the fit flag alongside the percentage so training navigation and refresh restore the same layout.
-    const result = applyBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true });
     save("cvt-board-fit-v1", true);
+    const result = applyBoardSize(Number(load(KEYS.boardSize, 100)) || 100, { fit: true });
     markSettingsCustomized();
     const output = $("boardSizeValue");
-    if (output) {
-        output.textContent = result.pixels + " px";
-        output.title = "Board fitted to the available area at " + result.pixels + " pixels";
-    }
-    if (typeof toast === "function") toast("Board fitted to available screen space.");
+    if (output) output.textContent = result.renderedWidth ? result.renderedWidth + " px" : "Fit";
+    if (typeof toast === "function") toast(result.fits ? "Board fitted to available screen space." : "Board fit is pending a visible Training layout.");
 }
 function bindBoardAutoFit() {
     if (settingsResizeHandlerBound) return;
@@ -4216,9 +4225,12 @@ function bindBoardAutoFit() {
     const rerender = () => {
         window.clearTimeout(resizeTimer);
         resizeTimer = window.setTimeout(() => {
-            const pct = Number(load(KEYS.boardSize, 100)) || 100;
-            applyBoardSize(pct, { fit: load("cvt-board-fit-v1", false) === true, transient: true, profile: false });
-        }, 80);
+            applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, {
+                fit: load("cvt-board-fit-v1", false) === true,
+                transient: true,
+                profile: false
+            });
+        }, 100);
     };
     window.addEventListener("resize", rerender, { passive: true });
     window.addEventListener("orientationchange", rerender, { passive: true });
@@ -4247,18 +4259,18 @@ function restoreSettingsDefaults() {
     activeSettingsProfile = "balanced";
     document.body.dataset.settingsProfile = "balanced";
     save("cvt-settings-profile-v1", "balanced");
-    setBoardSize(85);
     save("cvt-board-fit-v1", false);
+    setBoardSize(85);
     renderSettingsProfile();
     if (typeof toast === "function") toast("Settings restored. Training history is unchanged.");
 }
 function setupSettings() {
     $("appearanceTheme").addEventListener("change", e => { setTheme(e.target.value); markSettingsCustomized(); toast("Theme: " + e.target.options[e.target.selectedIndex].text); });
     $("boardTheme").addEventListener("change", e => { setBoardTheme(e.target.value); markSettingsCustomized(); toast("Board theme updated."); });
-    $("boardSize").addEventListener("input", e => { setBoardSize(Number(e.target.value)); save("cvt-board-fit-v1", false); markSettingsCustomized(); });
+    $("boardSize").addEventListener("input", e => { save("cvt-board-fit-v1", false); setBoardSize(Number(e.target.value)); markSettingsCustomized(); });
     document.querySelectorAll("[data-board-preset]").forEach(button => button.addEventListener("click", () => {
         const pct = BOARD_SIZE_PRESETS[button.dataset.boardPreset];
-        if (pct) { setBoardSize(pct); save("cvt-board-fit-v1", false); markSettingsCustomized(); toast("Board size: " + pct + "%"); }
+        if (pct) { save("cvt-board-fit-v1", false); setBoardSize(pct); markSettingsCustomized(); toast("Board size: " + pct + "%"); }
     }));
     document.querySelectorAll("[data-settings-profile]").forEach(button => button.addEventListener("click", () => applyRecommendedProfile(button.dataset.settingsProfile)));
     $("fitBoardBtn")?.addEventListener("click", fitBoardToScreen);
@@ -4833,7 +4845,7 @@ function init() {
         renderSettingsProfile();
     }
     bindBoardAutoFit();
-    requestAnimationFrame(() => applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, { transient: true, fit: load("cvt-board-fit-v1", false) === true, profile: false }));
+    requestAnimationFrame(() => requestAnimationFrame(() => applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, { transient: true, fit: load("cvt-board-fit-v1", false) === true, profile: false })));
     setupKeyboard();
     initMindPalace();
 
