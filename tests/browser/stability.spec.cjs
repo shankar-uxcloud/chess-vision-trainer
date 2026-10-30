@@ -126,6 +126,8 @@ test("responsive viewports keep the board square and inside the viewport", async
     expect(size.width).toBe(size.height);
     expect(size.left).toBeGreaterThanOrEqual(-1);
     expect(size.right).toBeLessThanOrEqual(viewport.width + 1);
+    const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(documentWidth).toBeLessThanOrEqual(viewport.width + 1);
   }
 });
 
