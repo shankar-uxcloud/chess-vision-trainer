@@ -1,105 +1,107 @@
 "use strict";
-const test=require("node:test");
-const assert=require("node:assert/strict");
-const core=require("../board-settings-core.js");
-test("board slider values are clamped and quantized safely",()=>{
- assert.equal(core.clampPercent(77),75);
- assert.equal(core.clampPercent(500),130);
- assert.equal(core.clampPercent(-4),60);
- assert.equal(core.clampPercent("nope"),100);
-});
-test("board targets scale with requested size but never exceed available width",()=>{
- assert.equal(core.computeTarget(600,100),468);
- assert.equal(core.computeTarget(600,115),538);
- assert.equal(core.computeTarget(600,130),600);
- assert.equal(core.computeTarget(350,130),350);
- assert.equal(core.computeTarget(600,70),328);
-});
-test("fit-to-screen selects full measured available width",()=>{assert.equal(core.computeTarget(612,100,true),612);});
-test("all recommended profiles define real compatible preferences",()=>{
- for(const name of ["balanced","focus","performance"]){const p=core.PROFILES[name];assert.ok(p);assert.ok(p.size>=60&&p.size<=130);assert.ok(["dark","light","neon","heavy"].includes(p.interfaceTheme));assert.ok(["emerald","walnut","ice","rose","midnight","classic"].includes(p.theme));}
- assert.equal(core.PROFILES.focus.animations,false);assert.equal(core.PROFILES.performance.sound,false);
-});
-test("saved setting validation rejects invalid names and preserves safe defaults",()=>{
- const p=core.validatePreferences({size:999,profile:"hacker",interfaceTheme:"bad",boardTheme:"bad",coords:false,sound:false});
- assert.equal(p.size,130);assert.equal(p.profile,"balanced");assert.equal(p.interfaceTheme,"light");assert.equal(p.boardTheme,"emerald");assert.equal(p.coords,false);assert.equal(p.sound,false);
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const core = require("../board-settings-core.js");
+
+test("slider values are clamped and quantized to supported 5% steps", () => {
+  assert.equal(core.clampPercent(77), 75);
+  assert.equal(core.clampPercent(500), 130);
+  assert.equal(core.clampPercent(-4), 60);
+  assert.equal(core.clampPercent("nope"), 100);
 });
 
-test("production board sizing uses the single CSS sizing source for the live grid",()=>{
- const fs=require("node:fs");
- const path=require("node:path");
- const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
- const mainCss=fs.readFileSync(path.join(__dirname,"..","style.css"),"utf8");
- const css=fs.readFileSync(path.join(__dirname,"..","board-settings.css"),"utf8");
- assert.match(app,/function applyBoardSize\(pct, options = \{\}\)/);
- assert.match(app,/style\.setProperty\("--cvt-board-target", target \+ "px"\)/);
- assert.match(app,/const renderedWidth = rect \? Math\.round\(rect\.width\) : 0/);
- assert.match(app,/const renderedHeight = rect \? Math\.round\(rect\.height\) : 0/);
- assert.match(mainCss,/SINGLE SOURCE OF TRUTH: RESPONSIVE TRAINING BOARD DIMENSIONS/);
- assert.match(mainCss,/width: var\(--cvt-board-target, 420px\) !important/);
- assert.match(mainCss,/height: var\(--cvt-board-target, 420px\) !important/);
- assert.doesNotMatch(mainCss,/BOARD SIZE CASCADE FIX v2/);
- assert.doesNotMatch(css,/training-board-panel #chessboard[^\n]*width:100% !important/);
-});
-test("presets map to visibly increasing target widths on the same available column",()=>{
- const available=640;
- const sizes=[70,85,100,115,130].map(p=>Math.min(available,Math.round(available*p/100)));
- assert.deepEqual(sizes,[448,544,640,640,640]);
- assert.ok(sizes[1]>sizes[0]);
- assert.ok(sizes[2]>sizes[1]);
-});
-test("recommended profiles apply their settings and persist fit mode separately",()=>{
- const fs=require("node:fs");
- const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
- assert.match(app,/balanced: \{ size: 85/);
- assert.match(app,/focus: \{ size: 115/);
- assert.match(app,/const shouldFitBoard = name === "performance"/);
- assert.match(app,/applyBoardSize\(chosenSize, \{ fit: shouldFitBoard/);
- assert.match(app,/save\("cvt-board-fit-v1", shouldFitBoard\)/);
-});
-test("training view activation waits for layout visibility before measuring the board",()=>{
- const fs=require("node:fs");
- const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
- assert.match(app,/if \(name === "training"\) requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => applyBoardSize\(/);
-});
-test("render verification reads the actual board rectangle and publishes measured dimensions", () => {
- const fs=require("node:fs");
- const path=require("node:path");
- const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
- assert.match(app,/const rect = board\?\.getBoundingClientRect\(\)/);
- assert.match(app,/renderedWidth/);
- assert.match(app,/renderedHeight/);
- assert.match(app,/new CustomEvent\("cvt:board-size-applied"/);
-});
-test("fit mode has a distinct persisted mode bit and presets do not overwrite training history", () => {
- const fs = require("node:fs");
- const path = require("node:path");
- const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
- assert.match(app, /save\("cvt-board-fit-v1", true\)/);
- assert.match(app, /save\(KEYS\.boardSize, requested\)/);
- assert.match(app, /markSettingsCustomized\(\)/);
+test("all five presets produce strictly increasing targets when space is available", () => {
+  const available = 640;
+  const values = Object.values(core.PRESETS).map(value => core.computeTarget(available, value));
+  assert.deepEqual(values, [349, 424, 499, 573, 640]);
+  assert.ok(values.every((value, index) => index === 0 || value > values[index - 1]));
 });
 
-test("available size is measured from the stable board section instead of the self-sizing wrapper", () => {
- const fs = require("node:fs");
- const path = require("node:path");
- const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
- const measure = app.slice(app.indexOf("function measureBoardMax"), app.indexOf("function applyBoardSize"));
- assert.match(measure, /section\?\.getBoundingClientRect\(\)/);
- assert.doesNotMatch(measure, /middleRect\?\.width/);
- assert.match(app, /save\("cvt-board-fit-v1", shouldFitBoard\)/);
+test("every preset clamps to physical space without exceeding it", () => {
+  for (const value of Object.values(core.PRESETS)) {
+    assert.ok(core.computeTarget(220, value) <= 220);
+    assert.ok(core.computeTarget(220, value) >= 160);
+  }
 });
 
-test("board sizing calculation reserves coordinate columns and always constrains the square to available viewport",()=>{
- const fs=require("node:fs"),path=require("node:path");
- const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
- const css=fs.readFileSync(path.join(__dirname,"..","style.css"),"utf8");
- const measure=app.slice(app.indexOf("function measureBoardMax"),app.indexOf("function applyBoardSize"));
- assert.match(measure,/panel\?\.getBoundingClientRect\(\)/);
- assert.match(measure,/const gutters = 22 \+ 22 \+ 12/);
- assert.match(app,/renderedWidth/);
- assert.match(app,/renderedHeight/);
- assert.match(app,/new CustomEvent\("cvt:board-size-applied"/);
- assert.match(css,/SINGLE SOURCE OF TRUTH: RESPONSIVE TRAINING BOARD DIMENSIONS/);
- assert.match(css,/min-width: var\(--cvt-board-target, 420px\) !important/);
+test("Fit to Screen uses all available board width", () => {
+  assert.equal(core.computeTarget(612, 70, true), 612);
+});
+
+test("Fit to Screen is independent of the selected slider percentage", () => {
+  for (const value of [60, 70, 85, 100, 115, 130]) {
+    assert.equal(core.computeTarget(500, value, true), 500);
+  }
+});
+
+test("recommended profiles are a single shared definition with real settings", () => {
+  assert.deepEqual(Object.keys(core.PROFILES), ["balanced", "focus", "performance"]);
+  assert.equal(core.PROFILES.balanced.size, 85);
+  assert.equal(core.PROFILES.focus.size, 115);
+  assert.equal(core.PROFILES.performance.size, 130);
+  assert.equal(core.PROFILES.performance.fit, true);
+  assert.equal(core.PROFILES.focus.animations, false);
+  assert.equal(core.PROFILES.performance.sound, false);
+});
+
+test("saved preferences are normalized to known profile, theme and board values", () => {
+  const value = core.validatePreferences({
+    size: 999, profile: "hacker", interfaceTheme: "bad", boardTheme: "bad",
+    coords: false, sound: false
+  });
+  assert.equal(value.size, 130);
+  assert.equal(value.profile, "balanced");
+  assert.equal(value.interfaceTheme, "light");
+  assert.equal(value.boardTheme, "emerald");
+  assert.equal(value.coords, false);
+  assert.equal(value.sound, false);
+});
+
+test("production app delegates target sizing and profile definitions to the core", () => {
+  const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+  assert.match(app, /const BOARD_SETTINGS_CORE = window\.CVTBoardSettingsCore/);
+  assert.match(app, /const BOARD_SIZE_PRESETS = BOARD_SETTINGS_CORE\.PRESETS/);
+  assert.match(app, /const BOARD_PROFILES = BOARD_SETTINGS_CORE\.PROFILES/);
+  assert.match(app, /BOARD_SETTINGS_CORE\.computeTarget\(available, requested, fit\)/);
+  assert.doesNotMatch(app, /const BOARD_PROFILES = \{/);
+});
+
+test("render verification requires the measured board to match its requested target", () => {
+  const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+  assert.match(app, /Math\.abs\(renderedWidth - target\) <= 1/);
+  assert.match(app, /Math\.abs\(renderedHeight - target\) <= 1/);
+  assert.match(app, /renderedWidth === renderedHeight/);
+  assert.match(app, /new CustomEvent\("cvt:board-size-applied"/);
+});
+
+test("board resize is rebound once and preserves Fit to Screen preference", () => {
+  const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+  assert.match(app, /if \(settingsResizeHandlerBound\) return/);
+  assert.match(app, /fit: load\("cvt-board-fit-v1", false\) === true/);
+  assert.match(app, /window\.addEventListener\("orientationchange"/);
+});
+
+test("the board CSS keeps a square target and reserves coordinate gutters", () => {
+  const css = fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8");
+  const boardCss = fs.readFileSync(path.join(__dirname, "..", "board-settings.css"), "utf8");
+  assert.match(css, /aspect-ratio: 1 \/ 1 !important/);
+  assert.match(css, /grid-template-columns: repeat\(8, minmax\(0, 1fr\)\)/);
+  assert.match(boardCss, /grid-template-columns: 22px minmax\(0, 1fr\) 22px/);
+});
+
+test("backup export includes board fit, recommended profile and animation preferences", () => {
+  const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+  const exportBlock = app.slice(app.indexOf("function exportData"), app.indexOf("function importData"));
+  assert.match(exportBlock, /boardFit:/);
+  assert.match(exportBlock, /settingsProfile:/);
+  assert.match(exportBlock, /animations:/);
+});
+
+test("backup import applies optional board preferences without requiring them in older backups", () => {
+  const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+  assert.match(app, /if \(settings\.boardFit !== undefined\)/);
+  assert.match(app, /if \(settings\.settingsProfile !== undefined\)/);
+  assert.match(app, /if \(settings\.animations !== undefined\)/);
 });
