@@ -133,7 +133,7 @@
    const synced=new Set(pending.map(item=>item.sessionId));
    season.pendingSessions=season.pendingSessions.filter(item=>!synced.has(item.sessionId));
    saveLocal(season);
-   setText("weeklyBoardFooter","Verified session records synced · "+new Date().toLocaleTimeString());
+   setText("weeklyBoardFooter","Server-calculated weekly scores synced · "+new Date().toLocaleTimeString());
    render();await refreshBoard();return true;
   }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; retry when available.");return false;}
   finally{busy=false;}
