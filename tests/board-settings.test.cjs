@@ -25,22 +25,22 @@ test("saved setting validation rejects invalid names and preserves safe defaults
  assert.equal(p.size,130);assert.equal(p.profile,"balanced");assert.equal(p.interfaceTheme,"light");assert.equal(p.boardTheme,"emerald");assert.equal(p.coords,false);assert.equal(p.sound,false);
 });
 
-test("production board sizing uses the winning CSS variable instead of inline width overrides",()=>{
+test("production board sizing uses the single CSS sizing source for the live grid",()=>{
  const fs=require("node:fs");
  const path=require("node:path");
  const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
- const css=fs.readFileSync(path.join(__dirname,"..","board-settings.css"),"utf8");
  const mainCss=fs.readFileSync(path.join(__dirname,"..","style.css"),"utf8");
+ const css=fs.readFileSync(path.join(__dirname,"..","board-settings.css"),"utf8");
  assert.match(app,/function applyBoardSize\(pct, options = \{\}\)/);
- assert.match(app,/document\.documentElement\.style\.setProperty\("\-\-cvt-board-target", target \+ "px"\)/);
- assert.match(app,/board\.style\.removeProperty\("width"\)/);
- assert.match(app,/board\.style\.removeProperty\("height"\)/);
- assert.ok(mainCss.includes("BOARD SIZE CONTROL CASCADE OVERRIDE"));
- assert.ok(mainCss.includes("width: var(--cvt-board-target, 420px) !important"));
- assert.ok(mainCss.includes("width: calc(var(--cvt-board-target, 420px) + 56px) !important"));
- assert.match(css,/training-board-panel #chessboard[^\n]*width:var\(--cvt-board-target/);
+ assert.match(app,/style\.setProperty\("--cvt-board-target", target \+ "px"\)/);
+ assert.match(app,/const renderedWidth = rect \? Math\.round\(rect\.width\) : 0/);
+ assert.match(app,/const renderedHeight = rect \? Math\.round\(rect\.height\) : 0/);
+ assert.match(mainCss,/SINGLE SOURCE OF TRUTH: RESPONSIVE TRAINING BOARD DIMENSIONS/);
+ assert.match(mainCss,/width: var\(--cvt-board-target, 420px\) !important/);
+ assert.match(mainCss,/height: var\(--cvt-board-target, 420px\) !important/);
+ assert.doesNotMatch(mainCss,/BOARD SIZE CASCADE FIX v2/);
+ assert.doesNotMatch(css,/training-board-panel #chessboard[^\n]*width:100% !important/);
 });
-
 test("presets map to visibly increasing target widths on the same available column",()=>{
  const available=640;
  const sizes=[70,85,100,115,130].map(p=>Math.min(available,Math.round(available*p/100)));
@@ -48,31 +48,28 @@ test("presets map to visibly increasing target widths on the same available colu
  assert.ok(sizes[1]>sizes[0]);
  assert.ok(sizes[2]>sizes[1]);
 });
-test("recommended balanced and focus sizes differ and performance uses fit",()=>{
+test("recommended profiles apply their settings and persist fit mode separately",()=>{
  const fs=require("node:fs");
  const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
  assert.match(app,/balanced: \{ size: 85/);
  assert.match(app,/focus: \{ size: 115/);
- assert.match(app,/applyBoardSize\(chosenSize, \{ fit: name === "performance"/);
- assert.match(app,/load\("cvt-board-fit-v1", false\) === true/);
+ assert.match(app,/const shouldFitBoard = name === "performance"/);
+ assert.match(app,/applyBoardSize\(chosenSize, \{ fit: shouldFitBoard/);
+ assert.match(app,/save\("cvt-board-fit-v1", shouldFitBoard\)/);
 });
-
-test("training view activation re-measures the board after a previously hidden layout becomes visible",()=>{
+test("training view activation waits for layout visibility before measuring the board",()=>{
  const fs=require("node:fs");
  const app=fs.readFileSync(require("node:path").join(__dirname,"..","script.js"),"utf8");
- assert.match(app,/if \(name === "training"\) requestAnimationFrame\(\(\) => applyBoardSize\(/);
+ assert.match(app,/if \(name === "training"\) requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => applyBoardSize\(/);
 });
-
-test("render-size correction is based on actual layout measurements and live board column", () => {
- const fs = require("node:fs");
- const path = require("node:path");
- const app = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
- const css = fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8");
- assert.match(app, /board\?\.getBoundingClientRect\(\)\.width/);
- assert.match(app, /board\.style\.setProperty\("width", target \+ "px", "important"\)/);
- assert.match(app, /const middle = board\?\.closest\("\.board-middle"\)/);
- assert.match(css, /BOARD SIZE CASCADE FIX v2/);
- assert.match(css, /\.gameplay-stage \.training-board-panel \.chessboard \{\s*width: var\(--cvt-board-target/);
+test("render verification reads the actual board rectangle and publishes measured dimensions", () => {
+ const fs=require("node:fs");
+ const path=require("node:path");
+ const app=fs.readFileSync(path.join(__dirname,"..","script.js"),"utf8");
+ assert.match(app,/const rect = board\?\.getBoundingClientRect\(\)/);
+ assert.match(app,/renderedWidth/);
+ assert.match(app,/renderedHeight/);
+ assert.match(app,/new CustomEvent\("cvt:board-size-applied"/);
 });
 test("fit mode has a distinct persisted mode bit and presets do not overwrite training history", () => {
  const fs = require("node:fs");
