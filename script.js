@@ -4004,6 +4004,7 @@ function setMode(mode) {
     updateFlipTrainingUI();
     renderMission();
     resetSession();
+    scheduleBoardSizeRecalc();
 }
 function mountGameplayStage() {
     const stage = $("gameplayStage");
@@ -4033,12 +4034,14 @@ function setTheme(t) {
     const selector = $("appearanceTheme");
     if (selector) selector.value = t;
     save(KEYS.theme, t);
+    scheduleBoardSizeRecalc();
 }
 function setBoardTheme(t) {
     if (!["emerald","walnut","ice","rose","midnight","classic"].includes(t)) t = "emerald";
     document.body.dataset.board = t;
     $("boardTheme").value = t;
     save(KEYS.board, t);
+    scheduleBoardSizeRecalc();
 }
 function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $("labelsToggle").checked = on; save(KEYS.labels, on); }
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
@@ -4147,6 +4150,17 @@ function applyBoardSize(pct, options = {}) {
     document.body.dataset.boardSizeVerified = result.fits ? "true" : "false";
     document.body.dispatchEvent(new CustomEvent("cvt:board-size-applied", { detail: result }));
     return result;
+}
+function scheduleBoardSizeRecalc() {
+    const board = $("chessboard");
+    if (!board || !board.getClientRects().length) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!board.getClientRects().length) return;
+        applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, {
+            transient: true,
+            fit: load("cvt-board-fit-v1", false) === true
+        });
+    }));
 }
 function setBoardSize(pct, options = {}) {
     return applyBoardSize(pct, options);
