@@ -33,7 +33,7 @@
   return {version:1,week:key,points:n(value.points),sessions:n(value.sessions),correct:n(value.correct),bonusClaimed:value.bonusClaimed===true,
    sessionIds,pendingSessions,updatedAt:typeof value.updatedAt==="string"?value.updatedAt:new Date().toISOString()};
  }
- function addSession(season,session,key=weekKey()){
+ function addSession(season,session,key=weekKey(),answerEvents=[]){
   const current=validateSeason(season,key);
   const id=String(session?.sessionId||session?.id||session?.date||session?.completedAt||"");
   if(!session||!id||current.sessionIds.includes(id))return current;
@@ -43,13 +43,18 @@
   const accuracy=Number(session.accuracy);
   const duration=Number(session.duration);
   const completedAt=session.date||session.completedAt||new Date().toISOString();
-  current.pendingSessions.push({
-   sessionId:id,correct:Math.max(0,Math.min(10000,Math.floor(Number(session.correct)||0))),
-   accuracy:Number.isFinite(accuracy)?Math.max(0,Math.min(100,accuracy)):0,
-   bestStreak:Math.max(0,Math.min(10000,Math.floor(Number(session.bestStreak)||0))),
-   durationSeconds:Number.isFinite(duration)?Math.max(0,Math.min(86400,Math.floor(duration))):0,
-   mode:["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom",
-   completedAt:typeof completedAt==="string"?completedAt:new Date().toISOString()
+  const mode=["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom";
+  const answers=Array.isArray(answerEvents)?answerEvents.filter(event=>
+   event&&typeof event==="object"&&event.sessionId===id&&event.mode===mode&&
+   typeof event.correct==="boolean"&&typeof event.targetSquare==="string"&&/^[a-h][1-8]$/.test(event.targetSquare)&&
+   Number.isFinite(Number(event.reactionTime))&&Number(event.reactionTime)>=0&&
+   typeof event.timestamp==="string"&&Number.isFinite(Date.parse(event.timestamp))
+  ).slice(-10000).map(event=>({
+   sessionId:id,mode,targetSquare:event.targetSquare,correct:event.correct,
+   reactionTime:Math.min(3600000,Math.round(Number(event.reactionTime))),timestamp:event.timestamp
+  })):[];
+  if(answers.length)current.pendingSessions.push({
+   sessionId:id,mode,answers,completedAt:typeof completedAt==="string"?completedAt:new Date().toISOString()
   });
   current.pendingSessions=current.pendingSessions.slice(-100);
   current.updatedAt=new Date().toISOString();
@@ -138,8 +143,8 @@
   }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; retry when available.");return false;}
   finally{busy=false;}
  }
- function recordSession(session){
-  const key=weekKey(),before=getLocal(key),after=addSession(before,session,key);
+ function recordSession(session,answerEvents=[]){
+  const key=weekKey(),before=getLocal(key),after=addSession(before,session,key,answerEvents);
   if(after.sessions!==before.sessions){if(after.sessions>=5&&!after.bonusClaimed){after.points+=250;after.bonusClaimed=true;}saveLocal(after);render();if(userId)sync();}
  }
  root.renderWeeklyChallenges=render;
