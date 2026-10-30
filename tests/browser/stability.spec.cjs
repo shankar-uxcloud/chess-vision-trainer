@@ -54,14 +54,14 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
   await activateTrainingAndWait(page);
   const small = await measureBoard(page);
 
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator("#boardSize").evaluate(el => { el.value = "130"; el.dispatchEvent(new Event("input", { bubbles: true })); });
   await activateTrainingAndWait(page);
   const large = await measureBoard(page);
   expect(large.width).toBeGreaterThan(small.width);
   expect(large.width).toBe(large.height);
 
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator("#fitBoardBtn").click();
   await activateTrainingAndWait(page);
   const fit = await measureBoard(page);
@@ -84,7 +84,7 @@ test("recommended profiles apply their declared preferences and retain a square 
 
 test("all four interface themes remain selectable", async ({ page }) => {
   await enterTraining(page);
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   for (const theme of ["dark", "light", "neon", "heavy"]) {
     await page.locator("#appearanceTheme").selectOption(theme);
     await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
@@ -149,7 +149,7 @@ test("orientation changes recalculate Fit to Screen without distorting the board
 
 test("backup export and import preserve board, theme and recommended settings", async ({ page }) => {
   await enterTraining(page);
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator("#appearanceTheme").selectOption("neon");
   await page.locator("#boardTheme").selectOption("ice");
   await page.locator("#boardSize").evaluate(el => { el.value = "115"; el.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -196,11 +196,11 @@ test("primary application sections remain routable in guest mode", async ({ page
 test("board size and Fit to Screen preference survive a browser reload", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await enterTraining(page);
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator('[data-board-preset="maximum"]').click();
   await activateTrainingAndWait(page);
   const presetBefore = await measureBoard(page);
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator("#fitBoardBtn").click();
   await activateTrainingAndWait(page);
   const fitBefore = await measureBoard(page);
