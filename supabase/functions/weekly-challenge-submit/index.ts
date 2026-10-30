@@ -123,6 +123,10 @@ Deno.serve(async (request: Request) => {
     correct: sum.correct + Number(row.correct || 0)
   }), { points: 0, sessions: 0, correct: 0 });
 
+  // Keep the existing local five-session consistency bonus in the shared total.
+  const consistencyBonus = totals.sessions >= 5 ? 250 : 0;
+  totals.points += consistencyBonus;
+
   const metadata = user.user_metadata || {};
   const candidate = metadata.display_name || metadata.full_name || metadata.name || user.email?.split("@")[0] || "Chess Player";
   const displayName = String(candidate).trim().slice(0, 60) || "Chess Player";
@@ -137,5 +141,5 @@ Deno.serve(async (request: Request) => {
   }, { onConflict: "user_id,week_key" });
   if (boardError) return json({ ok: false, message: "Could not update the leaderboard." }, 500);
 
-  return json({ ok: true, duplicateSafe: true, totals });
+  return json({ ok: true, duplicateSafe: true, consistencyBonus, totals });
 });
