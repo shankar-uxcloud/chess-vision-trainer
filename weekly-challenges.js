@@ -40,7 +40,6 @@
   const points=scoreSession(session);
   current.points+=points;current.sessions++;current.correct+=Math.max(0,Math.floor(Number(session.correct)||0));
   current.sessionIds.push(id);current.sessionIds=current.sessionIds.slice(-100);
-  const completedAt=session.date||session.completedAt||new Date().toISOString();
   const mode=["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom";
   const answers=Array.isArray(answerEvents)?answerEvents.filter(event=>
    event&&typeof event==="object"&&event.sessionId===id&&event.mode===mode&&
@@ -51,9 +50,7 @@
    sessionId:id,mode,targetSquare:event.targetSquare,correct:event.correct,
    reactionTime:Math.min(3600000,Math.round(Number(event.reactionTime))),timestamp:event.timestamp
   })):[];
-  if(answers.length)current.pendingSessions.push({
-   sessionId:id,mode,answers,completedAt:typeof completedAt==="string"?completedAt:new Date().toISOString()
-  });
+  if(answers.length)current.pendingSessions.push({sessionId:id,mode,answers});
   current.pendingSessions=current.pendingSessions.slice(-100);
   current.updatedAt=new Date().toISOString();
   return current;
