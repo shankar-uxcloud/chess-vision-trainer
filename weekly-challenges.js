@@ -123,7 +123,7 @@
     setText("weeklyBoardFooter","No new session records to sync. Complete a new training session first.");
     return false;
    }
-   const pending=season.pendingSessions.slice(0,20);
+   const pending=season.pendingSessions.slice(0,5);
    const {data,error}=await client.functions.invoke("weekly-challenge-submit",{
     body:{weekKey:season.week,sessions:pending}
    });
