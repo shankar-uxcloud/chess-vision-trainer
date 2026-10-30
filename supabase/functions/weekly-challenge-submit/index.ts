@@ -35,21 +35,41 @@ function allowedWeek(key: string) {
 
 function validSession(value: any) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  return typeof value.sessionId === "string" && value.sessionId.trim().length > 0 &&
-    value.sessionId.length <= 200 &&
-    Number.isSafeInteger(value.correct) && value.correct >= 0 && value.correct <= 10000 &&
-    typeof value.accuracy === "number" && Number.isFinite(value.accuracy) && value.accuracy >= 0 && value.accuracy <= 100 &&
-    Number.isSafeInteger(value.bestStreak) && value.bestStreak >= 0 && value.bestStreak <= 10000 &&
-    Number.isSafeInteger(value.durationSeconds) && value.durationSeconds >= 0 && value.durationSeconds <= 86400 &&
-    ["square", "coordinate", "reverse", "knight", "blindfold", "color", "custom", "daily"].includes(value.mode) &&
-    typeof value.completedAt === "string" && Number.isFinite(Date.parse(value.completedAt));
+  if (typeof value.sessionId !== "string" || value.sessionId.trim().length === 0 || value.sessionId.length > 200) return false;
+  if (!["square", "coordinate", "reverse", "knight", "blindfold", "color", "custom", "daily"].includes(value.mode)) return false;
+  if (!Array.isArray(value.answers) || value.answers.length < 1 || value.answers.length > 10000) return false;
+  const now = Date.now();
+  return value.answers.every((answer: any) => {
+    if (!answer || typeof answer !== "object" || Array.isArray(answer)) return false;
+    const timestamp = Date.parse(answer.timestamp);
+    return answer.sessionId === value.sessionId && answer.mode === value.mode &&
+      typeof answer.correct === "boolean" &&
+      typeof answer.targetSquare === "string" && /^[a-h][1-8]$/.test(answer.targetSquare) &&
+      typeof answer.reactionTime === "number" && Number.isFinite(answer.reactionTime) &&
+      answer.reactionTime >= 0 && answer.reactionTime <= 3600000 &&
+      Number.isFinite(timestamp) && timestamp <= now + 300000 && timestamp >= now - 86400000;
+  });
 }
 
-function calculatePoints(session: any) {
-  const correct = session.correct;
-  const accuracy = session.accuracy;
-  const streak = Math.min(session.bestStreak, 25);
-  return correct * 10 + (accuracy >= 90 ? 25 : 0) + (accuracy === 100 ? 25 : 0) + streak * 2;
+function calculateMetrics(session: any) {
+  const answers = [...session.answers].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+  const correct = answers.filter(answer => answer.correct).length;
+  const accuracy = Math.round(correct / answers.length * 10000) / 100;
+  let streak = 0;
+  let bestStreak = 0;
+  for (const answer of answers) {
+    streak = answer.correct ? streak + 1 : 0;
+    bestStreak = Math.max(bestStreak, streak);
+  }
+  const firstAnswerAt = Date.parse(answers[0].timestamp);
+  const durationSeconds = Math.max(0, Math.min(86400, Math.floor((Date.now() - firstAnswerAt) / 1000)));
+  return { correct, accuracy, bestStreak, durationSeconds };
+}
+
+function calculatePoints(metrics: any) {
+  const streak = Math.min(metrics.bestStreak, 25);
+  return metrics.correct * 10 + (metrics.accuracy >= 90 ? 25 : 0) +
+    (metrics.accuracy === 100 ? 25 : 0) + streak * 2;
 }
 
 Deno.serve(async (request: Request) => {
@@ -95,18 +115,19 @@ Deno.serve(async (request: Request) => {
   if (allowed !== true) return json({ ok: false, message: "Please wait before syncing another batch." }, 429);
 
   for (const session of sessions) {
-    const points = calculatePoints(session);
+    const metrics = calculateMetrics(session);
+    const points = calculatePoints(metrics);
     const { error } = await admin.from("cvt_weekly_challenge_sessions").upsert({
       user_id: user.id,
       week_key: weekKey,
       session_id: session.sessionId,
       mode: session.mode,
-      correct: session.correct,
-      accuracy: session.accuracy,
-      best_streak: session.bestStreak,
-      duration_seconds: session.durationSeconds,
+      correct: metrics.correct,
+      accuracy: metrics.accuracy,
+      best_streak: metrics.bestStreak,
+      duration_seconds: metrics.durationSeconds,
       points,
-      completed_at: new Date(session.completedAt).toISOString()
+      completed_at: new Date().toISOString()
     }, { onConflict: "user_id,session_id", ignoreDuplicates: true });
     if (error) return json({ ok: false, message: "Could not store the session record." }, 500);
   }
