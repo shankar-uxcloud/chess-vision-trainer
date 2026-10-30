@@ -37,13 +37,13 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
   await page.setViewportSize({ width: 1600, height: 1000 });
   await enterTraining(page);
   await page.evaluate(() => window.setView("settings"));
-  await page.locator("#boardSize").fill("60");
+  await page.locator("#boardSize").evaluate(el => { el.value = "60"; el.dispatchEvent(new Event("input", { bubbles: true })); });
   await page.evaluate(() => window.setView("training"));
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
   const small = await measureBoard(page);
 
   await page.evaluate(() => window.setView("settings"));
-  await page.locator("#boardSize").fill("130");
+  await page.locator("#boardSize").evaluate(el => { el.value = "130"; el.dispatchEvent(new Event("input", { bubbles: true })); });
   await page.evaluate(() => window.setView("training"));
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
   const large = await measureBoard(page);
