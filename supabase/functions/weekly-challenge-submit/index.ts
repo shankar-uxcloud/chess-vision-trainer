@@ -35,7 +35,7 @@ function allowedWeek(key: string) {
 
 function validSession(value: any) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  if (typeof value.sessionId !== "string" || value.sessionId.trim().length === 0 || value.sessionId.length > 200) return false;
+  if (typeof value.sessionId !== "string" || !/^[A-Za-z0-9_-]{1,200}$/.test(value.sessionId)) return false;
   if (!["square", "coordinate", "reverse", "knight", "blindfold", "color", "custom", "daily"].includes(value.mode)) return false;
   if (!Array.isArray(value.answers) || value.answers.length < 1 || value.answers.length > 5000) return false;
   const now = Date.now();
