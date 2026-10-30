@@ -71,6 +71,37 @@ node --test tests/*.test.cjs
 
 GitHub Actions runs the same syntax checks and regression tests on pushes to `main` and audit branches, and on pull requests targeting `main`.
 
+## Weekly leaderboard security (Phase 2)
+
+The shared weekly leaderboard is read-only to authenticated browser clients. Apply both migrations in order:
+
+1. `supabase/migrations/20261026_weekly_leaderboard.sql` (initial table).
+2. `supabase/migrations/20261030_weekly_leaderboard_secure.sql` (revokes direct client writes and creates the session ledger/rate limit).
+
+Deploy the server-side function with the Supabase CLI:
+
+```bash
+supabase functions deploy weekly-challenge-submit
+```
+
+The function verifies the Supabase access token, validates bounded session fields, rate-limits submissions, calculates points on the server, and uses a unique (user, session) key to prevent duplicate awards. The service-role key is read only from the Edge Function environment; never copy it into `index.html`, `script.js`, or any other browser asset.
+
+**Trust limitation:** this is not cheat-proof. A static browser client can fabricate a plausible completed-session payload, including answer counts and accuracy. Server-side calculation prevents arbitrary point totals and direct aggregate-row edits, but cannot prove that a human genuinely played each submitted action. Stronger proof would require server-authoritative gameplay events or an independently verifiable challenge protocol.
+
+Older local weekly totals remain visible on the device, but only new session records collected after this update can be submitted to the shared leaderboard. Guest scoring remains local.
+
+## Browser regression tests
+
+Install dependencies and Chromium, then run:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:browser
+```
+
+Playwright is a development-only dependency. The browser suite checks actual board dimensions, presets, custom sizing, Fit to Screen, profiles, themes, core modes, viewport bounds, and orientation changes.
+
 ## Backup safety
 
 Backups are JSON files exported by the app. Import validation checks the supported version, record structures, numeric bounds, enumerated settings, and file size before applying data. Invalid imports should leave existing progress unchanged. Keep a separate backup before importing unfamiliar files.
