@@ -88,7 +88,7 @@ The function verifies the Supabase access token, validates bounded per-answer ev
 
 **Trust limitation:** this is not cheat-proof. A static browser client can fabricate a plausible stream of answer events. Server-side derivation prevents clients from directly choosing aggregate accuracy, correct totals or point totals, and prevents direct aggregate-row edits, but cannot prove that a human genuinely performed every submitted action. Stronger proof would require server-authoritative gameplay events or an independently verifiable challenge protocol.
 
-Older local weekly totals remain visible on the device, but only new session records collected after this update can be submitted to the shared leaderboard. Guest scoring remains local.
+Older local weekly totals remain visible on the device. Existing cloud aggregate rows are retained in the database but marked as legacy and excluded from shared rankings until rebuilt from new answer-event submissions. Only new session records collected after this update can be submitted to the shared leaderboard. Guest scoring remains local.
 
 ## Browser regression tests
 
