@@ -74,6 +74,7 @@
                 !validDate(row.timestamp)) return null;
             if (row.square !== undefined && (typeof row.square !== "string" || !/^[a-h][1-8]$/.test(row.square))) return null;
             if (row.flipChallenge !== undefined && typeof row.flipChallenge !== "boolean") return null;
+            if (row.countsForScore !== undefined && typeof row.countsForScore !== "boolean") return null;
             if (row.attempt !== undefined && !integerIn(row.attempt, 0, 1000000000)) return null;
             rows.push({ ...row });
         }
