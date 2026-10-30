@@ -7316,46 +7316,77 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
 @media(max-width:650px){.weekly-hero{grid-template-columns:1fr;padding:22px}.weekly-hero-art{min-height:150px}.weekly-orbit{width:145px;height:145px}.weekly-trophy{font-size:90px}.weekly-stats-grid{gap:8px}.weekly-stat{padding:12px}.weekly-stat strong{font-size:22px}.weekly-stat-label{font-size:8px}.weekly-stat small{font-size:9px}.weekly-challenge-panel,.weekly-leaderboard-panel{padding:15px}.weekly-how-panel{align-items:flex-start;flex-wrap:wrap;padding:15px}.weekly-how-panel>div:nth-child(2){flex-basis:calc(100% - 60px)}.weekly-how-panel>button{width:100%}.weekly-leader-row{grid-template-columns:22px 32px minmax(0,1fr);gap:8px}.weekly-player-avatar{width:32px;height:32px}.weekly-player-points{grid-column:3;justify-self:start}}
 
 
-/* ===== BOARD SIZE CASCADE FIX v2: size the rendered element, not only the preference ===== */
-body[data-view="training"] .training-layout .training-board-panel .board-wrapper {
-    width: min(var(--cvt-board-wrapper-target, 476px), 100%) !important;
+
+/* ===== SINGLE SOURCE OF TRUTH: RESPONSIVE TRAINING BOARD DIMENSIONS =====
+   Earlier layout patches are intentionally superseded here. The live board
+   receives its own square width/height; its wrapper reserves coordinate gutters.
+*/
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+}
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-stage,
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-section {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+    display: block !important;
+    flex: 0 1 auto !important;
+    width: min(var(--cvt-board-wrapper-target, 500px), 100%) !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    padding: 0 !important;
     margin-inline: auto !important;
-    flex: 0 1 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
 }
-body[data-view="training"] .training-layout .training-board-panel .board-middle {
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-middle {
+    display: grid !important;
     width: 100% !important;
-    grid-template-columns: 22px minmax(0, 1fr) 22px !important;
-    gap: 6px !important;
     min-width: 0 !important;
+    grid-template-columns: 22px minmax(0, var(--cvt-board-target, 420px)) 22px !important;
+    gap: 6px !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
 }
-body[data-view="training"] .training-layout .training-board-panel #chessboard {
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel #chessboard {
+    display: grid !important;
     width: var(--cvt-board-target, 420px) !important;
     height: var(--cvt-board-target, 420px) !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
+    min-width: var(--cvt-board-target, 420px) !important;
+    max-width: var(--cvt-board-target, 420px) !important;
     aspect-ratio: 1 / 1 !important;
     grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
     grid-template-rows: repeat(8, minmax(0, 1fr)) !important;
-    flex: 0 1 auto !important;
+    flex: none !important;
+    box-sizing: border-box !important;
     margin-inline: auto !important;
 }
-@media (max-width: 720px) {
-    body[data-view="training"] .training-layout .training-board-panel .board-wrapper {
-        width: min(var(--cvt-board-wrapper-target, 476px), 100%) !important;
-    }
-    body[data-view="training"] .training-layout .training-board-panel #chessboard {
-        width: min(var(--cvt-board-target, 420px), 100%) !important;
-        height: auto !important;
-        aspect-ratio: 1 / 1 !important;
-    }
-}
-/* Last in the stylesheet: scoped to the live board to beat earlier generic 100%-width rules. */
-body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .chessboard {
-    width: var(--cvt-board-target, 420px) !important;
-    height: var(--cvt-board-target, 420px) !important;
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-coord-row {
+    width: 100% !important;
     max-width: 100% !important;
-    aspect-ratio: 1 / 1 !important;
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+}
+body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-coord-col {
+    min-width: 22px !important;
+}
+@media (max-width: 720px) {
+    body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-wrapper {
+        width: min(var(--cvt-board-wrapper-target, 500px), 100%) !important;
+    }
+    body[data-view="training"] .training-layout .gameplay-stage .training-board-panel .board-middle {
+        grid-template-columns: 20px minmax(0, var(--cvt-board-target, 420px)) 20px !important;
+        gap: 4px !important;
+    }
+    body[data-view="training"] .training-layout .gameplay-stage .training-board-panel #chessboard {
+        width: min(var(--cvt-board-target, 420px), calc(100vw - 56px)) !important;
+        height: min(var(--cvt-board-target, 420px), calc(100vw - 56px)) !important;
+        min-width: min(var(--cvt-board-target, 420px), calc(100vw - 56px)) !important;
+        max-width: min(var(--cvt-board-target, 420px), calc(100vw - 56px)) !important;
+    }
 }
