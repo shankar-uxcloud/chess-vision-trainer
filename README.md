@@ -84,9 +84,9 @@ Deploy the server-side function with the Supabase CLI:
 supabase functions deploy weekly-challenge-submit
 ```
 
-The function verifies the Supabase access token, validates bounded session fields, rate-limits submissions, calculates points on the server, and uses a unique (user, session) key to prevent duplicate awards. The service-role key is read only from the Edge Function environment; never copy it into `index.html`, `script.js`, or any other browser asset.
+The function verifies the Supabase access token, validates bounded per-answer event records, rate-limits submissions, derives correct-answer totals, accuracy and streaks on the server, calculates points there, and uses a unique (user, session) key to prevent duplicate awards. The service-role key is read only from the Edge Function environment; never copy it into `index.html`, `script.js`, or any other browser asset.
 
-**Trust limitation:** this is not cheat-proof. A static browser client can fabricate a plausible completed-session payload, including answer counts and accuracy. Server-side calculation prevents arbitrary point totals and direct aggregate-row edits, but cannot prove that a human genuinely played each submitted action. Stronger proof would require server-authoritative gameplay events or an independently verifiable challenge protocol.
+**Trust limitation:** this is not cheat-proof. A static browser client can fabricate a plausible stream of answer events. Server-side derivation prevents clients from directly choosing aggregate accuracy, correct totals or point totals, and prevents direct aggregate-row edits, but cannot prove that a human genuinely performed every submitted action. Stronger proof would require server-authoritative gameplay events or an independently verifiable challenge protocol.
 
 Older local weekly totals remain visible on the device, but only new session records collected after this update can be submitted to the shared leaderboard. Guest scoring remains local.
 
