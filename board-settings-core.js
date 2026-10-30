@@ -3,9 +3,9 @@
  "use strict";
  const PRESETS=Object.freeze({small:70,medium:85,large:100,"extra-large":115,maximum:130});
  const PROFILES=Object.freeze({
-  balanced:Object.freeze({size:85,theme:"emerald",labels:false,coords:true,pieces:false,sound:true,ticks:true,animations:true,interfaceTheme:"light"}),
-  focus:Object.freeze({size:115,theme:"midnight",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark"}),
-  performance:Object.freeze({size:130,theme:"classic",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark"})
+  balanced:Object.freeze({size:85,theme:"emerald",labels:false,coords:true,pieces:false,sound:true,ticks:true,animations:true,interfaceTheme:"light",fit:false}),
+  focus:Object.freeze({size:115,theme:"midnight",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark",fit:false}),
+  performance:Object.freeze({size:130,theme:"classic",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark",fit:true})
  });
  function clampPercent(value){const n=Number(value);if(!Number.isFinite(n))return 100;return Math.max(60,Math.min(130,Math.round(n/5)*5));}
  function computeTarget(availableWidth,percent,fit=false){const available=Math.max(160,Math.floor(Number(availableWidth)||160));if(fit)return available;return Math.max(160,Math.min(available,Math.round(available*.78*clampPercent(percent)/100)));}
