@@ -1,11 +1,18 @@
 "use strict";
 const { test, expect } = require("@playwright/test");
 
+async function navigateTo(page, view) {
+  const guestLink = page.locator(`#guestWelcome [data-nav="${view}"]`);
+  if (await guestLink.isVisible().catch(() => false)) {
+    await guestLink.click();
+  } else {
+    await page.locator(`.nav-link[data-nav="${view}"]`).first().click();
+  }
+}
+
 async function activateTrainingAndWait(page) {
-  await page.evaluate(() => {
-    document.body.dataset.boardSizeVerified = "pending";
-    window.setView("training");
-  });
+  await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
+  await navigateTo(page, "training");
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
 }
 
@@ -29,7 +36,7 @@ test("all five board presets produce increasing, square rendered dimensions", as
   await enterTraining(page);
   const values = [];
   for (const preset of ["small", "medium", "large", "extra-large", "maximum"]) {
-    await page.evaluate(() => window.setView("settings"));
+    await navigateTo(page, "settings");
     await page.locator(`[data-board-preset="${preset}"]`).click();
     await activateTrainingAndWait(page);
     const size = await measureBoard(page);
@@ -56,7 +63,6 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
 
   await page.evaluate(() => window.setView("settings"));
   await page.locator("#fitBoardBtn").click();
-  await page.evaluate(() => window.setView("training"));
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
   const fit = await measureBoard(page);
   expect(fit.width).toBe(fit.height);
@@ -67,7 +73,8 @@ test("recommended profiles apply their declared preferences and retain a square 
   await page.setViewportSize({ width: 1600, height: 1000 });
   await enterTraining(page);
   for (const profile of ["balanced", "focus", "performance"]) {
-    await page.evaluate(name => window.applyRecommendedProfile(name, { silent: true }), profile);
+    await navigateTo(page, "settings");
+    await page.locator(`[data-settings-profile="${profile}"]`).click();
     await activateTrainingAndWait(page);
     const size = await measureBoard(page);
     expect(size.width).toBe(size.height);
@@ -125,7 +132,8 @@ test("responsive viewports keep the board square and inside the viewport", async
 test("orientation changes recalculate Fit to Screen without distorting the board", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await enterTraining(page);
-  await page.evaluate(() => window.fitBoardToScreen());
+  await navigateTo(page, "settings");
+  await page.locator("#fitBoardBtn").click();
   await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
   await page.setViewportSize({ width: 812, height: 375 });
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
@@ -178,7 +186,7 @@ test("backup export and import preserve board, theme and recommended settings", 
 test("primary application sections remain routable in guest mode", async ({ page }) => {
   await enterTraining(page);
   for (const view of ["dashboard", "journey", "training", "mindpalace", "achievements", "daily", "analytics", "profile", "tactics", "blindfold", "weekly", "coach", "settings"]) {
-    await page.evaluate(name => window.setView(name), view);
+    await navigateTo(page, view);
     await expect(page.locator("body")).toHaveAttribute("data-view", view);
     await expect(page.locator(`.view[data-view="${view}"]`)).toHaveClass(/active/);
   }
