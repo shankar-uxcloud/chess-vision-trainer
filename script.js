@@ -3735,7 +3735,7 @@ function finishDailyChallenge() {
     };
     history.unshift(result);
     history = history.slice(0, 50);
-    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result, answerRecords.filter(record => record.sessionId === result.sessionId));
     save(KEYS.stats, stats);
     save(KEYS.history, history);
     schedulePlayerProfileSync();
