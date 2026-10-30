@@ -49,7 +49,7 @@ test("all five board presets produce increasing, square rendered dimensions", as
 test("custom slider and Fit to Screen change the actual rendered grid", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await enterTraining(page);
-  await page.evaluate(() => window.setView("settings"));
+  await navigateTo(page, "settings");
   await page.locator("#boardSize").evaluate(el => { el.value = "60"; el.dispatchEvent(new Event("input", { bubbles: true })); });
   await activateTrainingAndWait(page);
   const small = await measureBoard(page);
@@ -63,7 +63,7 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
 
   await page.evaluate(() => window.setView("settings"));
   await page.locator("#fitBoardBtn").click();
-  await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+  await activateTrainingAndWait(page);
   const fit = await measureBoard(page);
   expect(fit.width).toBe(fit.height);
   expect(fit.width).toBeGreaterThanOrEqual(large.width);
@@ -134,6 +134,7 @@ test("orientation changes recalculate Fit to Screen without distorting the board
   await enterTraining(page);
   await navigateTo(page, "settings");
   await page.locator("#fitBoardBtn").click();
+  await activateTrainingAndWait(page);
   await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
   await page.setViewportSize({ width: 812, height: 375 });
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
