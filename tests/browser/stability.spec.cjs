@@ -1,13 +1,20 @@
 "use strict";
 const { test, expect } = require("@playwright/test");
 
+async function activateTrainingAndWait(page) {
+  await page.evaluate(() => {
+    document.body.dataset.boardSizeVerified = "pending";
+    window.setView("training");
+  });
+  await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+}
+
 async function enterTraining(page) {
   await page.goto("/");
   await page.locator("#continueGuest").waitFor({ state: "visible", timeout: 30000 });
   await page.locator("#continueGuest").click();
-  await page.evaluate(() => window.setView("training"));
+  await activateTrainingAndWait(page);
   await expect(page.locator("#chessboard")).toBeVisible();
-  await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
 }
 
 async function measureBoard(page) {
@@ -24,8 +31,7 @@ test("all five board presets produce increasing, square rendered dimensions", as
   for (const preset of ["small", "medium", "large", "extra-large", "maximum"]) {
     await page.evaluate(() => window.setView("settings"));
     await page.locator(`[data-board-preset="${preset}"]`).click();
-    await page.evaluate(() => window.setView("training"));
-    await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+    await activateTrainingAndWait(page);
     const size = await measureBoard(page);
     expect(size.width).toBe(size.height);
     values.push(size.width);
@@ -38,8 +44,7 @@ test("custom slider and Fit to Screen change the actual rendered grid", async ({
   await enterTraining(page);
   await page.evaluate(() => window.setView("settings"));
   await page.locator("#boardSize").evaluate(el => { el.value = "60"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-  await page.evaluate(() => window.setView("training"));
-  await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
+  await activateTrainingAndWait(page);
   const small = await measureBoard(page);
 
   await page.evaluate(() => window.setView("settings"));
@@ -102,6 +107,7 @@ test("responsive viewports keep the board square and inside the viewport", async
     { width: 768, height: 1024 }, { width: 1024, height: 768 },
     { width: 1366, height: 768 }, { width: 1920, height: 1080 }
   ]) {
+    await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
     await page.setViewportSize(viewport);
     await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
     const size = await measureBoard(page);
@@ -115,10 +121,12 @@ test("orientation changes recalculate Fit to Screen without distorting the board
   await page.setViewportSize({ width: 375, height: 812 });
   await enterTraining(page);
   await page.evaluate(() => window.fitBoardToScreen());
+  await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
   await page.setViewportSize({ width: 812, height: 375 });
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
   const landscape = await measureBoard(page);
   expect(landscape.width).toBe(landscape.height);
+  await page.evaluate(() => { document.body.dataset.boardSizeVerified = "pending"; });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.waitForFunction(() => document.body.dataset.boardSizeVerified === "true");
   const portrait = await measureBoard(page);
