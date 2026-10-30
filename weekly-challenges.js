@@ -123,17 +123,16 @@
     setText("weeklyBoardFooter","No new session records to sync. Complete a new training session first.");
     return false;
    }
-   const pending=[...season.pendingSessions];
-   for(const session of pending){
-    const {data,error}=await client.functions.invoke("weekly-challenge-submit",{
-     body:{weekKey:season.week,session}
-    });
-    if(error)throw error;
-    if(!data?.ok)throw new Error(data?.message||"Weekly score submission was rejected.");
-    season=getLocal();
-    season.pendingSessions=season.pendingSessions.filter(item=>item.sessionId!==session.sessionId);
-    saveLocal(season);
-   }
+   const pending=season.pendingSessions.slice(0,20);
+   const {data,error}=await client.functions.invoke("weekly-challenge-submit",{
+    body:{weekKey:season.week,sessions:pending}
+   });
+   if(error)throw error;
+   if(!data?.ok)throw new Error(data?.message||"Weekly score submission was rejected.");
+   season=getLocal();
+   const synced=new Set(pending.map(item=>item.sessionId));
+   season.pendingSessions=season.pendingSessions.filter(item=>!synced.has(item.sessionId));
+   saveLocal(season);
    setText("weeklyBoardFooter","Verified session records synced · "+new Date().toLocaleTimeString());
    render();await refreshBoard();return true;
   }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; retry when available.");return false;}
