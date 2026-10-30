@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "audit/**"
+      - "phase-2/**"
   pull_request:
     branches:
       - main
@@ -27,5 +28,14 @@ jobs:
           node --check script.js
           node --check auth.js
           node --check data-validation.js
-      - name: Run backup validation regression tests
+      - name: Run Node.js regression tests
         run: node --test tests/*.test.cjs
+
+      - name: Install Playwright
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser regression tests
+        run: npm run test:browser
