@@ -37,7 +37,7 @@ function validSession(value: any) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   if (typeof value.sessionId !== "string" || value.sessionId.trim().length === 0 || value.sessionId.length > 200) return false;
   if (!["square", "coordinate", "reverse", "knight", "blindfold", "color", "custom", "daily"].includes(value.mode)) return false;
-  if (!Array.isArray(value.answers) || value.answers.length < 1 || value.answers.length > 10000) return false;
+  if (!Array.isArray(value.answers) || value.answers.length < 1 || value.answers.length > 5000) return false;
   const now = Date.now();
   return value.answers.every((answer: any) => {
     if (!answer || typeof answer !== "object" || Array.isArray(answer)) return false;
@@ -47,7 +47,7 @@ function validSession(value: any) {
       typeof answer.targetSquare === "string" && /^[a-h][1-8]$/.test(answer.targetSquare) &&
       typeof answer.reactionTime === "number" && Number.isFinite(answer.reactionTime) &&
       answer.reactionTime >= 0 && answer.reactionTime <= 3600000 &&
-      Number.isFinite(timestamp) && timestamp <= now + 300000 && timestamp >= now - 8 * 86400000;
+      typeof answer.timestamp === "string" && Number.isFinite(timestamp) && timestamp <= now + 300000 && timestamp >= now - 8 * 86400000;
   });
 }
 
@@ -98,8 +98,11 @@ Deno.serve(async (request: Request) => {
   if (authError || !user) return json({ ok: false, message: "Invalid or expired session." }, 401);
 
   let body: any;
-  try { body = await request.json(); }
-  catch { return json({ ok: false, message: "Invalid JSON payload." }, 400); }
+  try {
+    const rawBody = await request.text();
+    if (rawBody.length > 5 * 1024 * 1024) return json({ ok: false, message: "Submission payload is too large." }, 413);
+    body = JSON.parse(rawBody);
+  } catch { return json({ ok: false, message: "Invalid JSON payload." }, 400); }
 
   const weekKey = body?.weekKey;
   const sessions = body?.sessions;
