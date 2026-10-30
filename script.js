@@ -4599,6 +4599,8 @@ function importData(file) {
     const reader = new FileReader();
     reader.onerror = () => toast("Import failed — the selected file could not be read.");
     reader.onload = event => {
+        let storageSnapshot = null;
+        let importStarted = false;
         try {
             if (typeof event.target.result !== "string" || event.target.result.length > MAX_BACKUP_BYTES) {
                 throw new Error("Backup file is too large or unreadable.");
@@ -4606,9 +4608,7 @@ function importData(file) {
             // Validate and normalize every supported field before mutating any saved state.
             const data = backupValidation.validateBackup(JSON.parse(event.target.result));
             // Keep a complete local snapshot so an unexpected apply-time failure can roll back atomically.
-            const storageSnapshot = Object.keys(localStorage).map(key => [key, localStorage.getItem(key)]);
-            let importStarted = false;
-
+            storageSnapshot = Object.keys(localStorage).map(key => [key, localStorage.getItem(key)]);
             importStarted = true;
             stats = { ...DEFAULT_STATS, ...data.stats };
             history = data.history.slice(-50);
@@ -4693,7 +4693,7 @@ function importData(file) {
             toast("Backup imported successfully.");
         } catch (error) {
             console.warn("Backup import rejected:", error);
-            if (typeof storageSnapshot !== "undefined" && importStarted) {
+            if (storageSnapshot && importStarted) {
                 try {
                     localStorage.clear();
                     storageSnapshot.forEach(([key, value]) => localStorage.setItem(key, value));
