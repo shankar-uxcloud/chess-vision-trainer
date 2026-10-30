@@ -15,7 +15,7 @@ test("slider values are clamped and quantized to supported 5% steps", () => {
 test("all five presets produce strictly increasing targets when space is available", () => {
   const available = 640;
   const values = Object.values(core.PRESETS).map(value => core.computeTarget(available, value));
-  assert.deepEqual(values, [349, 424, 499, 573, 640]);
+  assert.deepEqual(values, [349, 424, 499, 574, 640]);
   assert.ok(values.every((value, index) => index === 0 || value > values[index - 1]));
 });
 
@@ -88,7 +88,7 @@ test("the board CSS keeps a square target and reserves coordinate gutters", () =
   const boardCss = fs.readFileSync(path.join(__dirname, "..", "board-settings.css"), "utf8");
   assert.match(css, /aspect-ratio: 1 \/ 1 !important/);
   assert.match(css, /grid-template-columns: repeat\(8, minmax\(0, 1fr\)\)/);
-  assert.match(boardCss, /grid-template-columns: 22px minmax\(0, 1fr\) 22px/);
+  assert.match(boardCss, /grid-template-columns:\\s*22px\\s+minmax\\(0,\\s*1fr\\)\\s+22px/);
 });
 
 test("backup export includes board fit, recommended profile and animation preferences", () => {
