@@ -3,7 +3,7 @@
  "use strict";
  const PRESETS=Object.freeze({small:70,medium:85,large:100,"extra-large":115,maximum:130});
  const PROFILES=Object.freeze({
-  balanced:Object.freeze({size:100,theme:"emerald",labels:false,coords:true,pieces:false,sound:true,ticks:true,animations:true,interfaceTheme:"light"}),
+  balanced:Object.freeze({size:85,theme:"emerald",labels:false,coords:true,pieces:false,sound:true,ticks:true,animations:true,interfaceTheme:"light"}),
   focus:Object.freeze({size:115,theme:"midnight",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark"}),
   performance:Object.freeze({size:130,theme:"classic",labels:false,coords:true,pieces:false,sound:false,ticks:false,animations:false,interfaceTheme:"dark"})
  });
