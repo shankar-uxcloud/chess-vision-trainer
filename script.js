@@ -4569,7 +4569,10 @@ function exportData() {
             perspective: game.perspective, flip: document.body.dataset.flip === "true",
             labels: document.body.dataset.labels === "true", coords: document.body.dataset.coords !== "hidden",
             pieces: game.piecesEnabled, sound: game.sound, volume: game.volume, ticks: game.ticks,
-            boardSize: Number($("boardSize").value),
+            boardSize: Number(load(KEYS.boardSize, 85)),
+            boardFit: load("cvt-board-fit-v1", false) === true,
+            settingsProfile: activeSettingsProfile,
+            animations: load("cvt-settings-animations-v1", true) !== false,
             musicVolume: music.volume, musicTrack: music.streamIndex,
             musicSource: music.source, musicWidget: { x: drag.offsetX, y: drag.offsetY },
             mpDifficulty: mindPalace.difficultyId, adaptive: adaptiveEnabled, adaptiveIntensity
@@ -4602,13 +4605,16 @@ function importData(file) {
             }
             // Validate and normalize every supported field before mutating any saved state.
             const data = backupValidation.validateBackup(JSON.parse(event.target.result));
+            // Keep a complete local snapshot so an unexpected apply-time failure can roll back atomically.
+            const storageSnapshot = Object.keys(localStorage).map(key => [key, localStorage.getItem(key)]);
+            let importStarted = false;
 
+            importStarted = true;
             stats = { ...DEFAULT_STATS, ...data.stats };
             history = data.history.slice(-50);
             answerRecords = data.answerRecords.slice(-5000);
             save(KEYS.stats, stats);
             save(KEYS.history, history);
-    schedulePlayerProfileSync();
             save(KEYS.answerRecords, answerRecords);
 
             if (data.visionRating) {
@@ -4641,6 +4647,23 @@ function importData(file) {
                 $("ticksToggle").checked = settings.ticks;
                 save(KEYS.ticks, settings.ticks);
                 setBoardSize(settings.boardSize);
+                if (settings.boardFit !== undefined) {
+                    save("cvt-board-fit-v1", settings.boardFit);
+                    applyBoardSize(settings.boardSize, { fit: settings.boardFit });
+                }
+                if (settings.settingsProfile !== undefined) {
+                    activeSettingsProfile = settings.settingsProfile;
+                    document.body.dataset.settingsProfile = settings.settingsProfile;
+                    save("cvt-settings-profile-v1", settings.settingsProfile);
+                    renderSettingsProfile();
+                }
+                if (settings.animations !== undefined) {
+                    document.body.dataset.reduceMotion = settings.animations ? "false" : "true";
+                    document.body.classList.toggle("cvt-reduced-effects", !settings.animations);
+                    const animationToggle = $("animationsToggle");
+                    if (animationToggle) animationToggle.checked = settings.animations;
+                    save("cvt-settings-animations-v1", settings.animations);
+                }
                 setMusicVol(settings.musicVolume);
                 const musicVolumeControl = $("musicVolume");
                 if (musicVolumeControl) musicVolumeControl.value = Math.round(settings.musicVolume * 100);
@@ -4666,12 +4689,23 @@ function importData(file) {
             renderHistory();
             renderAnalytics();
             resetSession();
+            schedulePlayerProfileSync();
             toast("Backup imported successfully.");
         } catch (error) {
             console.warn("Backup import rejected:", error);
+            if (typeof storageSnapshot !== "undefined" && importStarted) {
+                try {
+                    localStorage.clear();
+                    storageSnapshot.forEach(([key, value]) => localStorage.setItem(key, value));
+                    window.location.reload();
+                    return;
+                } catch (rollbackError) {
+                    console.error("Backup rollback failed:", rollbackError);
+                }
+            }
             toast(error instanceof Error && /Unsupported backup version|Backup/i.test(error.message)
                 ? "Import failed — backup is invalid or unsupported."
-                : "Import failed — invalid file. Your saved progress was not changed.");
+                : "Import failed — invalid file. Existing saved data was restored where possible.");
         }
     };
     reader.readAsText(file);
