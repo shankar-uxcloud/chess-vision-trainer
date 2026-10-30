@@ -28,8 +28,10 @@
  function validateSeason(value,key=weekKey()){
   if(!value||typeof value!=="object"||Array.isArray(value)||value.version!==1||value.week!==key)return emptySeason(key);
   const n=x=>Number.isSafeInteger(x)&&x>=0&&x<=1000000000?x:0;
+  const sessionIds=Array.isArray(value.sessionIds)?[...new Set(value.sessionIds.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))].slice(-100):[];
+  const pendingSessions=Array.isArray(value.pendingSessions)?value.pendingSessions.filter(x=>x&&typeof x==="object"&&typeof x.sessionId==="string"&&sessionIds.includes(x.sessionId)).slice(-100):[];
   return {version:1,week:key,points:n(value.points),sessions:n(value.sessions),correct:n(value.correct),bonusClaimed:value.bonusClaimed===true,
-   sessionIds:Array.isArray(value.sessionIds)?[...new Set(value.sessionIds.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))].slice(-100):[],updatedAt:typeof value.updatedAt==="string"?value.updatedAt:new Date().toISOString()};
+   sessionIds,pendingSessions,updatedAt:typeof value.updatedAt==="string"?value.updatedAt:new Date().toISOString()};
  }
  function addSession(season,session,key=weekKey()){
   const current=validateSeason(season,key);
@@ -38,6 +40,18 @@
   const points=scoreSession(session);
   current.points+=points;current.sessions++;current.correct+=Math.max(0,Math.floor(Number(session.correct)||0));
   current.sessionIds.push(id);current.sessionIds=current.sessionIds.slice(-100);
+  const accuracy=Number(session.accuracy);
+  const duration=Number(session.duration);
+  const completedAt=session.date||session.completedAt||new Date().toISOString();
+  current.pendingSessions.push({
+   sessionId:id,correct:Math.max(0,Math.min(10000,Math.floor(Number(session.correct)||0))),
+   accuracy:Number.isFinite(accuracy)?Math.max(0,Math.min(100,accuracy)):0,
+   bestStreak:Math.max(0,Math.min(10000,Math.floor(Number(session.bestStreak)||0))),
+   durationSeconds:Number.isFinite(duration)?Math.max(0,Math.min(86400,Math.floor(duration))):0,
+   mode:["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom",
+   completedAt:typeof completedAt==="string"?completedAt:new Date().toISOString()
+  });
+  current.pendingSessions=current.pendingSessions.slice(-100);
   current.updatedAt=new Date().toISOString();
   return current;
  }
@@ -104,13 +118,25 @@
   if(!client||!userId){setText("weeklyBoardFooter","Sign in to sync this score to the shared leaderboard.");if(typeof root.toast==="function")root.toast("Sign in to sync your weekly score.");return false;}
   if(busy)return false;busy=true;
   try{
-   const season=getLocal();
-   const row={user_id:userId,week_key:season.week,display_name:displayName||"Chess Player",points:season.points,sessions:season.sessions,correct:season.correct,updated_at:new Date().toISOString()};
-   const {error}=await client.from(BOARD_TABLE).upsert(row,{onConflict:"user_id,week_key"});
-   if(error)throw error;
-   setText("weeklyBoardFooter","Score synced · "+new Date().toLocaleTimeString());
+   let season=getLocal();
+   if(!season.pendingSessions.length){
+    setText("weeklyBoardFooter","No new session records to sync. Complete a new training session first.");
+    return false;
+   }
+   const pending=[...season.pendingSessions];
+   for(const session of pending){
+    const {data,error}=await client.functions.invoke("weekly-challenge-submit",{
+     body:{weekKey:season.week,session}
+    });
+    if(error)throw error;
+    if(!data?.ok)throw new Error(data?.message||"Weekly score submission was rejected.");
+    season=getLocal();
+    season.pendingSessions=season.pendingSessions.filter(item=>item.sessionId!==session.sessionId);
+    saveLocal(season);
+   }
+   setText("weeklyBoardFooter","Verified session records synced · "+new Date().toLocaleTimeString());
    render();await refreshBoard();return true;
-  }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; check the Supabase migration and retry.");return false;}
+  }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; retry when available.");return false;}
   finally{busy=false;}
  }
  function recordSession(session){
