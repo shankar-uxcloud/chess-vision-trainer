@@ -1847,7 +1847,20 @@ function knightMoves(coord) {
 }
 function randomSquare() { return FILES[Math.floor(Math.random()*8)] + RANKS[Math.floor(Math.random()*8)]; }
 function nextTarget() {
-    const target = adaptiveEnabled ? adaptiveTarget(game.target) : squareBag.next(game.target);
+    let target = null;
+    if (game.mode === "square" && localStorage.getItem("cvt-mastery-review-mode-v1") === "true" && window.CVTMasteryEngine) {
+        try {
+            const state = window.CVTMasteryEngine.normalizeReviewState(load("cvt-mastery-reviews-v1", null));
+            const due = window.CVTMasteryEngine.dueReviews(state, Date.now(), 64);
+            const nextReview = due.find(item => item.square !== game.target);
+            if (nextReview) target = nextReview.square;
+            else localStorage.removeItem("cvt-mastery-review-mode-v1");
+        } catch (error) {
+            console.warn("Mastery review queue unavailable; returning to standard training.", error);
+            localStorage.removeItem("cvt-mastery-review-mode-v1");
+        }
+    }
+    if (!target) target = adaptiveEnabled ? adaptiveTarget(game.target) : squareBag.next(game.target);
     if (adaptiveEnabled) {
         game.adaptiveRecentSquares.push(target);
         if (game.adaptiveRecentSquares.length > 12) game.adaptiveRecentSquares.shift();
@@ -2205,7 +2218,7 @@ function answerDifficulty() {
 }
 function recordAnswer(targetSquare, correct, reactionTime) {
     if (!targetSquare || !FILES.includes(targetSquare[0]) || !RANKS.includes(Number(targetSquare[1]))) return;
-    answerRecords.push({
+    const record = {
         targetSquare,
         square: targetSquare,
         correct: !!correct,
@@ -2218,9 +2231,16 @@ function recordAnswer(targetSquare, correct, reactionTime) {
         timestamp: new Date().toISOString(),
         difficulty: answerDifficulty(),
         attempt: ++game.questionAttempts
-    });
+    };
+    answerRecords.push(record);
     if (answerRecords.length > 5000) answerRecords = answerRecords.slice(-5000);
     save(KEYS.answerRecords, answerRecords);
+    if (window.CVTMasteryEngine) {
+        try {
+            const current = window.CVTMasteryEngine.normalizeReviewState(load("cvt-mastery-reviews-v1", null));
+            save("cvt-mastery-reviews-v1", window.CVTMasteryEngine.applyRecord(current, record));
+        } catch (error) { console.warn("Could not update mastery review schedule:", error); }
+    }
 }
 function handleSquare(coord, sq) {
     // Mind Palace: intercept clicks during rebuild phase
