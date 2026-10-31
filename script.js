@@ -2857,6 +2857,58 @@ $("savePlayerProfile")?.addEventListener("click", async () => {
 });
 $("syncProfileNow")?.addEventListener("click", () => { void syncPlayerProfile(); });
 $("exportProfileBackup")?.addEventListener("click", exportData);
+$("searchPublicPlayer")?.addEventListener("click", async () => {
+    const input = $("publicPlayerUsername");
+    const username = (input?.value || "").trim().toLowerCase();
+    const result = $("publicPlayerResult");
+    const button = $("searchPublicPlayer");
+    if (!result) return;
+    result.textContent = "";
+    if (!/^[a-z0-9][a-z0-9_]{2,19}$/.test(username)) {
+        result.textContent = "Enter an exact username (3–20 lowercase letters, numbers or underscores).";
+        return;
+    }
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (!client || !profileCloudUserId) {
+        result.textContent = "Sign in to search public player profiles.";
+        return;
+    }
+    if (button) { button.disabled = true; button.textContent = "Searching…"; }
+    try {
+        const { data, error } = await client.rpc("find_public_player_profile", { p_username: username });
+        if (error) throw error;
+        const player = Array.isArray(data) ? data[0] : data;
+        if (!player) {
+            result.textContent = "No public profile found for that exact username.";
+            return;
+        }
+        const title = document.createElement("strong");
+        title.textContent = player.display_name + " · @" + player.username;
+        result.appendChild(title);
+        if (player.show_stats) {
+            const stats = document.createElement("p");
+            const parts = [];
+            if (Number.isFinite(Number(player.vision_rating))) parts.push("Vision Rating " + player.vision_rating);
+            if (Number.isFinite(Number(player.total_sessions))) parts.push(player.total_sessions + " sessions");
+            if (Number.isFinite(Number(player.accuracy))) parts.push(player.accuracy + "% accuracy");
+            if (Number.isFinite(Number(player.xp))) parts.push(player.xp + " XP");
+            stats.textContent = parts.length ? parts.join(" · ") : "This player has not shared statistics yet.";
+            result.appendChild(stats);
+        } else {
+            const note = document.createElement("p");
+            note.textContent = "This player has chosen not to share training statistics.";
+            result.appendChild(note);
+        }
+    } catch (error) {
+        result.textContent = /wait before searching/i.test(String(error?.message || ""))
+            ? "Please wait a moment before searching again."
+            : "Public profile search is unavailable. Check the Phase 4 Supabase migration and try again.";
+        console.warn("Public profile lookup failed:", error);
+    } finally {
+        if (button) { button.disabled = false; button.textContent = "Search"; }
+    }
+});
+
 
 let ratingCloudUserId = null;
 let ratingCloudReady = false;
