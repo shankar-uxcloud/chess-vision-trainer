@@ -1852,7 +1852,7 @@ function nextTarget() {
         try {
             const state = window.CVTMasteryEngine.normalizeReviewState(load("cvt-mastery-reviews-v1", null));
             const due = window.CVTMasteryEngine.dueReviews(state, Date.now(), 64);
-            const nextReview = due.find(item => item.square !== game.target);
+            const nextReview = due[0];
             if (nextReview) target = nextReview.square;
             else localStorage.removeItem("cvt-mastery-review-mode-v1");
         } catch (error) {
