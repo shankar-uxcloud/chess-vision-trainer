@@ -23,13 +23,3 @@ body[data-settings-profile="focus"] .training-board-panel{border-color:var(--acc
 body[data-settings-profile="focus"] .target-panel .target-hint{opacity:.72}
 @media(max-width:800px){.settings-profile-grid{grid-template-columns:1fr}.settings-profile{min-height:70px}.settings-actions-row button{min-width:0;width:100%}}
 @media(max-width:560px){.board-presets{gap:5px}.board-presets button{font-size:10px;padding:9px 2px}.board-presets button small{font-size:9px}}
-/* The board itself gets an explicit square size from applyBoardSize(); do not override it with 100%-width !important rules. */
-body[data-view="training"] .training-layout,
-body[data-view="training"] .gameplay-stage,
-body[data-view="training"] .training-board-panel,
-body[data-view="training"] .training-board-panel .board-stage,
-body[data-view="training"] .training-board-panel .board-section {min-width:0;max-width:100%}
-body[data-view="training"] .training-board-panel .board-section {width:100%;padding-inline:0;justify-content:center}
-body[data-view="training"] .training-board-panel .board-wrapper {width:auto;max-width:100%;padding:0;overflow:visible;flex:0 1 auto}
-body[data-view="training"] .training-board-panel .board-middle {width:100%;grid-template-columns:22px minmax(0,1fr) 22px;gap:6px}
-body[data-view="training"] .training-board-panel #chessboard {width:var(--cvt-board-target, 480px);height:var(--cvt-board-target, 480px);max-width:100%;aspect-ratio:1/1;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr))}

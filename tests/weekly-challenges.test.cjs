@@ -39,3 +39,43 @@ test("leaderboard ranking is deterministic and ignores invalid rows",()=>{
  ]);
  assert.deepEqual(rows.map(r=>r.user_id),["a","b","c"]);
 });
+
+test("new weekly sessions retain a bounded pending server-submission record",()=>{
+ const first=core.addSession(core.emptySeason("2026-W44"),{
+  sessionId:"server-session-1",correct:8,mistakes:2,accuracy:80,bestStreak:4,
+  duration:60,mode:"square",date:"2026-10-26T12:00:00.000Z"
+ },"2026-W44",[
+  {sessionId:"server-session-1",mode:"square",targetSquare:"e4",correct:true,countsForScore:true,reactionTime:400,timestamp:"2026-10-26T12:00:00.000Z"},
+  {sessionId:"server-session-1",mode:"square",targetSquare:"d4",correct:false,countsForScore:true,reactionTime:600,timestamp:"2026-10-26T12:00:01.000Z"}
+ ]);
+ assert.equal(first.pendingSessions.length,1);
+ assert.deepEqual(first.pendingSessions[0],{
+  sessionId:"server-session-1",mode:"square",answers:[
+   {sessionId:"server-session-1",mode:"square",targetSquare:"e4",correct:true,countsForScore:true,reactionTime:400,timestamp:"2026-10-26T12:00:00.000Z"},
+   {sessionId:"server-session-1",mode:"square",targetSquare:"d4",correct:false,countsForScore:true,reactionTime:600,timestamp:"2026-10-26T12:00:01.000Z"}
+  ]
+ });
+});
+
+test("legacy weekly local data remains readable without pending session details",()=>{
+ const legacy=core.validateSeason({
+  version:1,week:"2026-W44",points:120,sessions:2,correct:10,sessionIds:["old-1"]
+ },"2026-W44");
+ assert.equal(legacy.points,120);
+ assert.deepEqual(legacy.pendingSessions,[]);
+});
+
+test("duplicate local session identifiers do not create duplicate pending server records",()=>{
+ const first=core.addSession(core.emptySeason("2026-W44"),{
+  sessionId:"repeat-id",correct:4,accuracy:80,bestStreak:2,mode:"knight",duration:30
+ },"2026-W44",[
+  {sessionId:"repeat-id",mode:"knight",targetSquare:"c3",correct:true,countsForScore:true,reactionTime:300,timestamp:"2026-10-26T12:00:00.000Z"}
+ ]);
+ const duplicate=core.addSession(first,{
+  sessionId:"repeat-id",correct:40,accuracy:100,bestStreak:40,mode:"knight",duration:30
+ },"2026-W44",[
+  {sessionId:"repeat-id",mode:"knight",targetSquare:"c3",correct:true,countsForScore:true,reactionTime:300,timestamp:"2026-10-26T12:00:00.000Z"}
+ ]);
+ assert.equal(duplicate.pendingSessions.length,1);
+ assert.equal(duplicate.pendingSessions[0].answers.length,1);
+});

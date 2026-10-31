@@ -136,7 +136,7 @@ const squareBag = {
         function correctFlip(sq) {
             if (game.flipStep === 0) {
                 game.flipStep = 1;
-                recordAnswer(game.target, true, Date.now() - game.questionStartTime);
+                recordAnswer(game.target, true, Date.now() - game.questionStartTime, false);
                 sq.classList.add("last-correct");
                 $("targetPanel").classList.add("correct");
                 $("targetFeedback").textContent = "✓ " + game.flipStartSide.toUpperCase() + " SIDE · NOW FIND IT FROM " + (game.flipStartSide === "white" ? "BLACK" : "WHITE");
@@ -318,11 +318,6 @@ function renderMPPosition(position) {
         el.textContent = mpGlyph(pk);
         el.setAttribute("aria-hidden", "true");
         sqEl.appendChild(el);
-    });
-    $("adaptiveIntensity").addEventListener("change", e => {
-        adaptiveIntensity = e.target.value;
-        save(KEYS.adaptiveIntensity, adaptiveIntensity);
-        toast("Adaptive intensity: " + e.target.options[e.target.selectedIndex].text + ".");
     });
 }
 
@@ -2203,12 +2198,13 @@ function answerDifficulty() {
     if (duration >= 120) return "endurance";
     return "standard";
 }
-function recordAnswer(targetSquare, correct, reactionTime) {
+function recordAnswer(targetSquare, correct, reactionTime, countsForScore = true) {
     if (!targetSquare || !FILES.includes(targetSquare[0]) || !RANKS.includes(Number(targetSquare[1]))) return;
     answerRecords.push({
         targetSquare,
         square: targetSquare,
         correct: !!correct,
+        countsForScore: countsForScore !== false,
         reactionTime: Math.max(0, Math.round(reactionTime)),
         mode: game.mode,
         perspectiveSide: getCurrentSide(),
@@ -2246,7 +2242,7 @@ function handleSquare(coord, sq) {
 function correctDual(sq) {
     if (game.dualStep === 0) {
         game.dualStep = 1;
-        recordAnswer(game.target, true, Date.now() - game.questionStartTime);
+        recordAnswer(game.target, true, Date.now() - game.questionStartTime, false);
         sq.classList.add("last-correct");
         $("targetPanel").classList.add("correct");
         $("targetFeedback").textContent = "✓ WHITE SIDE · NOW FIND IT FROM BLACK";
@@ -3454,6 +3450,7 @@ function startDailySession(practice) {
             const dateKey = dailyDateKey();
             dailyStateFor(dateKey);
             resetSession();
+            game.sessionId = "daily-" + dateKey + "-" + Math.random().toString(36).slice(2, 10);
             game.mode = "daily";
             game.dailyActive = true;
             game.dailyPractice = !!practice;
@@ -3659,7 +3656,7 @@ function finishSession() {
 
     history.unshift(result);
     history = history.slice(0, 50);
-    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result, answerRecords.filter(record => record.sessionId === result.sessionId));
 
     save(KEYS.stats, stats);
     save(KEYS.history, history);
@@ -3730,6 +3727,7 @@ function finishDailyChallenge() {
     const gained = game.correct * 4 + (official ? 20 : 0);
     addXp(gained);
     const result = {
+        sessionId: game.sessionId,
         correct: game.correct, mistakes: game.mistakes, accuracy: attempt.accuracy,
         bestStreak: game.bestStreak, duration: completionTime, mode: "daily",
         perspective: "white", xp: gained, score: attempt.score,
@@ -3738,7 +3736,7 @@ function finishDailyChallenge() {
     };
     history.unshift(result);
     history = history.slice(0, 50);
-    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result);
+    if (typeof recordWeeklyChallengeSession === "function") recordWeeklyChallengeSession(result, answerRecords.filter(record => record.sessionId === result.sessionId));
     save(KEYS.stats, stats);
     save(KEYS.history, history);
     schedulePlayerProfileSync();
@@ -4009,6 +4007,7 @@ function setMode(mode) {
     updateFlipTrainingUI();
     renderMission();
     resetSession();
+    scheduleBoardSizeRecalc();
 }
 function mountGameplayStage() {
     const stage = $("gameplayStage");
@@ -4038,21 +4037,21 @@ function setTheme(t) {
     const selector = $("appearanceTheme");
     if (selector) selector.value = t;
     save(KEYS.theme, t);
+    scheduleBoardSizeRecalc();
 }
 function setBoardTheme(t) {
     if (!["emerald","walnut","ice","rose","midnight","classic"].includes(t)) t = "emerald";
     document.body.dataset.board = t;
     $("boardTheme").value = t;
     save(KEYS.board, t);
+    scheduleBoardSizeRecalc();
 }
 function setLabels(on) { document.body.dataset.labels = on ? "true" : "false"; $("labelsToggle").checked = on; save(KEYS.labels, on); }
 function setCoords(on) { document.body.dataset.coords = on ? "visible" : "hidden"; $("coordsToggle").checked = on; save(KEYS.coords, on); }
-const BOARD_SIZE_PRESETS = window.CVTBoardSettingsCore?.PRESETS || { small: 70, medium: 85, large: 100, "extra-large": 115, maximum: 130 };
-const BOARD_PROFILES = {
-    balanced: { size: 85, theme: "emerald", labels: false, coords: true, pieces: false, sound: true, ticks: true, animations: true, interfaceTheme: "light" },
-    focus: { size: 115, theme: "midnight", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" },
-    performance: { size: 100, theme: "classic", labels: false, coords: true, pieces: false, sound: false, ticks: false, animations: false, interfaceTheme: "dark" }
-};
+const BOARD_SETTINGS_CORE = window.CVTBoardSettingsCore;
+if (!BOARD_SETTINGS_CORE) throw new Error("Board settings core failed to load.");
+const BOARD_SIZE_PRESETS = BOARD_SETTINGS_CORE.PRESETS;
+const BOARD_PROFILES = BOARD_SETTINGS_CORE.PROFILES;
 let activeSettingsProfile = load("cvt-settings-profile-v1", "balanced");
 if (!["balanced","focus","performance","custom"].includes(activeSettingsProfile)) activeSettingsProfile = "balanced";
 let settingsResizeObserver = null;
@@ -4093,7 +4092,7 @@ function applyBoardSize(pct, options = {}) {
     const requested = Math.max(60, Math.min(130, Math.round((Number(pct) || 100) / 5) * 5));
     const fit = options.fit === true;
     const available = measureBoardMax();
-    const target = Math.max(160, Math.min(available, Math.round(fit ? available : available * requested / 100)));
+    const target = BOARD_SETTINGS_CORE.computeTarget(available, requested, fit);
     const board = $("chessboard");
     const wrapper = $("boardWrapper");
     const middle = wrapper?.querySelector(".board-middle");
@@ -4142,7 +4141,7 @@ function applyBoardSize(pct, options = {}) {
         available,
         renderedWidth,
         renderedHeight,
-        fits: renderedWidth > 0 && renderedWidth === renderedHeight && renderedWidth <= available
+        fits: renderedWidth > 0 && Math.abs(renderedWidth - target) <= 1 && Math.abs(renderedHeight - target) <= 1 && renderedWidth === renderedHeight && renderedWidth <= available
     };
     if (output) {
         output.dataset.renderedWidth = String(renderedWidth);
@@ -4154,6 +4153,17 @@ function applyBoardSize(pct, options = {}) {
     document.body.dataset.boardSizeVerified = result.fits ? "true" : "false";
     document.body.dispatchEvent(new CustomEvent("cvt:board-size-applied", { detail: result }));
     return result;
+}
+function scheduleBoardSizeRecalc() {
+    const board = $("chessboard");
+    if (!board || !board.getClientRects().length) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!board.getClientRects().length) return;
+        applyBoardSize(Number(load(KEYS.boardSize, 85)) || 85, {
+            transient: true,
+            fit: load("cvt-board-fit-v1", false) === true
+        });
+    }));
 }
 function setBoardSize(pct, options = {}) {
     return applyBoardSize(pct, options);
@@ -4179,8 +4189,8 @@ function applyRecommendedProfile(name, options = {}) {
     save(KEYS.ticks, game.ticks);
     document.body.classList.toggle("cvt-reduced-effects", !profile.animations);
 
-    const shouldFitBoard = name === "performance";
-    const chosenSize = name === "balanced" ? 85 : profile.size;
+    const shouldFitBoard = profile.fit === true;
+    const chosenSize = profile.size;
     save("cvt-board-fit-v1", shouldFitBoard);
     applyBoardSize(chosenSize, { fit: shouldFitBoard, profileName: name });
     save(KEYS.boardSize, chosenSize);
@@ -4292,6 +4302,12 @@ function setupSettings() {
     $("volumeRange").addEventListener("input", e => { game.volume = Number(e.target.value)/100; save(KEYS.volume, game.volume); markSettingsCustomized(); });
     $("ticksToggle").addEventListener("change", e => { game.ticks = e.target.checked; save(KEYS.ticks, game.ticks); markSettingsCustomized(); toast(game.ticks ? "Ticks on." : "Ticks off."); });
     $("animationsToggle")?.addEventListener("change", e => { const enabled = e.target.checked; document.body.classList.toggle("cvt-reduced-effects", !enabled); document.body.dataset.reduceMotion = enabled ? "false" : "true"; save("cvt-settings-animations-v1", enabled); markSettingsCustomized(); toast(enabled ? "Animations on." : "Animations reduced."); });
+    $("adaptiveIntensity").addEventListener("change", e => {
+        if (!["balanced", "focus", "aggressive"].includes(e.target.value)) return;
+        adaptiveIntensity = e.target.value;
+        save(KEYS.adaptiveIntensity, adaptiveIntensity);
+        toast("Adaptive intensity: " + e.target.options[e.target.selectedIndex].text + ".");
+    });
     $("adaptiveToggle").addEventListener("change", e => {
         adaptiveEnabled = e.target.checked;
         save(KEYS.adaptive, adaptiveEnabled);
@@ -4570,7 +4586,10 @@ function exportData() {
             perspective: game.perspective, flip: document.body.dataset.flip === "true",
             labels: document.body.dataset.labels === "true", coords: document.body.dataset.coords !== "hidden",
             pieces: game.piecesEnabled, sound: game.sound, volume: game.volume, ticks: game.ticks,
-            boardSize: Number($("boardSize").value),
+            boardSize: Number(load(KEYS.boardSize, 85)),
+            boardFit: load("cvt-board-fit-v1", false) === true,
+            settingsProfile: activeSettingsProfile,
+            animations: load("cvt-settings-animations-v1", true) !== false,
             musicVolume: music.volume, musicTrack: music.streamIndex,
             musicSource: music.source, musicWidget: { x: drag.offsetX, y: drag.offsetY },
             mpDifficulty: mindPalace.difficultyId, adaptive: adaptiveEnabled, adaptiveIntensity
@@ -4597,19 +4616,22 @@ function importData(file) {
     const reader = new FileReader();
     reader.onerror = () => toast("Import failed — the selected file could not be read.");
     reader.onload = event => {
+        let storageSnapshot = null;
+        let importStarted = false;
         try {
             if (typeof event.target.result !== "string" || event.target.result.length > MAX_BACKUP_BYTES) {
                 throw new Error("Backup file is too large or unreadable.");
             }
             // Validate and normalize every supported field before mutating any saved state.
             const data = backupValidation.validateBackup(JSON.parse(event.target.result));
-
+            // Keep a complete local snapshot so an unexpected apply-time failure can roll back atomically.
+            storageSnapshot = Object.keys(localStorage).map(key => [key, localStorage.getItem(key)]);
+            importStarted = true;
             stats = { ...DEFAULT_STATS, ...data.stats };
             history = data.history.slice(-50);
             answerRecords = data.answerRecords.slice(-5000);
             save(KEYS.stats, stats);
             save(KEYS.history, history);
-    schedulePlayerProfileSync();
             save(KEYS.answerRecords, answerRecords);
 
             if (data.visionRating) {
@@ -4642,6 +4664,23 @@ function importData(file) {
                 $("ticksToggle").checked = settings.ticks;
                 save(KEYS.ticks, settings.ticks);
                 setBoardSize(settings.boardSize);
+                if (settings.boardFit !== undefined) {
+                    save("cvt-board-fit-v1", settings.boardFit);
+                    applyBoardSize(settings.boardSize, { fit: settings.boardFit });
+                }
+                if (settings.settingsProfile !== undefined) {
+                    activeSettingsProfile = settings.settingsProfile;
+                    document.body.dataset.settingsProfile = settings.settingsProfile;
+                    save("cvt-settings-profile-v1", settings.settingsProfile);
+                    renderSettingsProfile();
+                }
+                if (settings.animations !== undefined) {
+                    document.body.dataset.reduceMotion = settings.animations ? "false" : "true";
+                    document.body.classList.toggle("cvt-reduced-effects", !settings.animations);
+                    const animationToggle = $("animationsToggle");
+                    if (animationToggle) animationToggle.checked = settings.animations;
+                    save("cvt-settings-animations-v1", settings.animations);
+                }
                 setMusicVol(settings.musicVolume);
                 const musicVolumeControl = $("musicVolume");
                 if (musicVolumeControl) musicVolumeControl.value = Math.round(settings.musicVolume * 100);
@@ -4667,12 +4706,23 @@ function importData(file) {
             renderHistory();
             renderAnalytics();
             resetSession();
+            schedulePlayerProfileSync();
             toast("Backup imported successfully.");
         } catch (error) {
             console.warn("Backup import rejected:", error);
+            if (storageSnapshot && importStarted) {
+                try {
+                    localStorage.clear();
+                    storageSnapshot.forEach(([key, value]) => localStorage.setItem(key, value));
+                    window.location.reload();
+                    return;
+                } catch (rollbackError) {
+                    console.error("Backup rollback failed:", rollbackError);
+                }
+            }
             toast(error instanceof Error && /Unsupported backup version|Backup/i.test(error.message)
                 ? "Import failed — backup is invalid or unsupported."
-                : "Import failed — invalid file. Your saved progress was not changed.");
+                : "Import failed — invalid file. Existing saved data was restored where possible.");
         }
     };
     reader.readAsText(file);

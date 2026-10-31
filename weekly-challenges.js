@@ -28,16 +28,30 @@
  function validateSeason(value,key=weekKey()){
   if(!value||typeof value!=="object"||Array.isArray(value)||value.version!==1||value.week!==key)return emptySeason(key);
   const n=x=>Number.isSafeInteger(x)&&x>=0&&x<=1000000000?x:0;
+  const sessionIds=Array.isArray(value.sessionIds)?[...new Set(value.sessionIds.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))].slice(-100):[];
+  const pendingSessions=Array.isArray(value.pendingSessions)?value.pendingSessions.filter(x=>x&&typeof x==="object"&&typeof x.sessionId==="string"&&sessionIds.includes(x.sessionId)).slice(-100):[];
   return {version:1,week:key,points:n(value.points),sessions:n(value.sessions),correct:n(value.correct),bonusClaimed:value.bonusClaimed===true,
-   sessionIds:Array.isArray(value.sessionIds)?[...new Set(value.sessionIds.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))].slice(-100):[],updatedAt:typeof value.updatedAt==="string"?value.updatedAt:new Date().toISOString()};
+   sessionIds,pendingSessions,updatedAt:typeof value.updatedAt==="string"?value.updatedAt:new Date().toISOString()};
  }
- function addSession(season,session,key=weekKey()){
+ function addSession(season,session,key=weekKey(),answerEvents=[]){
   const current=validateSeason(season,key);
   const id=String(session?.sessionId||session?.id||session?.date||session?.completedAt||"");
   if(!session||!id||current.sessionIds.includes(id))return current;
   const points=scoreSession(session);
   current.points+=points;current.sessions++;current.correct+=Math.max(0,Math.floor(Number(session.correct)||0));
   current.sessionIds.push(id);current.sessionIds=current.sessionIds.slice(-100);
+  const mode=["square","coordinate","reverse","knight","blindfold","color","custom","daily"].includes(session.mode)?session.mode:"custom";
+  const answers=Array.isArray(answerEvents)?answerEvents.filter(event=>
+   event&&typeof event==="object"&&event.sessionId===id&&event.mode===mode&&
+   typeof event.correct==="boolean"&&typeof event.countsForScore==="boolean"&&typeof event.targetSquare==="string"&&/^[a-h][1-8]$/.test(event.targetSquare)&&
+   Number.isFinite(Number(event.reactionTime))&&Number(event.reactionTime)>=0&&
+   typeof event.timestamp==="string"&&Number.isFinite(Date.parse(event.timestamp))
+  ).slice(-10000).map(event=>({
+   sessionId:id,mode,targetSquare:event.targetSquare,correct:event.correct,countsForScore:event.countsForScore,
+   reactionTime:Math.min(3600000,Math.round(Number(event.reactionTime))),timestamp:event.timestamp
+  })):[];
+  if(answers.length)current.pendingSessions.push({sessionId:id,mode,answers});
+  current.pendingSessions=current.pendingSessions.slice(-100);
   current.updatedAt=new Date().toISOString();
   return current;
  }
@@ -94,27 +108,38 @@
   if(!client||!userId){renderBoard([],"Sign in and apply the leaderboard migration to enable shared rankings.");return;}
   setText("weeklyBoardFooter","Loading current season rankings…");
   try{
-   const {data,error}=await client.from(BOARD_TABLE).select("user_id,display_name,points,sessions,correct").eq("week_key",weekKey()).order("points",{ascending:false}).limit(100);
+   const {data,error}=await client.from(BOARD_TABLE).select("user_id,display_name,points,sessions,correct").eq("week_key",weekKey()).eq("score_version",1).order("points",{ascending:false}).limit(100);
    if(error)throw error;
    renderBoard(api.rankRows(data),data?.length?"Weekly rankings · "+weekKey():"No scores synced for this season yet.");
-  }catch(error){console.warn("Weekly leaderboard load failed",error);renderBoard([],"Cloud leaderboard unavailable. Apply supabase/migrations/20261026_weekly_leaderboard.sql and retry.");}
+  }catch(error){console.warn("Weekly leaderboard load failed",error);renderBoard([],"Cloud leaderboard unavailable. Apply the weekly leaderboard migrations and deploy the weekly-challenge-submit Edge Function, then retry.");}
  }
  async function sync(){
   const client=root.CVT_SUPABASE_CLIENT;
   if(!client||!userId){setText("weeklyBoardFooter","Sign in to sync this score to the shared leaderboard.");if(typeof root.toast==="function")root.toast("Sign in to sync your weekly score.");return false;}
   if(busy)return false;busy=true;
   try{
-   const season=getLocal();
-   const row={user_id:userId,week_key:season.week,display_name:displayName||"Chess Player",points:season.points,sessions:season.sessions,correct:season.correct,updated_at:new Date().toISOString()};
-   const {error}=await client.from(BOARD_TABLE).upsert(row,{onConflict:"user_id,week_key"});
+   let season=getLocal();
+   if(!season.pendingSessions.length){
+    setText("weeklyBoardFooter","No new session records to sync. Complete a new training session first.");
+    return false;
+   }
+   const pending=season.pendingSessions.slice(0,5);
+   const {data,error}=await client.functions.invoke("weekly-challenge-submit",{
+    body:{weekKey:season.week,sessions:pending}
+   });
    if(error)throw error;
-   setText("weeklyBoardFooter","Score synced · "+new Date().toLocaleTimeString());
+   if(!data?.ok)throw new Error(data?.message||"Weekly score submission was rejected.");
+   season=getLocal();
+   const synced=new Set(pending.map(item=>item.sessionId));
+   season.pendingSessions=season.pendingSessions.filter(item=>!synced.has(item.sessionId));
+   saveLocal(season);
+   setText("weeklyBoardFooter","Server-calculated weekly scores synced · "+new Date().toLocaleTimeString());
    render();await refreshBoard();return true;
-  }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; check the Supabase migration and retry.");return false;}
+  }catch(error){console.warn("Weekly score sync failed",error);setText("weeklyBoardFooter","Sync failed. Your local score is safe; retry when available.");return false;}
   finally{busy=false;}
  }
- function recordSession(session){
-  const key=weekKey(),before=getLocal(key),after=addSession(before,session,key);
+ function recordSession(session,answerEvents=[]){
+  const key=weekKey(),before=getLocal(key),after=addSession(before,session,key,answerEvents);
   if(after.sessions!==before.sessions){if(after.sessions>=5&&!after.bonusClaimed){after.points+=250;after.bonusClaimed=true;}saveLocal(after);render();if(userId)sync();}
  }
  root.renderWeeklyChallenges=render;
