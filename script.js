@@ -2613,6 +2613,9 @@ let profileCloudBusy = false;
 let profileCloudGeneration = 0;
 let profileCloudTimer = null;
 let profileDisplayName = "Chess Player";
+let profileUsername = "";
+let profileIsPublic = false;
+let profileShowStats = false;
 function profileProgressKey(userId) { return userId ? "cvt-progress-user-" + userId : "cvt-progress-guest-v1"; }
 function profileSnapshot() {
     return {
@@ -2676,6 +2679,17 @@ function renderPlayerProfile() {
     set("playerProfileAvatar", (displayName.trim()[0] || "♞").toUpperCase());
     const input = $("playerDisplayName");
     if (input && document.activeElement !== input) input.value = displayName === "Chess Player" ? "" : displayName;
+    const usernameInput = $("playerUsername");
+    if (usernameInput && document.activeElement !== usernameInput) usernameInput.value = profileUsername;
+    const publicToggle = $("playerProfilePublic");
+    if (publicToggle) publicToggle.checked = profileIsPublic;
+    const statsToggle = $("playerProfileShowStats");
+    if (statsToggle) statsToggle.checked = profileShowStats;
+    [usernameInput, publicToggle, statsToggle].forEach(control => { if (control) control.disabled = !profileCloudUserId; });
+    const privacyNote = $("profilePrivacyNote");
+    if (privacyNote) privacyNote.textContent = profileCloudUserId
+        ? "Your profile is private by default. Public visibility and statistics are controlled separately."
+        : "Guest profiles stay on this device. Sign in to reserve a unique username and manage public visibility.";
     const rating = Math.round(visionRating.current || 1000);
     const info = levelInfo(xp);
     set("profileVisionRating", rating); set("profileTotalSessions", stats.totalSessions || 0);
@@ -2729,7 +2743,8 @@ async function syncPlayerProfile(options = {}) {
     try {
         const progress = profileSnapshot();
         const { error } = await client.from("cvt_player_profiles").upsert({
-            user_id: userId, display_name: profileDisplayName, progress, updated_at: new Date().toISOString()
+            user_id: userId, display_name: profileDisplayName, username: profileUsername || null,
+            profile_public: profileIsPublic, show_stats: profileShowStats, progress, updated_at: new Date().toISOString()
         }, { onConflict: "user_id" });
         if (error) throw error;
         if (generation !== profileCloudGeneration || userId !== profileCloudUserId) return false;
@@ -2755,11 +2770,14 @@ async function loadPlayerProfileFromCloud(user) {
     const generation = profileCloudGeneration;
     try {
         const { data, error } = await client.from("cvt_player_profiles")
-            .select("display_name,progress,updated_at").eq("user_id", userId).maybeSingle();
+            .select("display_name,username,profile_public,show_stats,progress,updated_at").eq("user_id", userId).maybeSingle();
         if (error) throw error;
         if (generation !== profileCloudGeneration || userId !== profileCloudUserId) return;
         if (data && safeProfileProgress(data.progress)) {
             profileDisplayName = (typeof data.display_name === "string" && data.display_name.trim()) || profileDisplayName;
+            profileUsername = typeof data.username === "string" ? data.username : "";
+            profileIsPublic = data.profile_public === true;
+            profileShowStats = data.show_stats === true;
             const accountLabel = $("authAccountLabel");
             if (accountLabel) accountLabel.textContent = profileDisplayName;
             applyProfileProgress(data.progress);
@@ -2780,8 +2798,11 @@ window.addEventListener("cvt:auth-state", event => {
     profileCloudGeneration++;
     profileCloudUserId = user && typeof user.id === "string" ? user.id : null;
     profileDisplayName = user && typeof user.display_name === "string" && user.display_name.trim()
-        ? user.display_name.trim() : (user?.email?.split("@")[0] || "Chess Player");
+        ? user.display_name.trim() : (user?.email?.split("@")[0] || load("cvt-profile-display-name-guest", "Chess Player"));
     if (!profileCloudUserId) {
+        profileUsername = "";
+        profileIsPublic = false;
+        profileShowStats = false;
         profileSetCloudState("signedout", "Guest progress remains on this device. Sign in to sync across devices.");
         renderPlayerProfile();
         return;
@@ -2791,26 +2812,103 @@ window.addEventListener("cvt:auth-state", event => {
     renderPlayerProfile();
 });
 $("savePlayerProfile")?.addEventListener("click", async () => {
-    const input = $("playerDisplayName"), name = input?.value.trim();
+    const name = $("playerDisplayName")?.value.trim() || "";
     if (!name || name.length > 60) { toast("Enter a display name between 1 and 60 characters."); return; }
-    profileDisplayName = name;
-    const client = window.CVT_SUPABASE_CLIENT;
-    if (client && profileCloudUserId) {
-        const { error } = await client.auth.updateUser({ data: { display_name: name } });
-        if (error) { toast("Name updated locally, but account metadata could not be saved."); console.warn(error); }
-        else {
-            const label = $("authAccountLabel"); if (label) label.textContent = name;
-            void syncPlayerProfile();
-        }
-    } else {
+    if (!profileCloudUserId) {
+        profileDisplayName = name;
         save("cvt-profile-display-name-guest", name);
-        toast("Display name saved on this device. Sign in to sync it.");
+        renderPlayerProfile();
+        toast("Guest display name saved on this device. Sign in to reserve a username.");
+        return;
     }
+
+    const username = ($("playerUsername")?.value || "").trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_]{2,19}$/.test(username)) {
+        toast("Username must be 3–20 characters: lowercase letters, numbers or underscores.");
+        $("playerUsername")?.focus();
+        return;
+    }
+
+    const previous = { name: profileDisplayName, username: profileUsername, isPublic: profileIsPublic, showStats: profileShowStats };
+    profileDisplayName = name;
+    profileUsername = username;
+    profileIsPublic = $("playerProfilePublic")?.checked === true;
+    profileShowStats = $("playerProfileShowStats")?.checked === true;
+
+    const synced = await syncPlayerProfile();
+    if (!synced) {
+        profileDisplayName = previous.name;
+        profileUsername = previous.username;
+        profileIsPublic = previous.isPublic;
+        profileShowStats = previous.showStats;
+        renderPlayerProfile();
+        toast("Profile could not be saved to the cloud. Your previous settings are preserved.");
+        return;
+    }
+
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (client) {
+        const { error } = await client.auth.updateUser({ data: { display_name: name } });
+        if (error) console.warn("Profile saved, but auth display metadata did not update:", error);
+    }
+    const label = $("authAccountLabel"); if (label) label.textContent = name;
     renderPlayerProfile();
-    toast("Player profile updated.");
+    toast("Player profile saved.");
 });
 $("syncProfileNow")?.addEventListener("click", () => { void syncPlayerProfile(); });
 $("exportProfileBackup")?.addEventListener("click", exportData);
+$("searchPublicPlayer")?.addEventListener("click", async () => {
+    const input = $("publicPlayerUsername");
+    const username = (input?.value || "").trim().toLowerCase();
+    const result = $("publicPlayerResult");
+    const button = $("searchPublicPlayer");
+    if (!result) return;
+    result.textContent = "";
+    if (!/^[a-z0-9][a-z0-9_]{2,19}$/.test(username)) {
+        result.textContent = "Enter an exact username (3–20 lowercase letters, numbers or underscores).";
+        return;
+    }
+    const client = window.CVT_SUPABASE_CLIENT;
+    if (!client || !profileCloudUserId) {
+        result.textContent = "Sign in to search public player profiles.";
+        return;
+    }
+    if (button) { button.disabled = true; button.textContent = "Searching…"; }
+    try {
+        const { data, error } = await client.rpc("find_public_player_profile", { p_username: username });
+        if (error) throw error;
+        const player = Array.isArray(data) ? data[0] : data;
+        if (!player) {
+            result.textContent = "No public profile found for that exact username.";
+            return;
+        }
+        const title = document.createElement("strong");
+        title.textContent = player.display_name + " · @" + player.username;
+        result.appendChild(title);
+        if (player.show_stats) {
+            const stats = document.createElement("p");
+            const parts = [];
+            if (player.vision_rating !== null && Number.isFinite(Number(player.vision_rating))) parts.push("Vision Rating " + player.vision_rating);
+            if (player.total_sessions !== null && Number.isFinite(Number(player.total_sessions))) parts.push(player.total_sessions + " sessions");
+            if (player.accuracy !== null && Number.isFinite(Number(player.accuracy))) parts.push(player.accuracy + "% accuracy");
+            if (player.xp !== null && Number.isFinite(Number(player.xp))) parts.push(player.xp + " XP");
+            stats.textContent = parts.length ? parts.join(" · ") : "This player has not shared statistics yet.";
+            result.appendChild(stats);
+        } else {
+            const note = document.createElement("p");
+            note.textContent = "This player has chosen not to share training statistics.";
+            result.appendChild(note);
+        }
+    } catch (error) {
+        result.textContent = /wait before searching/i.test(String(error?.message || ""))
+            ? "Please wait a moment before searching again."
+            : "Public profile search is unavailable. Check the Phase 4 Supabase migration and try again.";
+        console.warn("Public profile lookup failed:", error);
+    } finally {
+        if (button) { button.disabled = false; button.textContent = "Search"; }
+    }
+});
+
 
 let ratingCloudUserId = null;
 let ratingCloudReady = false;
