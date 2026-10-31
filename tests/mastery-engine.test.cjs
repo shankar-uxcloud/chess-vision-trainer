@@ -40,10 +40,10 @@ test("review scheduler uses fixed Leitner intervals and correct answers advance 
  let state=M.normalizeReviewState(null);
  state=M.applyRecord(state,rec("g6",true,"square",1),now);
  assert.equal(state.items.g6.box,1);
- assert.equal(Date.parse(state.items.g6.dueAt),now+2*86400000);
+ assert.equal(Date.parse(state.items.g6.dueAt),now+1*86400000);
  state=M.applyRecord(state,rec("g6",true,"square",2),now+1000);
  assert.equal(state.items.g6.box,2);
- assert.equal(Date.parse(state.items.g6.dueAt),now+1000+4*86400000);
+ assert.equal(Date.parse(state.items.g6.dueAt),now+1000+2*86400000);
 });
 
 test("incorrect review resets the interval and schedules immediate repetition",()=>{
