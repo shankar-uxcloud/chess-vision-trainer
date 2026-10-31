@@ -45,7 +45,7 @@
   const prevAccuracy=previous.length?Math.round(previous.filter(r=>r.correct).length/previous.length*100):null;
   const accuracy=recent.length?Math.round(correct/recent.length*100):null;
   return {sample:recent.length,correct,wrong:recent.length-correct,accuracy,avgReaction,
-   previousSample:previous.length,previousAccuracy,
+   previousSample:previous.length,previousAccuracy:prevAccuracy,
    trend:accuracy===null||prevAccuracy===null?null:accuracy-prevAccuracy,
    modes,weakModes,weakSquares};
  }
