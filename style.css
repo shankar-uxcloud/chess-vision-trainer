@@ -7099,6 +7099,9 @@ body:has(#authAccountPill:not([hidden])) #dashboardAuthButton {
 .profile-edit-form label { color:var(--text-2); font-size:12px; font-weight:700; }
 .profile-edit-form input { width:100%; min-width:0; padding:12px 13px; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); color:var(--text); font:inherit; }
 .profile-edit-form input:focus { outline:2px solid var(--accent); outline-offset:2px; }
+.profile-privacy-toggle { display:flex; align-items:center; gap:9px; color:var(--text-2); font-size:12px; font-weight:600; }
+.profile-privacy-toggle input { width:16px; min-width:16px; accent-color:var(--accent); }
+.profile-privacy-note { margin:0; color:var(--text-2); font-size:11px; line-height:1.5; }
 .profile-stats-grid { margin:22px 0; }
 .profile-content-grid { margin:22px 0; }
 .profile-achievements { display:grid; gap:10px; }
