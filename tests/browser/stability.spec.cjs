@@ -20,6 +20,11 @@ async function enterTraining(page) {
   await page.goto("/");
   await page.locator("#continueGuest").waitFor({ state: "visible", timeout: 30000 });
   await page.locator("#continueGuest").click();
+  // First-time guest sessions show a blocking onboarding dialog. Complete it
+  // explicitly so browser tests exercise the app rather than timing out on the modal.
+  await expect(page.locator("#onboarding")).toBeVisible({ timeout: 10000 });
+  await page.locator("#onboardingStart").click();
+  await expect(page.locator("#onboarding")).toBeHidden();
   await activateTrainingAndWait(page);
   await expect(page.locator("#chessboard")).toBeVisible();
 }
