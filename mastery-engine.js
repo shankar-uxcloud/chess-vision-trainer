@@ -91,7 +91,8 @@
   const box=record.correct?Math.min(INTERVALS.length-1,old.box+1):0;
   const repetitions=record.correct?old.repetitions+1:0;
   const lapses=record.correct?old.lapses:old.lapses+1;
-  const dueAt=record.correct?now+INTERVALS[box]*DAY:now;
+  const intervalIndex=record.correct?Math.max(0,box-1):0;
+  const dueAt=record.correct?now+INTERVALS[intervalIndex]*DAY:now;
   next.items[square]={box,repetitions,lapses,dueAt:new Date(dueAt).toISOString(),lastReviewedAt:new Date(now).toISOString()};
   next.processed.push(key);if(next.processed.length>5000)next.processed=next.processed.slice(-5000);
   return next;
