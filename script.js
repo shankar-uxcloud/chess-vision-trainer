@@ -2888,10 +2888,10 @@ $("searchPublicPlayer")?.addEventListener("click", async () => {
         if (player.show_stats) {
             const stats = document.createElement("p");
             const parts = [];
-            if (Number.isFinite(Number(player.vision_rating))) parts.push("Vision Rating " + player.vision_rating);
-            if (Number.isFinite(Number(player.total_sessions))) parts.push(player.total_sessions + " sessions");
-            if (Number.isFinite(Number(player.accuracy))) parts.push(player.accuracy + "% accuracy");
-            if (Number.isFinite(Number(player.xp))) parts.push(player.xp + " XP");
+            if (player.vision_rating !== null && Number.isFinite(Number(player.vision_rating))) parts.push("Vision Rating " + player.vision_rating);
+            if (player.total_sessions !== null && Number.isFinite(Number(player.total_sessions))) parts.push(player.total_sessions + " sessions");
+            if (player.accuracy !== null && Number.isFinite(Number(player.accuracy))) parts.push(player.accuracy + "% accuracy");
+            if (player.xp !== null && Number.isFinite(Number(player.xp))) parts.push(player.xp + " XP");
             stats.textContent = parts.length ? parts.join(" · ") : "This player has not shared statistics yet.";
             result.appendChild(stats);
         } else {
