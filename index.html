@@ -871,6 +871,11 @@
       <div class="profile-edit-form">
         <label for="playerDisplayName">Display name</label>
         <input id="playerDisplayName" type="text" maxlength="60" placeholder="Your chess name" autocomplete="nickname">
+        <label for="playerUsername">Unique username</label>
+        <input id="playerUsername" type="text" maxlength="20" minlength="3" pattern="[a-z0-9][a-z0-9_]{2,19}" placeholder="e.g. knight_runner" autocomplete="username" spellcheck="false">
+        <label class="profile-privacy-toggle" for="playerProfilePublic"><input id="playerProfilePublic" type="checkbox"> Make my player profile public</label>
+        <label class="profile-privacy-toggle" for="playerProfileShowStats"><input id="playerProfileShowStats" type="checkbox"> Show my training statistics publicly</label>
+        <p class="profile-privacy-note" id="profilePrivacyNote">Your profile is private by default.</p>
         <button class="primary-button" id="savePlayerProfile" type="button">Save profile</button>
       </div>
     </div>
