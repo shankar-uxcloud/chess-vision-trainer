@@ -133,3 +133,9 @@ Please open an issue or pull request with a focused change, a reproduction case 
 Guest ratings remain local to the browser. Signed-in users can keep a separate rating profile in Supabase and sync it across devices. The SQL migration at `supabase/migrations/20261018_user_vision_rating.sql` creates the rating profile/session tables, enables row-level security, and adds authenticated RPC functions. The database calculates rating changes and prevents a session ID from awarding rating twice; sessions with fewer than five answers do not change rating.
 
 **One-time setup:** Open the Supabase project configured in `auth.js`, select **SQL Editor**, paste and run the migration file, then sign in to the app. Until this SQL is run, account-level sync is unavailable and the app retains local ratings. Guest mode continues to work locally.
+
+## Phase 5 mastery engine (incremental)
+
+The Phase 5 branch adds a local-first mastery engine that summarizes recorded answer accuracy, response time, skill/mode performance, and repeated weak squares. Recommendations are deterministic and include their supporting evidence. The spaced-review scheduler uses a Leitner-style interval ladder of 1, 2, 4, 7, 14, and 30 days; incorrect answers reset a square to immediate review. Review state is stored separately from the existing answer history so older records remain compatible.
+
+The first milestone is under review in a stacked draft pull request. Diagnostic assessments, personalized plans, custom session building, extended analytics, personal bests, PGN/FEN training, and cloud synchronization of mastery state are not yet implemented.

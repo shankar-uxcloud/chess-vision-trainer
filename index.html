@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="./style.css?v=board-sizing-render-20261028f">
 <link rel="stylesheet" href="./board-settings.css?v=board-sizing-render-20261028f">
 <link rel="stylesheet" href="./learning-journey.css?v=20261027a">
-<link rel="stylesheet" href="./adaptive-coach.css?v=20261026">
+<link rel="stylesheet" href="./adaptive-coach.css?v=phase5-20261031">
 </head>
 <body data-theme="light" data-board="emerald" data-view="dashboard" data-flip="false" data-perspective="white">
 
@@ -978,6 +978,7 @@
     <div class="coach-hero panel"><div><div class="section-kicker">YOUR TRAINING PLAN</div><h1 id="coachHeadline">Build your board vision.</h1><p id="coachSummary">Review your recent practice to get a plan tailored to your strengths and gaps.</p><div class="coach-actions"><button class="primary-button" id="coachStartBtn" type="button">Start recommended practice →</button><button class="ghost-button" id="coachRefreshBtn" type="button">↻ Refresh plan</button></div></div><div class="coach-hero-mark" aria-hidden="true">♞</div></div>
     <div class="coach-stats"><div class="panel coach-stat"><span>RECENT ACCURACY</span><strong id="coachAccuracy">—</strong><small id="coachSample">Waiting for answer history</small></div><div class="panel coach-stat"><span>MAIN FOCUS</span><strong id="coachFocus">Discovering</strong><small>Based on your latest answers</small></div><div class="panel coach-stat"><span>NEXT SESSION</span><strong id="coachDuration">5 min</strong><small>Short, focused practice</small></div></div>
     <div class="coach-grid"><div class="panel"><div class="panel-head"><div><div class="section-kicker">YOUR NEXT 3 STEPS</div><h3>Personalized plan</h3></div></div><div id="coachPlan" class="coach-plan"><p>Finish a training session to unlock your personalized plan.</p></div></div><div class="panel"><div class="panel-head"><div><div class="section-kicker">PATTERN CHECK</div><h3>What the data says</h3></div></div><div id="coachInsights" class="coach-insights"><p>Insights will appear as you practise.</p></div><p class="coach-privacy">Coach recommendations are generated locally from saved answer history. They are guidance, not a rating of your chess ability.</p></div></div>
+    <div class="panel mastery-review-panel"><div class="panel-head"><div><div class="section-kicker">SPACED REPETITION</div><h3>Daily review queue</h3><p class="panel-sub" id="masteryReviewSummary">Difficult squares are scheduled for review using fixed intervals.</p></div><button class="primary-button" id="masteryStartReviews" type="button">Start daily reviews →</button></div><div id="masteryReviewQueue" class="mastery-review-queue"><p>Complete a few answers to build your review schedule.</p></div><p class="coach-privacy">Scheduling: Leitner-style intervals of 1, 2, 4, 7, 14 and 30 days. A correct answer advances one interval; an incorrect answer resets the square to an immediate review.</p></div>
   </section>
 
 
@@ -1173,9 +1174,10 @@
 <script src="./data-validation.js"></script>
 <script src="./board-settings-core.js?v=board-size-fix-20261028b"></script>
 <script src="./weekly-challenges.js?v=weekly-challenges-20261026"></script>
-<script src="./adaptive-coach.js?v=20261026"></script>
+<script src="./mastery-engine.js?v=phase5-20261031"></script>
+<script src="./adaptive-coach.js?v=phase5-20261031"></script>
 <script src="./learning-journey.js?v=20261027a"></script>
-<script src="./script.js?v=board-sizing-render-20261028f"></script>
+<script src="./script.js?v=phase5-mastery-20261031"></script>
 <script src="./auth.js?v=player-profile-cloud-20261025"></script>
 </body>
 </html>
