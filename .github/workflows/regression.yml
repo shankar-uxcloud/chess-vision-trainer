@@ -6,6 +6,7 @@ on:
       - main
       - "audit/**"
       - "phase-4/**"
+      - "phase-5/**"
   pull_request:
     branches:
       - main
@@ -28,5 +29,7 @@ jobs:
           node --check script.js
           node --check auth.js
           node --check data-validation.js
+          node --check mastery-engine.js
+          node --check adaptive-coach.js
       - name: Run backup validation regression tests
         run: node --test tests/*.test.cjs
