@@ -41,3 +41,11 @@ test("profile sync persists username and privacy preferences", () => {
   assert.match(script, /show_stats: profileShowStats/);
   assert.match(script, /select\("display_name,username,profile_public,show_stats,progress,updated_at"\)/);
 });
+
+test("public player search uses exact username RPC and safely renders returned fields", () => {
+  assert.match(html, /id="publicPlayerUsername"/);
+  assert.match(html, /id="searchPublicPlayer"/);
+  assert.match(script, /client\.rpc\("find_public_player_profile", \{ p_username: username \}\)/);
+  assert.match(script, /No public profile found for that exact username/);
+  assert.match(script, /player has chosen not to share training statistics/);
+});
