@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "audit/**"
+      - "ultimate/**"
   pull_request:
     branches:
       - main
@@ -27,5 +28,9 @@ jobs:
           node --check script.js
           node --check auth.js
           node --check data-validation.js
+          node --check board-settings-core.js
+          node --check weekly-challenges.js
+          node --check adaptive-coach.js
+          node --check learning-journey.js
       - name: Run backup validation regression tests
         run: node --test tests/*.test.cjs
