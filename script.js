@@ -1027,7 +1027,7 @@ const game = {
     correct: 0, mistakes: 0, streak: 0, bestStreak: 0,
     target: null, knightSource: null, knightRemaining: [], knightFound: [],
     questionIndex: 0, questionStartTime: 0, questionAttempts: 0, reactionTimes: [], adaptiveRecentSquares: [], sessionId: null,
-    timer: null, feedbackTimer: null, toastTimer: null, countdownTimer: null,
+    timer: null, feedbackTimer: null, toastTimer: null, countdownTimer: null, boardCueTimer: null,
     sound: true, volume: 0.6, ticks: true, lastTick: -1,
     dailyActive: false, dailyPractice: false, dailySequence: [], dailyStart: 0
 };
@@ -2061,7 +2061,42 @@ function updateFlipIndicator() {
 }
 
 /* Targets */
+const BOARD_TARGET_CUE_DURATION = 1500;
+function clearBoardTargetCue(immediate = false) {
+    if (game.boardCueTimer) {
+        clearTimeout(game.boardCueTimer);
+        game.boardCueTimer = null;
+    }
+    const board = $("chessboard");
+    if (!board) return;
+    board.classList.remove("board-target-cue-visible");
+    if (immediate) {
+        board.classList.remove("board-target-cue-fading");
+        board.removeAttribute("data-target-cue");
+        $("targetPanel")?.classList.remove("board-cue-mode");
+        return;
+    }
+    if (!board.hasAttribute("data-target-cue")) return;
+    board.classList.add("board-target-cue-fading");
+    game.boardCueTimer = setTimeout(() => {
+        board.classList.remove("board-target-cue-fading");
+        board.removeAttribute("data-target-cue");
+        game.boardCueTimer = null;
+    }, 220);
+}
+function showBoardTargetCue(coord) {
+    const target = String(coord || "");
+    if (!/^[a-h][1-8]$/.test(target)) return;
+    const board = $("chessboard");
+    if (!board) return;
+    clearBoardTargetCue(true);
+    board.dataset.targetCue = target;
+    board.classList.add("board-target-cue-visible");
+    $("targetPanel")?.classList.add("board-cue-mode");
+    game.boardCueTimer = setTimeout(() => clearBoardTargetCue(false), BOARD_TARGET_CUE_DURATION);
+}
 function genTarget() {
+    clearBoardTargetCue(true);
     game.questionAttempts = 0;
     game.dualStep = 0; game.dualTarget = null; game.flipStep = 0;
     pickAutoSide();
@@ -2099,11 +2134,12 @@ function genSquareTarget() {
     $("targetLabelText").textContent = isDualMode() ? "FIND IN BOTH VIEWS" : "FIND THIS SQUARE";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coord;
-    $("targetHint").textContent = isDualMode() ? "Click this square from white's view." : "Click the matching square on the board.";
+    $("targetHint").textContent = isDualMode() ? "Coordinate flashes briefly — find it from white's view." : "Coordinate flashes briefly on the board — click its square."; 
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden"); $("choiceGrid").innerHTML = "";
     $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
+    showBoardTargetCue(coord);
 }
 function genNameTarget(count) {
     const coord = nextTarget();
@@ -2139,12 +2175,13 @@ function genKnightTarget() {
     $("targetLabelText").textContent = "KNIGHT JUMPS FROM";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = src;
-    $("targetHint").textContent = "Click every square this knight can move to.";
+    $("targetHint").textContent = "Source coordinate flashes briefly — find every legal knight jump."; 
     $("targetFeedback").textContent = "";
     $("choiceGrid").classList.add("hidden"); $("choiceGrid").innerHTML = "";
     $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
     hl(src, "knight-source");
+    showBoardTargetCue(src);
 }
 function genColorTarget() {
     const coord = nextTarget();
@@ -2153,10 +2190,11 @@ function genColorTarget() {
     $("targetLabelText").textContent = "SQUARE COLOR";
     $("targetCoordinate").classList.remove("muted");
     $("targetCoordinate").textContent = coord;
-    $("targetHint").textContent = "Is this square light or dark?";
+    $("targetHint").textContent = "Coordinate flashes briefly — choose its square color."; 
     $("targetFeedback").textContent = "";
     $("targetPanel").classList.remove("correct","wrong");
     clearHighlights();
+    showBoardTargetCue(coord);
     const grid = $("choiceGrid");
     grid.innerHTML = ""; grid.classList.remove("hidden"); grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     [["light","Light"],["dark","Dark"]].forEach(([val, label]) => {
@@ -2167,6 +2205,7 @@ function genColorTarget() {
     });
 }
 function resetTarget() {
+    clearBoardTargetCue(true);
     game.target = null; game.knightSource = null; game.knightRemaining = []; game.knightFound = [];
     game.questionIndex = 0; game.dualStep = 0; game.dualTarget = null; game.flipStep = 0;
     $("targetCoordinate").classList.add("muted");
@@ -2230,6 +2269,7 @@ function handleSquare(coord, sq) {
     }
     if (!game.running || game.paused || !game.target) return;
     if (sq && sq.getAttribute("aria-disabled") === "true") return;
+    clearBoardTargetCue(false);
     if (game.mode === "square" || game.mode === "blindfold" || game.mode === "daily") {
         if (coord === game.target) {
             if (isDualMode()) correctDual(sq);
@@ -2286,6 +2326,7 @@ function handleChoice(coord, btn) {
 }
 function handleColorChoice(val, btn) {
     if (!game.running || game.paused || !game.target) return;
+    clearBoardTargetCue(false);
     const isLight = isLightSquare(game.target);
     const correct = (val === "light" && isLight) || (val === "dark" && !isLight);
     if (correct) { btn.classList.add("correct"); correctColor(btn); }
@@ -3550,6 +3591,7 @@ function finishSession() {
 
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
+    clearBoardTargetCue(true);
     game.timer = null;
 
     $("sessionStateText").textContent = "COMPLETE";
