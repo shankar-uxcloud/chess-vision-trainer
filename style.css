@@ -7404,8 +7404,9 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
 #chessboard::after {
     content: attr(data-target-cue);
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 8%;
+    right: 8%;
+    left: auto;
     z-index: 100;
     display: grid;
     place-items: center;
@@ -7423,19 +7424,19 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transform: translate(-50%, -50%) scale(.88);
+    transform: translateY(-6px) scale(.88);
     transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
 }
 #chessboard.board-target-cue-visible::after {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
     transition-delay: 0s;
 }
 #chessboard.board-target-cue-fading::after {
     opacity: 0;
     visibility: hidden;
-    transform: translate(-50%, -50%) scale(.94);
+    transform: translateY(-3px) scale(.94);
 }
 #targetPanel.board-cue-mode #targetCoordinate {
     position: absolute !important;
