@@ -8,9 +8,9 @@ const app = fs.readFileSync(path.join(root, "script.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
 
 function functionSource(name, nextName) {
-  const start = app.indexOf(\`function \${name}(\`);
-  assert.notEqual(start, -1, \`Missing \${name}()\`);
-  const end = nextName ? app.indexOf(\`function \${nextName}(\`, start + 1) : -1;
+  const start = app.indexOf("function " + name + "(");
+  assert.notEqual(start, -1, "Missing " + name + "()");
+  const end = nextName ? app.indexOf("function " + nextName + "(", start + 1) : -1;
   return app.slice(start, end === -1 ? app.length : end);
 }
 
