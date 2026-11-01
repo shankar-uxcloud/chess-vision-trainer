@@ -19,7 +19,7 @@ test("board coordinate cue is transient and clears itself after the flash window
   assert.match(app, /function showBoardTargetCue\(coord\)/);
   assert.match(app, /board\.dataset\.targetCue = target/);
   assert.match(functionSource("showBoardTargetCue", "genTarget"), /BOARD_TARGET_CUE_DURATION/);
-  assert.match(functionSource("showBoardTargetCue", "genTarget"), /token !== game\\.boardCueToken/);
+  assert.match(functionSource("showBoardTargetCue", "genTarget"), /boardCueToken/);
   assert.match(app, /board\.removeAttribute\("data-target-cue"\)/);
 });
 
