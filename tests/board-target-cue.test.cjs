@@ -36,9 +36,15 @@ test("board cue never blocks square clicks and disappears after an attempted boa
 
 test("prompt card keeps an accessible target while its duplicate visual coordinate is hidden", () => {
   assert.match(css, /#targetPanel\.board-cue-mode #targetCoordinate/);
-  assert.match(css, /clip-path:\s*inset\(50%\)/);\n  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");\n  assert.match(html, /id="targetCoordinate" aria-live="polite" aria-atomic="true"/);
+  assert.match(css, /clip-path:\s*inset\(50%\)/);
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  assert.match(html, /id="targetCoordinate" aria-live="polite" aria-atomic="true"/);
 });
 
-test("resuming a paused coordinate exercise flashes the active target again", () => {\n  assert.match(functionSource("togglePause", "finishSession"), /showBoardTargetCue\\(game\\.mode === "knight" \\? game\\.knightSource : game\\.target\\)/);\n});\n\ntest("color target selection also dismisses the board cue", () => {
+test("resuming a paused coordinate exercise flashes the active target again", () => {
+  assert.match(functionSource("togglePause", "finishSession"), /showBoardTargetCue\(game\.mode === "knight" \? game\.knightSource : game\.target\)/);
+});
+
+test("color target selection also dismisses the board cue", () => {
   assert.match(functionSource("handleColorChoice", "onCorrectBase"), /clearBoardTargetCue\(false\)/);
 });
