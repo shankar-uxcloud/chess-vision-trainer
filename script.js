@@ -3581,6 +3581,9 @@ function togglePause() {
         $("sessionStateText").textContent = "LIVE";
         $("topStatus").textContent = "TRAINING LIVE";
         enableBoard(game.mode !== "coordinate" && game.mode !== "reverse" && game.mode !== "color");
+        if (game.target && ["square", "blindfold", "daily", "knight", "color"].includes(game.mode)) {
+            showBoardTargetCue(game.mode === "knight" ? game.knightSource : game.target);
+        }
     }
 }
 function finishSession() {
