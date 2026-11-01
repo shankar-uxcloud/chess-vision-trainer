@@ -146,6 +146,7 @@ const squareBag = {
                 setTimeout(() => {
                     setBoardFlip(game.flipStartSide === "white");
                     playSound("flip"); applyTargetSide(true); updateFlipIndicator();
+                    showBoardTargetCue(game.target);
                 }, 300);
                 clearTimeout(game.feedbackTimer);
                 game.feedbackTimer = setTimeout(() => { if (game.running) { $("targetPanel").classList.remove("correct"); clearHighlights(); } }, 700);
@@ -2293,7 +2294,7 @@ function correctDual(sq) {
         $("targetFeedback").style.color = "var(--green)";
         $("targetHint").textContent = "Board is flipping — click " + game.target + " again.";
         playSound("correct");
-        setTimeout(() => { setBoardFlip(true); playSound("flip"); applyTargetSide(true); updateDualIndicator(); }, 300);
+        setTimeout(() => { setBoardFlip(true); playSound("flip"); applyTargetSide(true); updateDualIndicator(); showBoardTargetCue(game.target); }, 300);
         clearTimeout(game.feedbackTimer);
         game.feedbackTimer = setTimeout(() => { if (!game.running) return; $("targetPanel").classList.remove("correct"); clearHighlights(); }, 700);
         return;
@@ -3372,6 +3373,7 @@ function fireConfetti(count) {
 
 /* Session lifecycle */
 function resetSession() {
+    clearBoardTargetCue(true);
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
     clearInterval(game.countdownTimer);
@@ -3567,6 +3569,7 @@ function togglePause() {
     if (game.mode === "mindpalace" || game.dailyActive) { toast("Pause is not available in this challenge."); return; }
     game.paused = !game.paused;
     if (game.paused) {
+        clearBoardTargetCue(true);
         $("pauseOverlay").classList.remove("hidden");
         $("pauseBtn").textContent = "Resume";
         $("sessionStateText").textContent = "PAUSED";
@@ -3738,6 +3741,7 @@ function finishDailyChallenge() {
     game.running = false;
     clearInterval(game.timer);
     clearTimeout(game.feedbackTimer);
+    clearBoardTargetCue(true);
     game.timer = null;
     const dateKey = dailyDateKey();
     const state = dailyStateFor(dateKey);
