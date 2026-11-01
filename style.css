@@ -7390,3 +7390,68 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
         max-width: min(var(--cvt-board-target, 420px), calc(100vw - 56px)) !important;
     }
 }
+
+
+/* ============================================================
+   TRANSIENT ON-BOARD COORDINATE CUE
+   The prompt flashes over the board, never intercepts clicks,
+   and leaves the target accessible in the hidden prompt card.
+   ============================================================ */
+#chessboard {
+    position: relative;
+    isolation: isolate;
+}
+#chessboard::after {
+    content: attr(data-target-cue);
+    position: absolute;
+    top: 8%;
+    right: 8%;
+    left: auto;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    min-width: 1.85em;
+    min-height: 1.35em;
+    padding: .12em .3em;
+    border: 2px solid var(--accent);
+    border-radius: 18px;
+    background: rgba(5, 12, 20, .88);
+    color: #fff;
+    font: 900 clamp(42px, 7vw, 76px)/1 "DM Mono", monospace;
+    letter-spacing: .025em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, .35), 0 0 28px var(--accent-soft);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px) scale(.88);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+#chessboard.board-target-cue-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    transition-delay: 0s;
+}
+#chessboard.board-target-cue-fading::after {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-3px) scale(.94);
+}
+#targetPanel.board-cue-mode #targetCoordinate {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+    #chessboard::after {
+        transition: none;
+    }
+}
