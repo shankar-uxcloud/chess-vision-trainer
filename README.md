@@ -1,4 +1,4 @@
-# ♟️ Chess Vision Trainer
+# ♟️ Chess Vision Trainer 
 
 <div align="center">
   <img src="chess-vision-trainer-animated.gif" alt="Chess Vision Trainer animated chessboard" width="700">
