@@ -7455,3 +7455,104 @@ body[data-view="training"] .training-layout .gameplay-stage .training-board-pane
         transition: none;
     }
 }
+
+/* =========================================================
+   ULTRA VISION DASHBOARD — warm wood / charcoal direction
+   Existing training routes and components remain intact.
+========================================================= */
+body[data-view="dashboard"] { background:#2d2c2a; color:#f7f4ed; overflow:hidden; }
+body[data-view="dashboard"] .sidebar { display:none; }
+body[data-view="dashboard"] .main-content { margin:0; max-width:none; width:100%; min-height:100vh; height:100vh; padding:0; }
+body[data-view="dashboard"] .topbar, body[data-view="dashboard"] .footer { display:none!important; }
+body[data-view="dashboard"] .view-dashboard { display:block; height:100vh; padding:0; overflow:hidden; }
+body[data-view="dashboard"] .view-dashboard > :not(.ultra-dashboard) { display:none!important; }
+.ultra-dashboard { --ultra-bg:#252422; --ultra-panel:#211f1d; --ultra-cream:#efd8b3; --ultra-wood:#b98b68; --ultra-green:#83bd4c; display:grid; grid-template-columns:minmax(0,1fr) 326px; gap:0; width:100%; height:100%; min-height:620px; background:#2d2c2a; }
+.ultra-board-column { min-width:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:clamp(18px,3vw,42px); overflow:hidden; }
+.ultra-board-topline { width:min(100%, min(76vh, 760px)); display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:17px; }
+.ultra-eyebrow { color:#a9a39a; font:600 10px "DM Mono",monospace; letter-spacing:.18em; }
+.ultra-board-topline h1 { margin:6px 0 0; font:700 clamp(24px,3vw,38px) "Inter",sans-serif; letter-spacing:-.045em; color:#f6f1e9; }
+.ultra-board-topline h1 span { color:var(--ultra-green); }
+.ultra-live { display:flex; align-items:center; gap:8px; color:#c3bdb4; font:600 9px "DM Mono",monospace; letter-spacing:.1em; white-space:nowrap; }
+.ultra-live i,.ultra-board-dot { width:7px; height:7px; border-radius:50%; background:#8bc65b; box-shadow:0 0 12px #8bc65b; }
+.ultra-board-frame { width:min(100%, min(76vh, 760px)); aspect-ratio:1; padding:0; display:flex; flex-direction:column; filter:drop-shadow(0 15px 32px rgba(0,0,0,.18)); }
+.ultra-board-middle { flex:1; min-height:0; display:grid; grid-template-columns:22px minmax(0,1fr) 22px; gap:5px; }
+.ultra-preview-board { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); grid-template-rows:repeat(8,minmax(0,1fr)); overflow:hidden; border-radius:4px; border:1px solid rgba(255,255,255,.08); }
+.ultra-square { position:relative; display:grid; place-items:center; min-width:0; min-height:0; border:0; padding:0; cursor:pointer; transition:filter .15s,box-shadow .15s; }
+.ultra-square.is-light { background:#efd8b3; }
+.ultra-square.is-dark { background:#b98b68; }
+.ultra-square:hover { filter:brightness(1.08); }
+.ultra-square.is-selected { z-index:1; box-shadow:inset 0 0 0 4px #8bc65b,inset 0 0 0 999px rgba(139,198,91,.15); }
+.ultra-square-coordinate { position:absolute; right:5px; bottom:3px; color:rgba(75,54,39,.6); font:600 clamp(8px,1vw,12px) "DM Mono",monospace; pointer-events:none; }
+.ultra-preview-board.coords-hidden .ultra-square-coordinate { display:none; }
+.ultra-board-coordinates { display:flex; color:#c9a886; font:600 12px "DM Mono",monospace; }
+.ultra-files-top,.ultra-files-bottom { height:18px; margin-left:27px; margin-right:27px; align-items:center; justify-content:space-around; }
+.ultra-ranks-left,.ultra-ranks-right { flex-direction:column; justify-content:space-around; align-items:center; }
+.ultra-board-foot { width:min(100%, min(76vh,760px)); display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 2px 0; color:#b9b2a8; font:500 9px "DM Mono",monospace; letter-spacing:.08em; }
+.ultra-board-foot>span:first-child { display:flex; align-items:center; gap:8px; }
+.ultra-board-foot>span:last-child { letter-spacing:0; text-align:right; }
+.ultra-board-hint { width:min(100%, min(76vh,760px)); margin-top:20px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); color:#a8a197; font-size:12px; }
+.ultra-board-hint span { color:#91c65b; margin-right:8px; }
+.ultra-control-panel { display:flex; flex-direction:column; min-height:0; overflow-y:auto; background:#232220; border-left:1px solid rgba(255,255,255,.045); color:#f7f4ee; }
+.ultra-brand { min-height:130px; padding:25px 25px 18px; display:flex; align-items:center; justify-content:center; gap:14px; position:relative; border-bottom:1px solid rgba(255,255,255,.045); }
+.ultra-brand-mark { width:64px; height:64px; position:relative; display:grid; place-items:center; border-radius:16px; background:#f3f1ed; color:#78b648; box-shadow:inset 0 -5px 0 rgba(0,0,0,.1); }
+.ultra-brand-mark span { font-size:48px; line-height:1; font-weight:800; }
+.ultra-brand-mark i { position:absolute; width:30px; height:30px; border:5px solid #78b648; border-radius:50%; background:transparent; }
+.ultra-brand>div:nth-child(2) strong { display:block; font-size:29px; line-height:1; letter-spacing:-.04em; }
+.ultra-brand>div:nth-child(2) small { display:block; margin-top:7px; color:#aaa49b; font:600 9px "DM Mono",monospace; letter-spacing:.17em; }
+.ultra-settings-link { position:absolute; right:16px; top:18px; border:0; background:transparent; color:#aaa49b; font-size:19px; cursor:pointer; }
+.ultra-record { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:190px; padding:20px 16px 15px; }
+.ultra-record-art { position:relative; width:74px; height:74px; display:grid; place-items:center; margin-bottom:12px; border-radius:12px; background:linear-gradient(145deg,#c3d2b5,#8fba6e); color:#26331f; overflow:hidden; }
+.ultra-record-art span { font-size:54px; line-height:1; z-index:1; }
+.ultra-record-art i { position:absolute; width:100px; height:1px; background:rgba(255,255,255,.6); transform:rotate(-35deg); }
+.ultra-micro-label { color:#b9b3aa; font:600 10px "Inter",sans-serif; }
+.ultra-record>strong { margin-top:3px; font-size:42px; line-height:1; letter-spacing:-.04em; }
+.ultra-record>small { margin-top:7px; color:#858078; font:500 8px "DM Mono",monospace; letter-spacing:.1em; }
+.ultra-stats { display:grid; grid-template-columns:repeat(3,1fr); padding:15px 13px; border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); }
+.ultra-stats>div { display:grid; gap:6px; text-align:center; }
+.ultra-stats>div+div { border-left:1px solid rgba(255,255,255,.08); }
+.ultra-stats span { color:#9d978e; font:600 8px "DM Mono",monospace; letter-spacing:.07em; }
+.ultra-stats strong { font-size:20px; font-weight:700; }
+.ultra-config { padding:20px 24px 17px; display:grid; gap:13px; }
+.ultra-config-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:1px; }
+.ultra-config-title span { font-size:11px; font-weight:700; letter-spacing:.1em; }
+.ultra-config-title small { color:#88837b; font:500 8px "DM Mono",monospace; letter-spacing:.1em; }
+.ultra-field { min-width:0; display:grid; gap:6px; }
+.ultra-field>span { color:#aaa49a; font-size:9px; font-weight:600; letter-spacing:.07em; }
+.ultra-field select { width:100%; height:39px; min-width:0; padding:0 11px; border:1px solid #46433f; border-radius:7px; outline:none; background:#302e2b; color:#eee9e1; font:500 12px "Inter",sans-serif; }
+.ultra-field select:focus { border-color:#8bc65b; box-shadow:0 0 0 2px rgba(139,198,91,.14); }
+.ultra-field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ultra-check { display:flex; align-items:center; gap:9px; color:#c6c0b7; font-size:11px; cursor:pointer; }
+.ultra-check input { position:absolute; opacity:0; pointer-events:none; }
+.ultra-check-box { width:15px; height:15px; border:1px solid #777168; border-radius:4px; background:#302e2b; }
+.ultra-check input:checked+.ultra-check-box { background:#83bd4c; border-color:#83bd4c; box-shadow:inset 0 0 0 3px #302e2b; }
+.ultra-memory-difficulty[hidden] { display:none!important; }
+.ultra-start-button { display:flex; align-items:center; justify-content:center; gap:15px; width:100%; min-height:58px; margin-top:3px; border:1px solid #8ecb58; border-radius:11px; background:linear-gradient(180deg,#8fc653,#70aa3e); color:#fff; box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.25); font:800 19px "Inter",sans-serif; cursor:pointer; transition:transform .18s,filter .18s,box-shadow .18s; }
+.ultra-start-button:hover { transform:translateY(-2px); filter:brightness(1.06); box-shadow:0 10px 24px rgba(0,0,0,.28); }
+.ultra-start-button:active { transform:translateY(0); }
+.ultra-start-button b { font-size:23px; font-weight:500; }
+.ultra-config-note { color:#8f8981; font-size:9px; text-align:center; line-height:1.5; }
+.ultra-panel-footer { margin-top:auto; padding:15px 10px; display:flex; align-items:center; justify-content:center; gap:7px; color:#88837a; font:500 8px "DM Mono",monospace; letter-spacing:.08em; border-top:1px solid rgba(255,255,255,.05); }
+.ultra-panel-footer i { width:3px; height:3px; border-radius:50%; background:#83bd4c; }
+@media(max-width:900px) {
+  body[data-view="dashboard"] { overflow:auto; }
+  body[data-view="dashboard"] .main-content,body[data-view="dashboard"] .view-dashboard { height:auto; min-height:100vh; overflow:visible; }
+  .ultra-dashboard { grid-template-columns:minmax(0,1fr) 300px; min-height:100vh; height:auto; }
+  .ultra-board-frame { width:min(100%,68vh); }
+  .ultra-board-topline,.ultra-board-foot,.ultra-board-hint { width:min(100%,68vh); }
+}
+@media(max-width:680px) {
+  .ultra-dashboard { display:flex; flex-direction:column; min-height:100vh; }
+  .ultra-board-column { padding:22px 14px 18px; }
+  .ultra-board-frame { width:min(100%,calc(100vw - 38px)); }
+  .ultra-board-topline,.ultra-board-foot,.ultra-board-hint { width:min(100%,calc(100vw - 38px)); }
+  .ultra-board-topline { align-items:flex-start; }
+  .ultra-live { font-size:8px; margin-top:7px; }
+  .ultra-board-hint { margin-top:12px; }
+  .ultra-control-panel { border-left:0; border-top:1px solid rgba(255,255,255,.07); overflow:visible; }
+  .ultra-brand { min-height:100px; }
+  .ultra-record { min-height:150px; }
+  .ultra-config { padding:20px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ultra-square,.ultra-start-button { transition:none!important; }
+}

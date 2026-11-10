@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=board-sizing-render-20261028f">
+<link rel="stylesheet" href="./style.css?v=ultra-vision-20261110">
 <link rel="stylesheet" href="./board-settings.css?v=board-sizing-render-20261028f">
 <link rel="stylesheet" href="./learning-journey.css?v=20261027a">
 <link rel="stylesheet" href="./adaptive-coach.css?v=20261026">
@@ -303,6 +303,82 @@
   </header>
 
   <section class="view view-dashboard" data-view="dashboard">
+
+  <section class="ultra-dashboard" aria-label="Chess Vision Trainer dashboard">
+    <div class="ultra-board-column">
+      <div class="ultra-board-topline">
+        <div><span class="ultra-eyebrow">YOUR TRAINING SPACE</span><h1>See the board<span>.</span></h1></div>
+        <div class="ultra-live"><i></i> READY TO TRAIN</div>
+      </div>
+      <div class="ultra-board-frame">
+        <div class="ultra-board-coordinates ultra-files-top" id="visionFilesTop" aria-hidden="true"></div>
+        <div class="ultra-board-middle">
+          <div class="ultra-board-coordinates ultra-ranks-left" id="visionRanksLeft" aria-hidden="true"></div>
+          <div class="ultra-preview-board" id="visionPreviewBoard" role="grid" aria-label="Interactive chess coordinate board"></div>
+          <div class="ultra-board-coordinates ultra-ranks-right" id="visionRanksRight" aria-hidden="true"></div>
+        </div>
+        <div class="ultra-board-coordinates ultra-files-bottom" id="visionFilesBottom" aria-hidden="true"></div>
+      </div>
+      <div class="ultra-board-foot">
+        <span><i class="ultra-board-dot"></i> BOARD VISION / 001</span>
+        <span id="visionSquareReadout">Select any square to inspect its coordinate</span>
+      </div>
+      <div class="ultra-board-hint"><span>♟</span> Build instant recognition. One square at a time.</div>
+    </div>
+
+    <aside class="ultra-control-panel">
+      <div class="ultra-brand">
+        <div class="ultra-brand-mark" aria-hidden="true"><span>◉</span><i></i></div>
+        <div><strong>VISION</strong><small>CHESS TRAINER</small></div>
+        <button class="ultra-settings-link" type="button" data-nav="settings" aria-label="Open settings" title="Settings">⚙</button>
+      </div>
+
+      <div class="ultra-record">
+        <div class="ultra-record-art" aria-hidden="true"><span>♞</span><i></i></div>
+        <span class="ultra-micro-label">PERSONAL BEST</span>
+        <strong id="ultraPersonalBest">0</strong>
+        <small>BEST CORRECT ANSWERS</small>
+      </div>
+
+      <div class="ultra-stats">
+        <div><span>BEST STREAK</span><strong id="ultraBestStreak">0</strong></div>
+        <div><span>ACCURACY</span><strong id="ultraAccuracy">—</strong></div>
+        <div><span>SESSIONS</span><strong id="ultraSessions">0</strong></div>
+      </div>
+
+      <div class="ultra-config">
+        <div class="ultra-config-title"><span>SESSION SETUP</span><small>MAKE IT YOURS</small></div>
+        <label class="ultra-field"><span>TRAINING MODE</span>
+          <select id="visionModeSelect">
+            <option value="square">Square Recognition</option>
+            <option value="coordinate">Coordinates Training</option>
+            <option value="color">Color Recognition</option>
+            <option value="mindpalace">Visual Memory · Mind Palace</option>
+            <option value="knight">Chess Pattern Recognition</option>
+            <option value="reverse">Board Awareness</option>
+          </select>
+        </label>
+        <div class="ultra-field-row">
+          <label class="ultra-field"><span>BOARD SIDE</span>
+            <select id="visionColorSelect"><option value="white">White</option><option value="black">Black</option><option value="random">Random</option></select>
+          </label>
+          <label class="ultra-field"><span>DURATION</span>
+            <select id="visionDurationSelect"><option value="30">30 sec</option><option value="45">45 sec</option><option value="60" selected>1 min</option><option value="90">90 sec</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select>
+          </label>
+        </div>
+        <label class="ultra-check"><input id="visionCoordinatesToggle" type="checkbox" checked><span class="ultra-check-box"></span><span>Show coordinates</span></label>
+        <div class="ultra-memory-difficulty" id="visionMemoryDifficulty" hidden>
+          <label class="ultra-field"><span>MEMORY LEVEL</span>
+            <select id="visionDifficultySelect"><option value="beginner">Beginner</option><option value="focus">Focus</option><option value="memory">Memory</option><option value="blindfold">Blindfold</option><option value="grandmaster">Grandmaster</option></select>
+          </label>
+        </div>
+        <button class="ultra-start-button" id="visionStartButton" type="button"><span>Start training</span><b>→</b></button>
+        <p class="ultra-config-note">Your progress is saved automatically on this device.</p>
+      </div>
+      <div class="ultra-panel-footer"><span>FOCUS</span><i></i><span>PERCEPTION</span><i></i><span>PRECISION</span></div>
+    </aside>
+  </section>
+
     <div class="hero">
       <div class="hero-copy">
         <div class="eyebrow"><span class="eyebrow-line"></span>CHESS VISION TRAINER</div>
