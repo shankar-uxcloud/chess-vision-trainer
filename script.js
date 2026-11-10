@@ -4863,6 +4863,10 @@ function setupUltraDashboard() {
         drawLabels("visionRanksRight", rs);
         board.classList.toggle("coords-hidden", !$("visionCoordinatesToggle")?.checked);
     };
+    $("visionCoordinatesToggle").checked = load(KEYS.coords, true) !== false;
+    $("visionModeSelect").value = game.mode;
+    $("visionMemoryDifficulty").hidden = game.mode !== "mindpalace";
+    $("visionDurationSelect").value = String(game.duration);
     renderPreview();
     $("visionCoordinatesToggle")?.addEventListener("change", event => {
         setCoords(event.target.checked);
@@ -4904,12 +4908,12 @@ function setupUltraDashboard() {
         setTimeout(() => startSession(), 320);
     });
     const refreshStats = () => {
-        const stats = loadStats();
-        const total = Number(stats.totalCorrect || 0) + Number(stats.totalMistakes || 0);
-        $("ultraPersonalBest").textContent = Number(stats.personalBest || 0);
-        $("ultraBestStreak").textContent = Number(stats.bestStreak || 0);
-        $("ultraAccuracy").textContent = total ? Math.round(Number(stats.totalCorrect || 0) / total * 100) + "%" : "—";
-        $("ultraSessions").textContent = Number(stats.totalSessions || 0);
+        const currentStats = stats;
+        const total = Number(currentStats.totalCorrect || 0) + Number(currentStats.totalMistakes || 0);
+        $("ultraPersonalBest").textContent = Number(currentStats.personalBest || 0);
+        $("ultraBestStreak").textContent = Number(currentStats.bestStreak || 0);
+        $("ultraAccuracy").textContent = total ? Math.round(Number(currentStats.totalCorrect || 0) / total * 100) + "%" : "—";
+        $("ultraSessions").textContent = Number(currentStats.totalSessions || 0);
     };
     refreshStats();
     ["statAccuracy","statStreak","statBest","statSessions"].forEach(id => {
@@ -4924,7 +4928,6 @@ function init() {
     mountGameplayStage();
     buildCoords();
     buildBoard();
-    setupUltraDashboard();
 
     setTheme(load(KEYS.theme, "light"));
     setBoardTheme(load(KEYS.board, "emerald"));
@@ -4983,6 +4986,7 @@ function init() {
         });
     });
     setPerspective(load(KEYS.perspective, "white"));
+    setupUltraDashboard();
     updateFlipTrainingUI();
     if (game.piecesEnabled) generatePieces();
 
