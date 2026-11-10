@@ -4826,10 +4826,105 @@ function completeOnboarding() { save(KEYS.onboarded, true); $("onboarding").clas
 function setTip() { const day = Math.floor(Date.now() / (1000*60*60*24)); const el = $("tipText"); if (el) el.textContent = TIPS[day % TIPS.length]; }
 
 /* Init */
+
+function setupUltraDashboard() {
+    const board = $("visionPreviewBoard");
+    if (!board) return;
+    const files = ["a","b","c","d","e","f","g","h"];
+    const ranks = [8,7,6,5,4,3,2,1];
+    const drawLabels = (id, values) => {
+        const node = $(id);
+        if (node) node.innerHTML = values.map(value => "<span>" + value + "</span>").join("");
+    };
+    const renderPreview = () => {
+        const flipped = document.body.dataset.flip === "true";
+        const fs = flipped ? files.slice().reverse() : files;
+        const rs = flipped ? ranks.slice().reverse() : ranks;
+        board.innerHTML = "";
+        rs.forEach((rank, row) => fs.forEach((file, col) => {
+            const coord = file + rank;
+            const cell = document.createElement("button");
+            cell.type = "button";
+            cell.className = "ultra-square " + (((files.indexOf(file) + rank) % 2 === 0) ? "is-light" : "is-dark");
+            cell.dataset.square = coord;
+            cell.setAttribute("role", "gridcell");
+            cell.setAttribute("aria-label", "Square " + coord);
+            cell.innerHTML = '<span class="ultra-square-coordinate">' + coord + '</span>';
+            cell.addEventListener("click", () => {
+                board.querySelectorAll(".ultra-square.is-selected").forEach(el => el.classList.remove("is-selected"));
+                cell.classList.add("is-selected");
+                $("visionSquareReadout").textContent = coord.toUpperCase() + " · " + (((files.indexOf(file) + rank) % 2 === 0) ? "LIGHT SQUARE" : "DARK SQUARE");
+            });
+            board.appendChild(cell);
+        }));
+        drawLabels("visionFilesTop", fs);
+        drawLabels("visionFilesBottom", fs);
+        drawLabels("visionRanksLeft", rs);
+        drawLabels("visionRanksRight", rs);
+        board.classList.toggle("coords-hidden", !$("visionCoordinatesToggle")?.checked);
+    };
+    renderPreview();
+    $("visionCoordinatesToggle")?.addEventListener("change", event => {
+        setCoords(event.target.checked);
+        renderPreview();
+    });
+    $("visionModeSelect")?.addEventListener("change", event => {
+        const mode = event.target.value;
+        $("visionMemoryDifficulty").hidden = mode !== "mindpalace";
+        setMode(mode);
+    });
+    $("visionDifficultySelect")?.addEventListener("change", event => {
+        setMindPalaceDifficulty(event.target.value);
+    });
+    $("visionColorSelect")?.addEventListener("change", event => {
+        if (game.running) { toast("Finish the current session before changing board side."); event.target.value = game.perspective === "black" ? "black" : "white"; return; }
+        const side = event.target.value;
+        const chosen = side === "random" ? (Math.random() < .5 ? "white" : "black") : side;
+        setPerspective(chosen);
+        renderPreview();
+    });
+    $("visionDurationSelect")?.addEventListener("change", event => {
+        if (game.running) { toast("Finish the current session before changing duration."); event.target.value = String(game.duration); return; }
+        game.duration = Number(event.target.value) || 60;
+        if ($("durationSelect")) $("durationSelect").value = String(game.duration);
+        resetSession();
+    });
+    $("visionStartButton")?.addEventListener("click", () => {
+        if (game.running) { toast("Finish the active session before starting another."); return; }
+        const mode = $("visionModeSelect").value;
+        const side = $("visionColorSelect").value;
+        const chosen = side === "random" ? (Math.random() < .5 ? "white" : "black") : side;
+        game.duration = Number($("visionDurationSelect").value) || 60;
+        if ($("durationSelect")) $("durationSelect").value = String(game.duration);
+        setCoords($("visionCoordinatesToggle").checked);
+        setPerspective(chosen);
+        setMode(mode);
+        if (mode === "mindpalace") setMindPalaceDifficulty($("visionDifficultySelect").value);
+        setView("training");
+        setTimeout(() => startSession(), 320);
+    });
+    const refreshStats = () => {
+        const stats = loadStats();
+        const total = Number(stats.totalCorrect || 0) + Number(stats.totalMistakes || 0);
+        $("ultraPersonalBest").textContent = Number(stats.personalBest || 0);
+        $("ultraBestStreak").textContent = Number(stats.bestStreak || 0);
+        $("ultraAccuracy").textContent = total ? Math.round(Number(stats.totalCorrect || 0) / total * 100) + "%" : "—";
+        $("ultraSessions").textContent = Number(stats.totalSessions || 0);
+    };
+    refreshStats();
+    ["statAccuracy","statStreak","statBest","statSessions"].forEach(id => {
+        const node = $(id);
+        if (node && window.MutationObserver) new MutationObserver(refreshStats).observe(node, { childList:true, characterData:true, subtree:true });
+    });
+    const previousView = document.body.dataset.view;
+    if (previousView === "dashboard") renderPreview();
+}
+
 function init() {
     mountGameplayStage();
     buildCoords();
     buildBoard();
+    setupUltraDashboard();
 
     setTheme(load(KEYS.theme, "light"));
     setBoardTheme(load(KEYS.board, "emerald"));
